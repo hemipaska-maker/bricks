@@ -1,0 +1,47 @@
+"""Custom exceptions for the Bricks engine."""
+
+
+class BrickError(Exception):
+    """Base exception for all Bricks errors."""
+
+
+class DuplicateBrickError(BrickError):
+    """Raised when a brick name is registered more than once."""
+
+    def __init__(self, name: str) -> None:
+        self.name = name
+        super().__init__(f"Brick already registered: {name!r}")
+
+
+class BrickNotFoundError(BrickError):
+    """Raised when a brick name cannot be found in the registry."""
+
+    def __init__(self, name: str) -> None:
+        self.name = name
+        super().__init__(f"Brick not found: {name!r}")
+
+
+class SequenceValidationError(BrickError):
+    """Raised when a sequence definition fails validation."""
+
+    def __init__(self, message: str, errors: list[str] | None = None) -> None:
+        self.errors = errors or []
+        super().__init__(message)
+
+
+class VariableResolutionError(BrickError):
+    """Raised when a ${variable} reference cannot be resolved."""
+
+    def __init__(self, reference: str) -> None:
+        self.reference = reference
+        super().__init__(f"Cannot resolve reference: {reference!r}")
+
+
+class BrickExecutionError(BrickError):
+    """Raised when a brick fails during execution."""
+
+    def __init__(self, brick_name: str, step_name: str, cause: Exception) -> None:
+        self.brick_name = brick_name
+        self.step_name = step_name
+        self.cause = cause
+        super().__init__(f"Brick {brick_name!r} failed at step {step_name!r}: {cause}")
