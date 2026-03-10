@@ -1,1 +1,5 @@
-"""Bricks AI: natural language composition of sequences via external LLM APIs."""
+"""Bricks AI composition layer."""
+
+from bricks.ai.composer import ComposerError, SequenceComposer
+
+__all__ = ["ComposerError", "SequenceComposer"]

@@ -45,3 +45,27 @@ class BrickExecutionError(BrickError):
         self.step_name = step_name
         self.cause = cause
         super().__init__(f"Brick {brick_name!r} failed at step {step_name!r}: {cause}")
+
+
+class YamlLoadError(BrickError):
+    """Raised when a YAML file cannot be parsed or loaded."""
+
+    def __init__(self, path: str, cause: Exception) -> None:
+        self.path = path
+        self.cause = cause
+        super().__init__(f"Failed to load YAML from {path!r}: {cause}")
+
+
+class ConfigError(BrickError):
+    """Raised when bricks.config.yaml cannot be loaded or is invalid."""
+
+    def __init__(self, path: str, cause: Exception) -> None:
+        """Initialise the error.
+
+        Args:
+            path: The config file path or '<string>' for string sources.
+            cause: The underlying exception.
+        """
+        super().__init__(f"Config error in {path!r}: {cause}")
+        self.path = path
+        self.cause = cause

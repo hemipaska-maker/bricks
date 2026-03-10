@@ -26,3 +26,68 @@ class TestExecutionContext:
         ctx = ExecutionContext()
         with pytest.raises(KeyError):
             ctx.get_variable("missing")
+
+
+class TestExecutionContextAdvanced:
+    def test_initial_step_index_is_zero(self) -> None:
+        ctx = ExecutionContext()
+        assert ctx.step_index == 0
+
+    def test_advance_step_increments(self) -> None:
+        ctx = ExecutionContext()
+        ctx.advance_step()
+        assert ctx.step_index == 1
+        ctx.advance_step()
+        assert ctx.step_index == 2
+
+    def test_inputs_accessible_by_namespace(self) -> None:
+        ctx = ExecutionContext(inputs={"x": 42})
+        inputs_obj = ctx.get_variable("inputs")
+        assert inputs_obj["x"] == 42
+
+    def test_input_key_accessible_directly(self) -> None:
+        ctx = ExecutionContext(inputs={"channel": 5})
+        assert ctx.get_variable("channel") == 5
+
+    def test_save_result_and_retrieve(self) -> None:
+        ctx = ExecutionContext()
+        ctx.save_result("my_result", 99)
+        assert ctx.get_variable("my_result") == 99
+
+    def test_get_variable_unknown_raises_key_error(self) -> None:
+        ctx = ExecutionContext()
+        with pytest.raises(KeyError):
+            ctx.get_variable("nonexistent")
+
+    def test_empty_inputs(self) -> None:
+        ctx = ExecutionContext(inputs={})
+        # inputs namespace still accessible
+        inputs = ctx.get_variable("inputs")
+        assert inputs == {}
+
+    def test_none_inputs_defaults_to_empty(self) -> None:
+        ctx = ExecutionContext(inputs=None)
+        assert ctx.inputs == {}
+
+    def test_results_start_empty(self) -> None:
+        ctx = ExecutionContext(inputs={"a": 1})
+        assert ctx.results == {}
+
+    def test_multiple_results_saved(self) -> None:
+        ctx = ExecutionContext()
+        ctx.save_result("r1", 10)
+        ctx.save_result("r2", 20)
+        assert ctx.get_variable("r1") == 10
+        assert ctx.get_variable("r2") == 20
+
+    def test_result_overrides_input_with_same_name(self) -> None:
+        ctx = ExecutionContext(inputs={"x": 100})
+        ctx.save_result("x", 999)
+        # results take priority over inputs
+        assert ctx.get_variable("x") == 999
+
+    def test_advance_step_multiple_times(self) -> None:
+        ctx = ExecutionContext()
+        for i in range(5):
+            ctx.advance_step()
+        assert ctx.step_index == 5

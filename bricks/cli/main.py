@@ -2,7 +2,22 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import typer
+
+from bricks.core.config import BricksConfig, ConfigLoader
+from bricks.core.discovery import BrickDiscovery
+from bricks.core.engine import SequenceEngine
+from bricks.core.exceptions import (
+    BrickExecutionError,
+    SequenceValidationError,
+    YamlLoadError,
+)
+from bricks.core.loader import SequenceLoader
+from bricks.core.registry import BrickRegistry
+from bricks.core.validation import SequenceValidator
 
 app = typer.Typer(
     name="bricks",
@@ -14,81 +29,291 @@ new_app = typer.Typer(help="Scaffold new Bricks components.")
 app.add_typer(new_app, name="new")
 
 
+def _setup_registry(
+    config_dir: Path | None = None,
+) -> tuple[BrickRegistry, BricksConfig]:
+    """Load config and set up registry with auto-discovery.
+
+    Args:
+        config_dir: Directory to search for bricks.config.yaml. Defaults to cwd.
+
+    Returns:
+        A tuple of (registry, config).
+    """
+    loader = ConfigLoader()
+    config = loader.load(directory=config_dir)
+    registry = BrickRegistry()
+    if config.registry.auto_discover:
+        discovery = BrickDiscovery(registry=registry)
+        for path_str in config.registry.paths:
+            p = Path(path_str)
+            if not p.is_absolute():
+                p = (config_dir or Path.cwd()) / p
+            if p.is_dir():
+                discovery.discover_package(p)
+            elif p.suffix == ".py" and p.exists():
+                discovery.discover_path(p)
+    return registry, config
+
+
 @app.command()
 def init() -> None:
     """Scaffold a new Bricks project in the current directory."""
-    typer.echo("bricks init: not yet implemented")
-    raise typer.Exit(code=1)
+    config_file = Path.cwd() / "bricks.config.yaml"
+    if config_file.exists():
+        typer.echo("Error: bricks.config.yaml already exists.", err=True)
+        raise typer.Exit(code=1)
+
+    config_content = """version: "1"
+registry:
+  auto_discover: false
+  paths: []
+sequences:
+  base_dir: "sequences/"
+ai:
+  model: "claude-3-5-sonnet-20241022"
+  max_tokens: 4096
+"""
+    config_file.write_text(config_content)
+    sequences_dir = Path.cwd() / "sequences"
+    sequences_dir.mkdir(exist_ok=True)
+    bricks_lib = Path.cwd() / "bricks_lib"
+    bricks_lib.mkdir(exist_ok=True)
+    (bricks_lib / "__init__.py").write_text("")
+    typer.echo("Created bricks.config.yaml")
+    typer.echo("Created sequences/")
+    typer.echo("Created bricks_lib/")
+    typer.echo("Bricks project initialised.")
 
 
 @new_app.command("brick")
-def new_brick(name: str) -> None:
-    """Scaffold a new Brick module.
+def new_brick(
+    name: str = typer.Argument(..., help="Name of the brick (snake_case)."),
+) -> None:
+    """Scaffold a new Brick module."""
+    snake_name = name.lower().replace("-", "_").replace(" ", "_")
+    class_name = "".join(word.capitalize() for word in snake_name.split("_"))
 
-    Args:
-        name: Name of the brick to create.
-    """
-    typer.echo(f"bricks new brick {name}: not yet implemented")
-    raise typer.Exit(code=1)
+    output_path = Path.cwd() / "bricks_lib" / f"{snake_name}.py"
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    content = f'''"""Brick: {snake_name}."""
+
+from __future__ import annotations
+
+from bricks.core import BrickMeta, BrickModel, BaseBrick
+
+
+class {class_name}(BaseBrick):
+    """{class_name} brick."""
+
+    class Meta:
+        """Brick metadata."""
+
+        name = "{snake_name}"
+        tags: list[str] = []
+        destructive: bool = False
+        idempotent: bool = True
+        description = ""
+
+    class Input(BrickModel):
+        """Input schema."""
+
+    class Output(BrickModel):
+        """Output schema."""
+
+    def execute(self, inputs: BrickModel, metadata: BrickMeta) -> dict[str, object]:
+        """Execute the brick.
+
+        Args:
+            inputs: Validated input data.
+            metadata: Brick metadata.
+
+        Returns:
+            Output dict matching Output schema.
+        """
+        raise NotImplementedError(f"{{{class_name}}} is not yet implemented")
+'''
+    output_path.write_text(content)
+    typer.echo(f"Created {output_path}")
 
 
 @new_app.command("sequence")
-def new_sequence(name: str) -> None:
-    """Scaffold a new YAML sequence file.
+def new_sequence(name: str = typer.Argument(..., help="Name of the sequence.")) -> None:
+    """Scaffold a new YAML sequence file."""
+    snake_name = name.lower().replace("-", "_").replace(" ", "_")
 
-    Args:
-        name: Name of the sequence to create.
-    """
-    typer.echo(f"bricks new sequence {name}: not yet implemented")
-    raise typer.Exit(code=1)
+    loader = ConfigLoader()
+    config = loader.load()
+    seq_dir = Path.cwd() / config.sequences.base_dir
+    seq_dir.mkdir(parents=True, exist_ok=True)
+
+    output_path = seq_dir / f"{snake_name}.yaml"
+    content = f"""name: {snake_name}
+description: ""
+inputs:
+  # input_name: "type"
+steps:
+  - name: step_1
+    brick: my_brick
+    params: {{}}
+    save_as: step_1_result
+outputs_map:
+  result: "${{step_1_result}}"
+"""
+    output_path.write_text(content)
+    typer.echo(f"Created {output_path}")
 
 
 @app.command()
-def check(file: str) -> None:
-    """Lint a Brick module or sequence file.
+def check(file: str = typer.Argument(..., help="Path to sequence YAML file.")) -> None:
+    """Validate a sequence YAML file (lint without executing)."""
+    path = Path(file)
+    if not path.exists():
+        typer.echo(f"Error: File not found: {path}", err=True)
+        raise typer.Exit(code=1)
 
-    Args:
-        file: Path to the file to check.
-    """
-    typer.echo(f"bricks check {file}: not yet implemented")
-    raise typer.Exit(code=1)
+    seq_loader = SequenceLoader()
+    try:
+        sequence = seq_loader.load_file(path)
+    except YamlLoadError as exc:
+        typer.echo(f"Error loading YAML: {exc}", err=True)
+        raise typer.Exit(code=1)
+
+    registry, _ = _setup_registry()
+    validator = SequenceValidator(registry=registry)
+
+    try:
+        validator.validate(sequence)
+        typer.echo(f"valid: {path}")
+    except SequenceValidationError as exc:
+        typer.echo(f"Validation errors in {path}:", err=True)
+        if exc.errors:
+            for error in exc.errors:
+                typer.echo(f"  - {error}", err=True)
+        raise typer.Exit(code=1)
 
 
 @app.command()
-def run(sequence: str) -> None:
-    """Execute a sequence.
+def run(
+    sequence: str = typer.Argument(..., help="Path to sequence YAML file."),
+    input_: list[str] = typer.Option(
+        [], "--input", "-i", help="Input values as key=value."
+    ),
+) -> None:
+    """Execute a sequence."""
+    path = Path(sequence)
+    if not path.exists():
+        typer.echo(f"Error: Sequence file not found: {path}", err=True)
+        raise typer.Exit(code=1)
 
-    Args:
-        sequence: Path to the sequence YAML file.
-    """
-    typer.echo(f"bricks run {sequence}: not yet implemented")
-    raise typer.Exit(code=1)
+    seq_loader = SequenceLoader()
+    try:
+        seq_def = seq_loader.load_file(path)
+    except YamlLoadError as exc:
+        typer.echo(f"Error loading YAML: {exc}", err=True)
+        raise typer.Exit(code=1)
+
+    inputs: dict[str, object] = {}
+    for item in input_:
+        if "=" not in item:
+            typer.echo(
+                f"Error: Invalid input format {item!r}. Use key=value.", err=True
+            )
+            raise typer.Exit(code=1)
+        k, v = item.split("=", 1)
+        try:
+            inputs[k] = json.loads(v)
+        except json.JSONDecodeError:
+            inputs[k] = v
+
+    registry, _ = _setup_registry()
+    engine = SequenceEngine(registry=registry)
+
+    try:
+        outputs = engine.run(seq_def, inputs=inputs or None)
+    except BrickExecutionError as exc:
+        typer.echo(f"Execution error: {exc}", err=True)
+        raise typer.Exit(code=1)
+
+    typer.echo(f"Sequence {seq_def.name!r} completed.")
+    if outputs:
+        typer.echo("Outputs:")
+        for k, v in outputs.items():
+            typer.echo(f"  {k}: {v!r}")
 
 
 @app.command(name="dry-run")
-def dry_run(sequence: str) -> None:
-    """Validate a sequence without executing (dry run).
+def dry_run(
+    sequence: str = typer.Argument(..., help="Path to sequence YAML file."),
+) -> None:
+    """Validate a sequence without executing (dry run)."""
+    path = Path(sequence)
+    if not path.exists():
+        typer.echo(f"Error: Sequence file not found: {path}", err=True)
+        raise typer.Exit(code=1)
 
-    Args:
-        sequence: Path to the sequence YAML file.
-    """
-    typer.echo(f"bricks dry-run {sequence}: not yet implemented")
-    raise typer.Exit(code=1)
+    seq_loader = SequenceLoader()
+    try:
+        seq_def = seq_loader.load_file(path)
+    except YamlLoadError as exc:
+        typer.echo(f"Error loading YAML: {exc}", err=True)
+        raise typer.Exit(code=1)
+
+    registry, _ = _setup_registry()
+    validator = SequenceValidator(registry=registry)
+
+    try:
+        validator.validate(seq_def)
+        typer.echo(f"Sequence {seq_def.name!r} is valid (dry-run passed).")
+    except SequenceValidationError as exc:
+        typer.echo("Validation errors:", err=True)
+        if exc.errors:
+            for error in exc.errors:
+                typer.echo(f"  - {error}", err=True)
+        raise typer.Exit(code=1)
 
 
 @app.command(name="list")
 def list_bricks() -> None:
-    """Show all available Bricks and their schemas."""
-    typer.echo("bricks list: not yet implemented")
-    raise typer.Exit(code=1)
+    """List all available Bricks in the registry."""
+    registry, _ = _setup_registry()
+    all_bricks = registry.list_all()
+
+    if not all_bricks:
+        typer.echo(
+            "No bricks registered. Check your bricks.config.yaml registry paths."
+        )
+        return
+
+    typer.echo(f"Registered bricks ({len(all_bricks)}):")
+    for name, meta in all_bricks:
+        tags_str = f" [{', '.join(meta.tags)}]" if meta.tags else ""
+        destructive_str = " [DESTRUCTIVE]" if meta.destructive else ""
+        desc_str = f" - {meta.description}" if meta.description else ""
+        typer.echo(f"  {name}{tags_str}{destructive_str}{desc_str}")
 
 
 @app.command()
-def compose(intent: str) -> None:
-    """AI-compose a sequence from a natural language description.
+def compose(
+    intent: str = typer.Argument(..., help="Natural language description."),
+) -> None:
+    """AI-compose a sequence from a natural language description."""
+    try:
+        from bricks.ai.composer import SequenceComposer
+    except ImportError:
+        typer.echo("Error: AI features require the 'anthropic' package.", err=True)
+        typer.echo("Install with: pip install bricks[ai]", err=True)
+        raise typer.Exit(code=1)
 
-    Args:
-        intent: Natural language description of the desired sequence.
-    """
-    typer.echo(f"bricks compose {intent!r}: not yet implemented")
-    raise typer.Exit(code=1)
+    api_key = typer.prompt("Anthropic API key", hide_input=True)
+    registry, _ = _setup_registry()
+    composer = SequenceComposer(registry=registry, api_key=api_key)
+
+    try:
+        result_sequence = composer.compose(intent)
+        typer.echo(f"Composed sequence: {result_sequence.name!r}")
+        typer.echo(f"  Steps: {len(result_sequence.steps)}")
+    except NotImplementedError:
+        typer.echo("AI composition is not yet fully implemented.", err=True)
+        raise typer.Exit(code=1)

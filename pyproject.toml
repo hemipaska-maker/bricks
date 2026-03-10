@@ -31,6 +31,9 @@ dev = [
     "mypy>=1.8",
     "ruff>=0.3",
 ]
+ai = [
+    "anthropic>=0.40",
+]
 
 [project.scripts]
 bricks = "bricks.cli.main:app"
