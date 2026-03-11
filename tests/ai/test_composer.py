@@ -45,7 +45,7 @@ class TestComposerCompose:
         mock_client = MagicMock()
         composer = SequenceComposer.__new__(SequenceComposer)
         composer._registry = registry
-        composer._model = "claude-3-5-haiku-latest"
+        composer._model = "claude-haiku-4-5-20251001"
         composer._max_tokens = 4096
         composer._client = mock_client
         from bricks.core.loader import SequenceLoader

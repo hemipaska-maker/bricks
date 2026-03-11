@@ -77,7 +77,7 @@ class SequenceComposer:
     Requires the ``anthropic`` package: ``pip install bricks[ai]``
     """
 
-    DEFAULT_MODEL = "claude-3-5-haiku-latest"
+    DEFAULT_MODEL = "claude-haiku-4-5-20251001"
     DEFAULT_MAX_TOKENS = 4096
 
     _client: Any
