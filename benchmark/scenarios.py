@@ -18,6 +18,11 @@ class Scenario:
     python_code: str
     inputs: dict[str, Any] = field(default_factory=dict)
     extra_inputs: list[dict[str, Any]] = field(default_factory=list)
+    # Real token counts from live API calls (0 = not set, use estimates instead)
+    live_bricks_tokens: int = 0
+    live_python_tokens: int = 0
+    # True when scenario was generated via live API -- disables estimation fallback
+    live_mode: bool = False
 
 
 # ──────────────────────────────────────────────────────────────────────

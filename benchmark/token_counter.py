@@ -55,19 +55,35 @@ class TokenEstimator:
         scenario: Scenario,
         had_error: bool = False,
     ) -> TokenEstimate:
-        """Estimate tokens for the Bricks (YAML) approach."""
+        """Return token usage for the Bricks (YAML) approach.
+
+        In live mode uses real API token counts. Raises if live tokens are
+        missing. In demo mode falls back to character-count estimates.
+        """
+        if scenario.live_mode:
+            if not scenario.live_bricks_tokens:
+                raise RuntimeError(
+                    f"Live mode enabled but live_bricks_tokens not set "
+                    f"for scenario '{scenario.name}'"
+                )
+            return TokenEstimate(
+                system_prompt=0,
+                generation_input=scenario.live_bricks_tokens,
+                generation_output=0,
+                error_correction=0,
+                reuse_cost=0,
+            )
         system_prompt = _chars_to_tokens(_BRICKS_SYSTEM_PROMPT_CHARS)
         brick_context = _chars_to_tokens(_CHARS_PER_BRICK_SCHEMA * _NUM_BRICKS)
         intent_tokens = _chars_to_tokens(len(scenario.intent))
         generation_input = brick_context + intent_tokens
         generation_output = _chars_to_tokens(len(scenario.bricks_yaml))
-        reuse_cost = 0  # YAML is parameterized, re-run with new inputs = 0 tokens
         return TokenEstimate(
             system_prompt=system_prompt,
             generation_input=generation_input,
             generation_output=generation_output,
             error_correction=0,
-            reuse_cost=reuse_cost,
+            reuse_cost=0,
         )
 
     def estimate_python(
@@ -75,13 +91,35 @@ class TokenEstimator:
         scenario: Scenario,
         had_error: bool = False,
     ) -> TokenEstimate:
-        """Estimate tokens for the raw Python approach.
+        """Return token usage for the raw Python approach.
+
+        In live mode uses real API token counts. Raises if live tokens are
+        missing. In demo mode falls back to character-count estimates.
 
         Args:
             scenario: The benchmark scenario.
             had_error: Whether the Python code caused a runtime error
                        (requires a full re-prompt to fix).
         """
+        if scenario.live_mode:
+            if not scenario.live_python_tokens:
+                raise RuntimeError(
+                    f"Live mode enabled but live_python_tokens not set "
+                    f"for scenario '{scenario.name}'"
+                )
+            error_correction = (
+                _chars_to_tokens(_PYTHON_ERROR_CORRECTION_CHARS) if had_error else 0
+            )
+            reuse_cost = 0
+            if scenario.extra_inputs:
+                reuse_cost = scenario.live_python_tokens * len(scenario.extra_inputs)
+            return TokenEstimate(
+                system_prompt=0,
+                generation_input=scenario.live_python_tokens,
+                generation_output=0,
+                error_correction=error_correction,
+                reuse_cost=reuse_cost,
+            )
         system_prompt = _chars_to_tokens(_PYTHON_SYSTEM_PROMPT_CHARS)
         func_context = _chars_to_tokens(_CHARS_PER_PYTHON_FUNC * _NUM_BRICKS)
         intent_tokens = _chars_to_tokens(len(scenario.intent))
@@ -90,7 +128,6 @@ class TokenEstimator:
         error_correction = (
             _chars_to_tokens(_PYTHON_ERROR_CORRECTION_CHARS) if had_error else 0
         )
-        # Reuse: each additional input set needs a new prompt or manual adaptation
         reuse_cost = 0
         if scenario.extra_inputs:
             per_run = generation_input + generation_output

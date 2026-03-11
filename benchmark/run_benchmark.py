@@ -53,6 +53,8 @@ def _generate_live_code(scenarios: list[Scenario], registry) -> None:  # type: i
                 expected_outputs=list(scenario.expected_output.keys()),
             )
             scenario.bricks_yaml = yaml_code
+            scenario.live_bricks_tokens = bricks_tokens
+            scenario.live_mode = True
             print(f"  YAML: {len(yaml_code)} chars, {bricks_tokens} tokens")
         except Exception as e:
             print(f"  YAML generation failed: {e}")
@@ -64,6 +66,7 @@ def _generate_live_code(scenarios: list[Scenario], registry) -> None:  # type: i
                 scenario.intent, available_functions, inputs=scenario.inputs
             )
             scenario.python_code = python_code
+            scenario.live_python_tokens = python_tokens
             print(f"  Python: {len(python_code)} chars, {python_tokens} tokens")
         except Exception as e:
             print(f"  Python generation failed: {e}")
