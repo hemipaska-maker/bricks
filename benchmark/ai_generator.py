@@ -16,13 +16,15 @@ def generate_bricks_yaml(
 
     Returns:
         (yaml_string, input_tokens_used)
+
+    Note: Token count is estimated from the request since SequenceComposer
+    does not expose token usage from the underlying Anthropic API call.
     """
     try:
         from bricks.ai import SequenceComposer
     except ImportError:
         raise RuntimeError(
-            "anthropic package not installed. "
-            "Run: pip install -e '.[ai]'"
+            "anthropic package not installed. Run: pip install -e '.[ai]'"
         )
 
     api_key = os.environ.get("ANTHROPIC_API_KEY")
@@ -35,7 +37,16 @@ def generate_bricks_yaml(
     composer = SequenceComposer(registry=registry, api_key=api_key)
     sequence = composer.compose(intent)
     yaml_str = _sequence_to_yaml(sequence)
-    return yaml_str, 0  # Token count would come from API response
+
+    # Estimate tokens from YAML output and brick schemas
+    # Rough estimate: ~4 characters = 1 token
+    yaml_tokens = len(yaml_str) // 4
+    # Add ~960 tokens for Bricks system prompt in SequenceComposer
+    # and ~200 tokens per brick in registry for context
+    system_and_context_tokens = 960 + (len(registry.get_all_brick_names()) * 200)
+    estimated_total = system_and_context_tokens + yaml_tokens
+
+    return yaml_str, estimated_total
 
 
 def generate_python_code(
@@ -49,14 +60,15 @@ def generate_python_code(
         available_functions: List of (function_name, docstring) tuples
 
     Returns:
-        (python_code, input_tokens_used)
+        (python_code, total_tokens_used)
+
+    Token count includes both input and output tokens from the API response.
     """
     try:
         import anthropic
     except ImportError:
         raise RuntimeError(
-            "anthropic package not installed. "
-            "Run: pip install -e '.[ai]'"
+            "anthropic package not installed. Run: pip install -e '.[ai]'"
         )
 
     api_key = os.environ.get("ANTHROPIC_API_KEY")
@@ -73,19 +85,19 @@ def generate_python_code(
         f"- {name}: {doc}" for name, doc in available_functions
     )
 
-    system_prompt = f"""You are an expert Python programmer. Generate Python code that solves the given task.
-
-Available functions:
-{func_descriptions}
-
-Requirements:
-- Use only the available functions listed above
-- Do NOT import any modules or define new functions
-- Store the final result in a variable named 'result' as a dict
-- The code must be runnable with exec()
-- Assume 'inputs' is a dict of input parameters already defined
-
-Output ONLY the Python code, no explanations."""
+    system_prompt = (
+        "You are an expert Python programmer. "
+        "Generate Python code that solves the given task.\n\n"
+        "Available functions:\n"
+        f"{func_descriptions}\n\n"
+        "Requirements:\n"
+        "- Use only the available functions listed above\n"
+        "- Do NOT import any modules or define new functions\n"
+        "- Store the final result in a variable named 'result' as a dict\n"
+        "- The code must be runnable with exec()\n"
+        "- Assume 'inputs' is a dict of input parameters already defined\n\n"
+        "Output ONLY the Python code, no explanations."
+    )
 
     user_prompt = f"""Task: {intent}
 
@@ -99,8 +111,9 @@ Generate Python code that solves this task using the available functions."""
     )
 
     code = response.content[0].text
-    input_tokens = response.usage.input_tokens
-    return code, input_tokens
+    # Return total tokens: input + output
+    total_tokens = response.usage.input_tokens + response.usage.output_tokens
+    return code, total_tokens
 
 
 def _sequence_to_yaml(sequence: Any) -> str:
