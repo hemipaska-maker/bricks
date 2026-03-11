@@ -17,7 +17,7 @@ class TestDefaultConfig:
         assert config.registry.auto_discover is False
         assert config.registry.paths == []
         assert config.sequences.base_dir == "sequences/"
-        assert config.ai.model == "claude-3-5-sonnet-20241022"
+        assert config.ai.model == "claude-3-5-haiku-20241022"
         assert config.ai.max_tokens == 4096
 
     def test_load_returns_default_when_no_file(self, tmp_path: Path) -> None:

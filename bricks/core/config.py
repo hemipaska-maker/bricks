@@ -29,7 +29,7 @@ class SequencesConfig(BaseModel):
 class AiConfig(BaseModel):
     """AI composition configuration."""
 
-    model: str = "claude-3-5-sonnet-20241022"
+    model: str = "claude-3-5-haiku-20241022"
     max_tokens: int = 4096
 
 
