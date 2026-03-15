@@ -1,0 +1,24 @@
+{
+  "timestamp": "2026-03-15T07:23:30.603766+00:00",
+  "mode": "estimated",
+  "scenarios": {
+    "simple_calc": {
+      "code_gen_tokens": 367,
+      "bricks_tokens": 355,
+      "savings_ratio": 1.03,
+      "savings_pct": 3
+    },
+    "api_pipeline": {
+      "code_gen_tokens": 611,
+      "bricks_tokens": 414,
+      "savings_ratio": 1.48,
+      "savings_pct": 32
+    },
+    "session_cache": {
+      "code_gen_tokens": 2420,
+      "bricks_tokens": 325,
+      "savings_ratio": 7.45,
+      "savings_pct": 87
+    }
+  }
+}

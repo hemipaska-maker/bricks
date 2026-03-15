@@ -34,6 +34,10 @@ dev = [
 ai = [
     "anthropic>=0.40",
 ]
+benchmark = [
+    "tiktoken>=0.5",
+    "matplotlib>=3.7",
+]
 
 [project.scripts]
 bricks = "bricks.cli.main:app"
