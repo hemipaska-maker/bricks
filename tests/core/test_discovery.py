@@ -5,7 +5,7 @@ from __future__ import annotations
 import textwrap
 import types
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 import pytest
 
@@ -30,8 +30,8 @@ class TestDiscoverModule:
         disc = BrickDiscovery(registry=reg)
         found = disc.discover_module(mod)
 
-        assert "my_test_brick" in found
-        assert reg.has("my_test_brick")
+        assert "my_test_brick" in found, "Expected 'my_test_brick' to be in collection"
+        assert reg.has("my_test_brick"), "Expected 'my_test_brick' to be registered"
 
     def test_discovers_class_based_brick(self) -> None:
         """A BaseBrick subclass should be auto-registered."""
@@ -40,7 +40,7 @@ class TestDiscoverModule:
         class MyClassBrick(BaseBrick):
             class Meta:
                 name = "my_class_brick"
-                tags = ["test"]
+                tags: ClassVar[list[str]] = ["test"]
                 destructive = False
 
             class Input(BrickModel):
@@ -49,9 +49,7 @@ class TestDiscoverModule:
             class Output(BrickModel):
                 result: int
 
-            def execute(
-                self, inputs: BrickModel, metadata: BrickMeta
-            ) -> dict[str, Any]:
+            def execute(self, inputs: BrickModel, metadata: BrickMeta) -> dict[str, Any]:
                 return {"result": 42}
 
         mod.MyClassBrick = MyClassBrick  # type: ignore[attr-defined]
@@ -60,8 +58,8 @@ class TestDiscoverModule:
         disc = BrickDiscovery(registry=reg)
         found = disc.discover_module(mod)
 
-        assert "my_class_brick" in found
-        assert reg.has("my_class_brick")
+        assert "my_class_brick" in found, "Expected 'my_class_brick' to be in collection"
+        assert reg.has("my_class_brick"), "Expected 'my_class_brick' to be registered"
 
     def test_skips_duplicate_names(self) -> None:
         """Already-registered names should not be re-registered."""
@@ -78,7 +76,8 @@ class TestDiscoverModule:
         disc = BrickDiscovery(registry=reg)
         found = disc.discover_module(mod)
 
-        assert "dupe_brick" not in found  # skipped because already registered
+        # skipped because already registered
+        assert "dupe_brick" not in found, "Expected 'dupe_brick' not to be in collection"
 
     def test_ignores_non_brick_objects(self) -> None:
         """Plain functions and classes without brick markers are ignored."""
@@ -94,8 +93,8 @@ class TestDiscoverModule:
         disc = BrickDiscovery(registry=reg)
         found = disc.discover_module(mod)
 
-        assert found == []
-        assert not reg.has("plain_function")
+        assert found == [], f"Expected [], got {found!r}"
+        assert not reg.has("plain_function"), "Expected 'plain_function' not to be registered"
 
 
 class TestDiscoverPath:
@@ -116,8 +115,8 @@ class TestDiscoverPath:
         disc = BrickDiscovery(registry=reg)
         found = disc.discover_path(brick_file)
 
-        assert "add_numbers" in found
-        assert reg.has("add_numbers")
+        assert "add_numbers" in found, "Expected 'add_numbers' to be in collection"
+        assert reg.has("add_numbers"), "Expected 'add_numbers' to be registered"
 
     def test_raises_for_missing_file(self, tmp_path: Path) -> None:
         """FileNotFoundError raised when path does not exist."""
@@ -162,9 +161,10 @@ class TestDiscoverPackage:
         disc = BrickDiscovery(registry=reg)
         found = disc.discover_package(tmp_path)
 
-        assert "brick_alpha" in found
-        assert "brick_beta" in found
-        assert "private_brick" not in found  # skipped (underscore prefix)
+        assert "brick_alpha" in found, "Expected 'brick_alpha' to be in collection"
+        assert "brick_beta" in found, "Expected 'brick_beta' to be in collection"
+        # skipped (underscore prefix)
+        assert "private_brick" not in found, "Expected 'private_brick' not to be in collection"
 
     def test_raises_for_non_directory(self, tmp_path: Path) -> None:
         """NotADirectoryError raised when path is a file, not a directory."""

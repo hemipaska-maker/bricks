@@ -14,28 +14,22 @@ runner = CliRunner()
 
 
 class TestCliEndToEnd:
-    def test_init_then_scaffold_brick(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_init_then_scaffold_brick(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         r1 = runner.invoke(app, ["init"])
-        assert r1.exit_code == 0
+        assert r1.exit_code == 0, f"Expected exit code 0, got {r1.exit_code}"
         r2 = runner.invoke(app, ["new", "brick", "my_op"])
-        assert r2.exit_code == 0
-        assert (tmp_path / "bricks_lib" / "my_op.py").exists()
+        assert r2.exit_code == 0, f"Expected exit code 0, got {r2.exit_code}"
+        assert (tmp_path / "bricks_lib" / "my_op.py").exists(), "Expected my_op.py to exist"
 
-    def test_init_then_scaffold_sequence(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_init_then_scaffold_sequence(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         runner.invoke(app, ["init"])
         r = runner.invoke(app, ["new", "sequence", "my_flow"])
-        assert r.exit_code == 0
-        assert (tmp_path / "sequences" / "my_flow.yaml").exists()
+        assert r.exit_code == 0, f"Expected exit code 0, got {r.exit_code}"
+        assert (tmp_path / "sequences" / "my_flow.yaml").exists(), "Expected my_flow.yaml to exist"
 
-    def test_list_with_auto_discover(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_list_with_auto_discover(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         bricks_dir = tmp_path / "my_bricks"
         bricks_dir.mkdir()
@@ -48,16 +42,12 @@ class TestCliEndToEnd:
                     return x ** 0.5
             """).strip()
         )
-        (tmp_path / "bricks.config.yaml").write_text(
-            "registry:\n  auto_discover: true\n  paths:\n    - 'my_bricks/'\n"
-        )
+        (tmp_path / "bricks.config.yaml").write_text("registry:\n  auto_discover: true\n  paths:\n    - 'my_bricks/'\n")
         r = runner.invoke(app, ["list"])
-        assert r.exit_code == 0
-        assert "sqrt_approx" in r.output
+        assert r.exit_code == 0, f"Expected exit code 0, got {r.exit_code}"
+        assert "sqrt_approx" in r.output, "Expected 'sqrt_approx' in output"
 
-    def test_run_with_real_brick(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_run_with_real_brick(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         bricks_dir = tmp_path / "bricks_lib"
         bricks_dir.mkdir()
@@ -91,16 +81,12 @@ class TestCliEndToEnd:
                   result: "${product}"
             """).strip()
         )
-        r = runner.invoke(
-            app, ["run", str(seq_file), "--input", "a=3.0", "--input", "b=4.0"]
-        )
-        assert r.exit_code == 0
-        assert "mul_seq" in r.output
-        assert "12.0" in r.output
+        r = runner.invoke(app, ["run", str(seq_file), "--input", "a=3.0", "--input", "b=4.0"])
+        assert r.exit_code == 0, f"Expected exit code 0, got {r.exit_code}"
+        assert "mul_seq" in r.output, "Expected 'mul_seq' in output"
+        assert "12.0" in r.output, "Expected '12.0' in output"
 
-    def test_check_and_dry_run_agree(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_check_and_dry_run_agree(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         bricks_dir = tmp_path / "bricks_lib"
         bricks_dir.mkdir()
@@ -133,8 +119,8 @@ class TestCliEndToEnd:
         )
         r1 = runner.invoke(app, ["check", str(seq_file)])
         r2 = runner.invoke(app, ["dry-run", str(seq_file)])
-        assert r1.exit_code == 0
-        assert r2.exit_code == 0
+        assert r1.exit_code == 0, f"Expected exit code 0 for check, got {r1.exit_code}"
+        assert r2.exit_code == 0, f"Expected exit code 0 for dry-run, got {r2.exit_code}"
 
 
 class TestCliRunEndToEnd:
@@ -165,9 +151,7 @@ class TestCliRunEndToEnd:
             "registry:\n  auto_discover: true\n  paths:\n    - 'bricks_lib/'\n"
         )
 
-    def test_run_add_sequence(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_run_add_sequence(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         self._setup_project(tmp_path, monkeypatch)
         seq_file = tmp_path / "add_seq.yaml"
         seq_file.write_text(
@@ -187,15 +171,11 @@ class TestCliRunEndToEnd:
                   result: "${total}"
             """).strip()
         )
-        r = runner.invoke(
-            app, ["run", str(seq_file), "--input", "x=10.0", "--input", "y=5.0"]
-        )
-        assert r.exit_code == 0
-        assert "15.0" in r.output
+        r = runner.invoke(app, ["run", str(seq_file), "--input", "x=10.0", "--input", "y=5.0"])
+        assert r.exit_code == 0, f"Expected exit code 0, got {r.exit_code}"
+        assert "15.0" in r.output, "Expected '15.0' in output"
 
-    def test_run_chained_sequence(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_run_chained_sequence(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         self._setup_project(tmp_path, monkeypatch)
         seq_file = tmp_path / "chain_seq.yaml"
         seq_file.write_text(
@@ -221,25 +201,19 @@ class TestCliRunEndToEnd:
                   result: "${doubled}"
             """).strip()
         )
-        r = runner.invoke(
-            app, ["run", str(seq_file), "--input", "a=3.0", "--input", "b=4.0"]
-        )
-        assert r.exit_code == 0
-        assert "14.0" in r.output  # (3+4)*2 = 14
+        r = runner.invoke(app, ["run", str(seq_file), "--input", "a=3.0", "--input", "b=4.0"])
+        assert r.exit_code == 0, f"Expected exit code 0, got {r.exit_code}"
+        assert "14.0" in r.output, "Expected '14.0' in output"  # (3+4)*2 = 14
 
-    def test_list_shows_multiple_bricks(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_list_shows_multiple_bricks(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         self._setup_project(tmp_path, monkeypatch)
         r = runner.invoke(app, ["list"])
-        assert r.exit_code == 0
-        assert "add" in r.output
-        assert "subtract" in r.output
-        assert "multiply" in r.output
+        assert r.exit_code == 0, f"Expected exit code 0, got {r.exit_code}"
+        assert "add" in r.output, "Expected 'add' in output"
+        assert "subtract" in r.output, "Expected 'subtract' in output"
+        assert "multiply" in r.output, "Expected 'multiply' in output"
 
-    def test_check_valid_sequence(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_check_valid_sequence(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         self._setup_project(tmp_path, monkeypatch)
         seq_file = tmp_path / "valid_seq.yaml"
         seq_file.write_text(
@@ -257,12 +231,10 @@ class TestCliRunEndToEnd:
             """).strip()
         )
         r = runner.invoke(app, ["check", str(seq_file)])
-        assert r.exit_code == 0
-        assert "valid" in r.output
+        assert r.exit_code == 0, f"Expected exit code 0, got {r.exit_code}"
+        assert "valid" in r.output, "Expected 'valid' in output"
 
-    def test_run_outputs_correct_values(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_run_outputs_correct_values(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         self._setup_project(tmp_path, monkeypatch)
         seq_file = tmp_path / "sub_seq.yaml"
         seq_file.write_text(
@@ -282,28 +254,24 @@ class TestCliRunEndToEnd:
                   result: "${diff}"
             """).strip()
         )
-        r = runner.invoke(
-            app, ["run", str(seq_file), "--input", "a=10.0", "--input", "b=3.0"]
-        )
-        assert r.exit_code == 0
-        assert "7.0" in r.output
+        r = runner.invoke(app, ["run", str(seq_file), "--input", "a=10.0", "--input", "b=3.0"])
+        assert r.exit_code == 0, f"Expected exit code 0, got {r.exit_code}"
+        assert "7.0" in r.output, "Expected '7.0' in output"
 
 
 class TestCliInitWorkflow:
     """Tests for the full init + use workflow."""
 
-    def test_full_init_workflow(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_full_init_workflow(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test the complete workflow: init -> new brick -> new sequence -> run."""
         monkeypatch.chdir(tmp_path)
 
         # Step 1: init
         r_init = runner.invoke(app, ["init"])
-        assert r_init.exit_code == 0
-        assert (tmp_path / "bricks.config.yaml").exists()
-        assert (tmp_path / "bricks_lib").is_dir()
-        assert (tmp_path / "sequences").is_dir()
+        assert r_init.exit_code == 0, f"Expected exit code 0, got {r_init.exit_code}"
+        assert (tmp_path / "bricks.config.yaml").exists(), "Expected bricks.config.yaml to exist"
+        assert (tmp_path / "bricks_lib").is_dir(), "Expected bricks_lib/ to be a directory"
+        assert (tmp_path / "sequences").is_dir(), "Expected sequences/ to be a directory"
 
         # Step 2: scaffold a brick file (manually create working implementation)
         brick_file = tmp_path / "bricks_lib" / "adder.py"
@@ -349,16 +317,14 @@ class TestCliInitWorkflow:
 
         # Step 5: check the sequence
         r_check = runner.invoke(app, ["check", str(seq_file)])
-        assert r_check.exit_code == 0
+        assert r_check.exit_code == 0, f"Expected exit code 0 for check, got {r_check.exit_code}"
 
         # Step 6: run the sequence
         r_run = runner.invoke(app, ["run", str(seq_file)])
-        assert r_run.exit_code == 0
-        assert "8.0" in r_run.output
+        assert r_run.exit_code == 0, f"Expected exit code 0 for run, got {r_run.exit_code}"
+        assert "8.0" in r_run.output, "Expected '8.0' in output"
 
-    def test_list_shows_tags_and_description(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_list_shows_tags_and_description(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         bricks_lib = tmp_path / "bricks_lib"
         bricks_lib.mkdir()
@@ -375,7 +341,7 @@ class TestCliInitWorkflow:
             "registry:\n  auto_discover: true\n  paths:\n    - 'bricks_lib/'\n"
         )
         r = runner.invoke(app, ["list"])
-        assert r.exit_code == 0
-        assert "average" in r.output
-        assert "math" in r.output
-        assert "Compute average" in r.output
+        assert r.exit_code == 0, f"Expected exit code 0, got {r.exit_code}"
+        assert "average" in r.output, "Expected 'average' in output"
+        assert "math" in r.output, "Expected 'math' in output"
+        assert "Compute average" in r.output, "Expected 'Compute average' in output"

@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib
 import importlib.util
 import inspect
+import logging
 from pathlib import Path
 from types import ModuleType
 from typing import Any
@@ -12,6 +13,8 @@ from typing import Any
 from bricks.core.brick import BaseBrick
 from bricks.core.models import BrickMeta
 from bricks.core.registry import BrickRegistry
+
+logger = logging.getLogger(__name__)
 
 
 class BrickDiscovery:
@@ -89,8 +92,8 @@ class BrickDiscovery:
                 continue
             try:
                 registered.extend(self.discover_path(py_file))
-            except Exception:
-                pass  # Skip files that cannot be imported
+            except Exception as exc:
+                logger.warning("Failed to discover bricks in %s: %s", py_file, exc)
         return registered
 
     def _try_register(self, obj: Any) -> str | None:

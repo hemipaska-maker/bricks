@@ -27,9 +27,9 @@ from __future__ import annotations
 import argparse
 import os
 import sys
-from typing import Any
+from typing import Any, cast
 
-from bricks.core.brick import brick
+from bricks.core.brick import BrickFunction, brick
 from bricks.core.engine import SequenceEngine
 from bricks.core.registry import BrickRegistry
 from bricks.core.schema import registry_schema
@@ -62,7 +62,7 @@ def subtract(a: float, b: float) -> float:
     return a - b
 
 
-@brick(tags=["io"], description="Format a float as a labelled string, e.g. 'Score: 87.5'")  # noqa: E501
+@brick(tags=["io"], description="Format a float as a labelled string, e.g. 'Score: 87.5'")
 def format_label(value: float, label: str) -> str:
     """Return '{label}: {value}'."""
     return f"{label}: {value}"
@@ -75,7 +75,8 @@ def build_registry() -> BrickRegistry:
     """Create a registry populated with the example bricks."""
     registry = BrickRegistry()
     for fn in (add, multiply, subtract, round_value, format_label):
-        registry.register(fn.__name__, fn, fn.__brick_meta__)  # type: ignore[attr-defined]
+        typed = cast(BrickFunction, fn)
+        registry.register(typed.__brick_meta__.name, typed, typed.__brick_meta__)
     return registry
 
 
@@ -173,7 +174,7 @@ def run_demo(registry: BrickRegistry) -> None:
     # Validate
     validator = SequenceValidator(registry=registry)
     errors = validator.validate(sequence)
-    assert errors == [], f"Validation failed: {errors}"
+    assert errors == [], f"Validation failed: {errors}"  # noqa: S101
     print("\nOK Sequence validated (no errors)")
 
     # Execute with sample inputs: 5 items x 12.00 each, 10% discount (0.10)
@@ -187,10 +188,10 @@ def run_demo(registry: BrickRegistry) -> None:
     for k, v in outputs.items():
         print(f"  {k}: {v!r}")
 
-    assert outputs["gross"] == 60.0,   f"Expected gross=60.0, got {outputs['gross']}"
-    assert outputs["savings"] == 6.0,  f"Expected savings=6.0, got {outputs['savings']}"
-    assert outputs["price"] == 54.0,   f"Expected price=54.0, got {outputs['price']}"
-    assert outputs["display"] == "Final price: 54.0"
+    assert outputs["gross"] == 60.0, f"Expected gross=60.0, got {outputs['gross']}"  # noqa: S101
+    assert outputs["savings"] == 6.0, f"Expected savings=6.0, got {outputs['savings']}"  # noqa: S101
+    assert outputs["price"] == 54.0, f"Expected price=54.0, got {outputs['price']}"  # noqa: S101
+    assert outputs["display"] == "Final price: 54.0"  # noqa: S101
 
     print("\nOK Demo complete. All outputs verified.")
 
@@ -208,8 +209,7 @@ def run_live(registry: BrickRegistry, api_key: str) -> None:
         from bricks.ai.composer import ComposerError, SequenceComposer
     except ImportError:
         print(
-            "\nError: the 'anthropic' package is not installed.\n"
-            "Install it with:  pip install bricks[ai]\n",
+            "\nError: the 'anthropic' package is not installed.\nInstall it with:  pip install bricks[ai]\n",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -249,7 +249,11 @@ def run_live(registry: BrickRegistry, api_key: str) -> None:
         sys.exit(1)
 
     # Run with sample inputs: 5 items x 12.00 each, 10% discount as a fraction
-    inputs: dict[str, Any] = {"quantity": 5.0, "unit_price": 12.0, "discount_fraction": 0.10}
+    inputs: dict[str, Any] = {
+        "quantity": 5.0,
+        "unit_price": 12.0,
+        "discount_fraction": 0.10,
+    }
     print(f"\nRunning with inputs: {inputs}")
 
     engine = SequenceEngine(registry=registry)
@@ -293,8 +297,7 @@ def main() -> None:
     if args.live:
         if not args.api_key:
             print(
-                "Error: --live mode requires an API key.\n"
-                "Set $ANTHROPIC_API_KEY or pass --api-key sk-ant-...",
+                "Error: --live mode requires an API key.\nSet $ANTHROPIC_API_KEY or pass --api-key sk-ant-...",
                 file=sys.stderr,
             )
             sys.exit(1)

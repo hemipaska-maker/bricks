@@ -4,18 +4,22 @@
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue)](https://www.python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-**Bricks** is a deterministic sequencing engine where typed Python building blocks are composed into auditable YAML sequences — by engineers directly or by AI through natural language — with full validation before execution.
+**Bricks** is a deterministic automation engine for AI agents. Instead of generating Python code at runtime — expensive, non-deterministic, unvalidated — AI composes YAML Blueprints that wire together pre-tested, typed building blocks. The engine validates before execution, produces identical results every time, and Blueprints are reusable artifacts that run forever at zero AI cost.
+
+**Why it matters:** In benchmarks with real API calls, Bricks used **83% fewer tokens** than code generation for repeated tasks, and produced **identical execution across every run** while code generation used 18 different variable names across 5 attempts at the same function. [See the benchmark &rarr;](benchmark/showcase/README.md)
 
 ---
 
 ## Table of Contents
 
+- [Why Bricks](#why-bricks)
+- [Benchmark Results](#benchmark-results)
 - [Features](#features)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [Core Concepts](#core-concepts)
   - [Bricks](#bricks-1)
-  - [Sequences](#sequences)
+  - [Sequences (Blueprints)](#sequences-blueprints)
   - [Validation](#validation)
   - [Execution](#execution)
 - [CLI Reference](#cli-reference)
@@ -24,6 +28,41 @@
 - [AI Composition](#ai-composition)
 - [Examples](#examples)
 - [Development](#development)
+
+---
+
+## Why Bricks
+
+Today, when an AI agent needs to perform a task, it generates code from scratch every time. This creates three problems:
+
+**Token cost scales linearly.** Every invocation pays full price — even for tasks the AI has done a hundred times before. There is no concept of "reuse."
+
+**Every generation is different.** Ask the same model the same question five times and you get five different programs. Variable names change, error handling appears and disappears, docstrings vary. If you need predictable, auditable behavior — testing, compliance, CI/CD — this is a problem.
+
+**No validation before execution.** Generated code runs and you hope it works. There is no dry-run, no schema check, no way to catch a bad function call before it hits production.
+
+Bricks solves all three. The AI composes a YAML Blueprint from typed building block schemas. The engine validates every step before execution. The Blueprint is saved as a file and reused forever — identical execution, zero AI cost after the first call.
+
+```
+Code Generation:   Request → AI writes Python → Run it → Hope it works → Pay again next time
+Bricks:            Request → AI picks Bricks → YAML Blueprint → Validate → Execute → Reuse forever
+```
+
+---
+
+## Benchmark Results
+
+Real API calls. Real token counts. No simulations.
+
+| Scenario | Code Generation | Bricks | Savings |
+|---|---|---|---|
+| Simple calc (single call) | 671 tokens | 921 tokens | -37% (Bricks costs more) |
+| API pipeline (single call) | 1,039 tokens | 1,025 tokens | ~even |
+| **Reusable artifact (10 runs)** | **5,518 tokens** | **922 tokens** | **83% fewer tokens** |
+
+**Determinism:** 5 identical code generation requests produced **18 distinct variable names** and **0 exact duplicate outputs**. The same Blueprint executed identically all 5 times.
+
+Full methodology, raw data, and reproducible scripts: [benchmark/showcase/README.md](benchmark/showcase/README.md)
 
 ---
 
@@ -37,6 +76,7 @@
 - **JSON schema export** — generate schemas for every registered brick
 - **8-command CLI** — `init`, `new`, `check`, `run`, `dry-run`, `list`, `compose`
 - **AI composition** — describe a sequence in plain English and let Claude generate the YAML
+- **Benchmarked** — [real token savings and determinism proof](benchmark/showcase/README.md) with live API calls
 - **290 tests**, mypy `--strict` clean, ruff clean
 
 ---
@@ -166,9 +206,9 @@ class ConvertTemperature(BaseBrick):
         return celsius * 9 / 5 + 32
 ```
 
-### Sequences
+### Sequences (Blueprints)
 
-Sequences are YAML files that wire bricks together using `${variable}` references:
+Sequences (also called Blueprints) are YAML files that wire bricks together using `${variable}` references:
 
 | Reference | Resolves to |
 |---|---|
@@ -334,6 +374,7 @@ python examples/ai_composer.py --live --api-key sk-ant-...
 | `examples/discovery_example.py` | Auto-discovery of bricks from a directory |
 | `examples/ai_composer.py` | AI-powered sequence composition (demo + live) |
 | `examples/sequences/power_cycle_test.yaml` | Reference hardware test sequence |
+| `benchmark/showcase/` | Token savings & determinism benchmark with real API data |
 
 ```bash
 python examples/yaml_sequence.py

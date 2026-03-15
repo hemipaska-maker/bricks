@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any, ClassVar, Protocol, cast, runtime_checkable
 
 from pydantic import BaseModel
 
@@ -16,6 +17,21 @@ class BrickModel(BaseModel):
     All Brick inputs and outputs should subclass this.
     Provides Pydantic v2 validation and serialization.
     """
+
+
+@runtime_checkable
+class BrickFunction(Protocol):
+    """Protocol for callables decorated with ``@brick``.
+
+    Guarantees the presence of ``__brick_meta__`` so that type checkers
+    can verify access to metadata without ``# type: ignore`` suppression.
+    """
+
+    __brick_meta__: BrickMeta
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        """Call the brick function."""
+        ...
 
 
 class BaseBrick(ABC):
@@ -46,7 +62,7 @@ class BaseBrick(ABC):
     class Meta:
         """Brick metadata. Subclasses should override."""
 
-        tags: list[str] = []
+        tags: ClassVar[list[str]] = []
         destructive: bool = False
         idempotent: bool = True
         description: str = ""
@@ -77,7 +93,7 @@ def brick(
     destructive: bool = False,
     idempotent: bool = True,
     description: str = "",
-) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+) -> Callable[[Callable[..., Any]], BrickFunction]:
     """Decorator that registers a function as a Brick.
 
     Args:
@@ -87,7 +103,9 @@ def brick(
         description: Human-readable description.
 
     Returns:
-        The original function, unwrapped, with a ``__brick_meta__`` attribute attached.
+        The original function, unwrapped, with a ``__brick_meta__`` attribute
+        attached. The return type is ``BrickFunction`` so callers can safely
+        access ``fn.__brick_meta__`` without type-ignore suppression.
 
     Example::
 
@@ -96,7 +114,7 @@ def brick(
             return sensor.read(channel)
     """
 
-    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+    def decorator(func: Callable[..., Any]) -> BrickFunction:
         func.__brick_meta__ = BrickMeta(  # type: ignore[attr-defined]
             name=func.__name__,
             tags=tags or [],
@@ -104,6 +122,6 @@ def brick(
             idempotent=idempotent,
             description=description or func.__doc__ or "",
         )
-        return func
+        return cast(BrickFunction, func)
 
     return decorator

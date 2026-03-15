@@ -12,9 +12,7 @@ def _status_label(result: RunResult) -> str:
         "correct": "OK correct",
         "wrong_answer": "WRONG silent",
         "caught_pre_exec": "CAUGHT pre-exec",
-        "runtime_error": (
-            "CLEAR error" if result.error_quality == "clear" else "CRASH runtime"
-        ),
+        "runtime_error": ("CLEAR error" if result.error_quality == "clear" else "CRASH runtime"),
         "blocked": "BLOCKED safe",
     }
     return labels.get(result.status, result.status)
@@ -22,11 +20,9 @@ def _status_label(result: RunResult) -> str:
 
 def _is_safe(result: RunResult) -> bool:
     """A safe outcome: correct, caught pre-exec, or clear runtime error."""
-    if result.status in ("correct", "caught_pre_exec", "blocked"):
-        return True
-    if result.status == "runtime_error" and result.error_quality == "clear":
-        return True
-    return False
+    return result.status in ("correct", "caught_pre_exec", "blocked") or (
+        result.status == "runtime_error" and result.error_quality == "clear"
+    )
 
 
 def print_header() -> None:
@@ -49,9 +45,7 @@ def print_correctness_table(
     print()
     print(f" {'#':>2}  {'Scenario':<28} {'With Bricks':<20} {'Without Bricks':<20}")
     print(f" {'--':>2}  {'-' * 28:<28} {'-' * 20:<20} {'-' * 20:<20}")
-    for i, (scn, br, pr) in enumerate(
-        zip(scenarios, bricks_results, python_results), start=1
-    ):
+    for i, (scn, br, pr) in enumerate(zip(scenarios, bricks_results, python_results, strict=True), start=1):
         bl = _status_label(br)
         pl = _status_label(pr)
         print(f" {i:>2}  {scn.name:<28} {bl:<20} {pl:<20}")
@@ -66,15 +60,13 @@ def print_token_table(
     """Print Table 2: Token Savings."""
     total_bricks = 0
     total_python = 0
-    for br, pr in zip(bricks_results, python_results):
+    for br, pr in zip(bricks_results, python_results, strict=True):
         if br.tokens:
             total_bricks += br.tokens.total
         if pr.tokens:
             total_python += pr.tokens.total
 
-    savings_pct = (
-        round((1 - total_bricks / total_python) * 100) if total_python > 0 else 0
-    )
+    savings_pct = round((1 - total_bricks / total_python) * 100) if total_python > 0 else 0
 
     # Per-component breakdown
     bricks_ctx = 0
@@ -85,7 +77,7 @@ def print_token_table(
     python_err = 0
     bricks_reuse = 0
     python_reuse = 0
-    for br, pr in zip(bricks_results, python_results):
+    for br, pr in zip(bricks_results, python_results, strict=True):
         if br.tokens:
             bricks_ctx += br.tokens.system_prompt + br.tokens.generation_input
             bricks_out += br.tokens.generation_output
@@ -141,7 +133,7 @@ def print_security_table(
     print()
 
     # Show scenario 10 result if present
-    for scn, br, pr in zip(scenarios, bricks_results, python_results):
+    for scn, br, pr in zip(scenarios, bricks_results, python_results, strict=True):
         if scn.category == "security":
             print(f" Scenario '{scn.name}':")
             print(f"   Bricks: security_safe={br.security_safe} | {_status_label(br)}")
@@ -174,15 +166,9 @@ def print_scorecard(
     print(hdr)
     print(f" {'-' * 24:<24} {'-' * 12:>12} {'-' * 12:>12}   {'-' * 10}")
     bw = "BRICKS" if bricks_safe > python_safe else "PYTHON"
-    print(
-        f" {'Safe outcomes':<24} {bricks_safe:>10} / {n:<3}"
-        f" {python_safe:>12} / {n:<3}   {bw:<10}"
-    )
+    print(f" {'Safe outcomes':<24} {bricks_safe:>10} / {n:<3} {python_safe:>12} / {n:<3}   {bw:<10}")
     tw = "BRICKS" if total_b_tok < total_p_tok else "PYTHON"
-    print(
-        f" {'Token efficiency':<24} {total_b_tok:>10,}    "
-        f" {total_p_tok:>12,}     {tw} ({savings_pct}% less)"
-    )
+    print(f" {'Token efficiency':<24} {total_b_tok:>10,}     {total_p_tok:>12,}     {tw} ({savings_pct}% less)")
     sw = "BRICKS" if bricks_secure else "PYTHON"
     print(f" {'Security (sandboxed)':<24} {'YES':>14} {'NO':>16}   {sw:<10}")
     print()

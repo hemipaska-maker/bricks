@@ -62,10 +62,7 @@ class TokenEstimator:
         """
         if scenario.live_mode:
             if not scenario.live_bricks_tokens:
-                raise RuntimeError(
-                    f"Live mode enabled but live_bricks_tokens not set "
-                    f"for scenario '{scenario.name}'"
-                )
+                raise RuntimeError(f"Live mode enabled but live_bricks_tokens not set for scenario '{scenario.name}'")
             return TokenEstimate(
                 system_prompt=0,
                 generation_input=scenario.live_bricks_tokens,
@@ -103,13 +100,8 @@ class TokenEstimator:
         """
         if scenario.live_mode:
             if not scenario.live_python_tokens:
-                raise RuntimeError(
-                    f"Live mode enabled but live_python_tokens not set "
-                    f"for scenario '{scenario.name}'"
-                )
-            error_correction = (
-                _chars_to_tokens(_PYTHON_ERROR_CORRECTION_CHARS) if had_error else 0
-            )
+                raise RuntimeError(f"Live mode enabled but live_python_tokens not set for scenario '{scenario.name}'")
+            error_correction = _chars_to_tokens(_PYTHON_ERROR_CORRECTION_CHARS) if had_error else 0
             reuse_cost = 0
             if scenario.extra_inputs:
                 reuse_cost = scenario.live_python_tokens * len(scenario.extra_inputs)
@@ -125,9 +117,7 @@ class TokenEstimator:
         intent_tokens = _chars_to_tokens(len(scenario.intent))
         generation_input = func_context + intent_tokens
         generation_output = _chars_to_tokens(len(scenario.python_code))
-        error_correction = (
-            _chars_to_tokens(_PYTHON_ERROR_CORRECTION_CHARS) if had_error else 0
-        )
+        error_correction = _chars_to_tokens(_PYTHON_ERROR_CORRECTION_CHARS) if had_error else 0
         reuse_cost = 0
         if scenario.extra_inputs:
             per_run = generation_input + generation_output

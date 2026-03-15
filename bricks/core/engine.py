@@ -22,9 +22,7 @@ class SequenceEngine:
         self._registry = registry
         self._resolver = ReferenceResolver()
 
-    def run(
-        self, sequence: SequenceDefinition, inputs: dict[str, Any] | None = None
-    ) -> dict[str, Any]:
+    def run(self, sequence: SequenceDefinition, inputs: dict[str, Any] | None = None) -> dict[str, Any]:
         """Execute a sequence and return its output map.
 
         Args:

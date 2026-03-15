@@ -28,20 +28,20 @@ class TestBrickSchema:
         """brick_schema returns correct metadata fields."""
         reg = _make_reg()
         schema = brick_schema("add", reg)
-        assert schema["name"] == "add"
-        assert schema["description"] == "Add two numbers"
-        assert schema["tags"] == ["math"]
-        assert schema["destructive"] is False
-        assert "parameters" in schema
+        assert schema["name"] == "add", f"Expected 'add', got {schema['name']!r}"
+        assert schema["description"] == "Add two numbers", f"Expected 'Add two numbers', got {schema['description']!r}"
+        assert schema["tags"] == ["math"], f"Expected ['math'], got {schema['tags']!r}"
+        assert schema["destructive"] is False, f"Expected False, got {schema['destructive']!r}"
+        assert "parameters" in schema, "Expected 'parameters' key in schema"
 
     def test_schema_parameters_have_correct_structure(self) -> None:
         """Parameters dict includes correct type and required info."""
         reg = _make_reg()
         schema = brick_schema("add", reg)
         params = schema["parameters"]
-        assert "a" in params
-        assert "b" in params
-        assert params["a"]["required"] is True
+        assert "a" in params, "Expected 'a' in parameters"
+        assert "b" in params, "Expected 'b' in parameters"
+        assert params["a"]["required"] is True, "Expected parameter 'a' to be required"
 
     def test_schema_raises_for_unknown_brick(self) -> None:
         """BrickNotFoundError raised when brick is not registered."""
@@ -53,7 +53,7 @@ class TestBrickSchema:
         """brick_schema includes idempotent field from metadata."""
         reg = _make_reg()
         schema = brick_schema("add", reg)
-        assert "idempotent" in schema
+        assert "idempotent" in schema, "Expected 'idempotent' key in schema"
 
     def test_schema_parameter_type_annotation(self) -> None:
         """Parameter type annotation is captured as a string."""
@@ -61,7 +61,7 @@ class TestBrickSchema:
         schema = brick_schema("add", reg)
         params = schema["parameters"]
         # int annotation should be present as a string form
-        assert "int" in params["a"]["type"]
+        assert "int" in params["a"]["type"], f"Expected 'int' in type annotation, got {params['a']['type']!r}"
 
 
 class TestRegistrySchema:
@@ -69,14 +69,14 @@ class TestRegistrySchema:
         """registry_schema returns a list with one entry per brick."""
         reg = _make_reg()
         schemas = registry_schema(reg)
-        assert isinstance(schemas, list)
-        assert len(schemas) == 1
-        assert schemas[0]["name"] == "add"
+        assert isinstance(schemas, list), f"Expected list, got {type(schemas).__name__}"
+        assert len(schemas) == 1, f"Expected length 1, got {len(schemas)}"
+        assert schemas[0]["name"] == "add", f"Expected 'add', got {schemas[0]['name']!r}"
 
     def test_empty_registry_returns_empty_list(self) -> None:
         """registry_schema returns empty list for empty registry."""
         reg = BrickRegistry()
-        assert registry_schema(reg) == []
+        assert registry_schema(reg) == [], f"Expected [], got {registry_schema(reg)!r}"
 
     def test_registry_schema_sorted_by_name(self) -> None:
         """registry_schema results are sorted alphabetically by brick name."""
@@ -94,8 +94,8 @@ class TestRegistrySchema:
         reg.register("alpha_brick", alpha_brick, alpha_brick.__brick_meta__)
 
         schemas = registry_schema(reg)
-        assert schemas[0]["name"] == "alpha_brick"
-        assert schemas[1]["name"] == "zebra_brick"
+        assert schemas[0]["name"] == "alpha_brick", f"Expected 'alpha_brick' first, got {schemas[0]['name']!r}"
+        assert schemas[1]["name"] == "zebra_brick", f"Expected 'zebra_brick' second, got {schemas[1]['name']!r}"
 
 
 class TestSequenceSchema:
@@ -115,12 +115,12 @@ class TestSequenceSchema:
             outputs_map={"result": "${s1}"},
         )
         schema = sequence_schema(seq)
-        assert schema["name"] == "my_seq"
-        assert schema["description"] == "A test sequence"
-        assert schema["inputs"] == {"x": "int"}
-        assert len(schema["steps"]) == 1
-        assert schema["steps"][0]["name"] == "s1"
-        assert schema["outputs_map"] == {"result": "${s1}"}
+        assert schema["name"] == "my_seq", f"Expected 'my_seq', got {schema['name']!r}"
+        assert schema["description"] == "A test sequence", f"Expected 'A test sequence', got {schema['description']!r}"
+        assert schema["inputs"] == {"x": "int"}, f"Expected {{'x': 'int'}}, got {schema['inputs']!r}"
+        assert len(schema["steps"]) == 1, f"Expected length 1, got {len(schema['steps'])}"
+        assert schema["steps"][0]["name"] == "s1", f"Expected 's1', got {schema['steps'][0]['name']!r}"
+        assert schema["outputs_map"] == {"result": "${s1}"}, "Expected outputs_map mismatch"
 
     def test_sequence_schema_step_fields(self) -> None:
         """sequence_schema step entries include all required step fields."""
@@ -137,16 +137,16 @@ class TestSequenceSchema:
         )
         schema = sequence_schema(seq)
         step = schema["steps"][0]
-        assert step["name"] == "step1"
-        assert step["brick"] == "some_brick"
-        assert step["params"] == {"key": "value"}
-        assert step["save_as"] == "step1_result"
+        assert step["name"] == "step1", f"Expected 'step1', got {step['name']!r}"
+        assert step["brick"] == "some_brick", f"Expected 'some_brick', got {step['brick']!r}"
+        assert step["params"] == {"key": "value"}, "Expected params mismatch"
+        assert step["save_as"] == "step1_result", f"Expected 'step1_result', got {step['save_as']!r}"
 
     def test_sequence_schema_empty_sequence(self) -> None:
         """sequence_schema works with a sequence that has no steps."""
         seq = SequenceDefinition(name="empty_seq")
         schema = sequence_schema(seq)
-        assert schema["name"] == "empty_seq"
-        assert schema["steps"] == []
-        assert schema["inputs"] == {}
-        assert schema["outputs_map"] == {}
+        assert schema["name"] == "empty_seq", f"Expected 'empty_seq', got {schema['name']!r}"
+        assert schema["steps"] == [], f"Expected [], got {schema['steps']!r}"
+        assert schema["inputs"] == {}, f"Expected {{}}, got {schema['inputs']!r}"
+        assert schema["outputs_map"] == {}, f"Expected {{}}, got {schema['outputs_map']!r}"

@@ -6,19 +6,15 @@ import json
 from pathlib import Path
 from typing import Any
 
+from benchmark.showcase.scenarios import CODEGEN_SYSTEM
 from benchmark.showcase.tokens import count_tokens
 
 _BLUEPRINTS = Path(__file__).parent.parent / "blueprints"
 
-_CODEGEN_SYSTEM = (
-    "You are an expert Python programmer. Generate production-ready Python "
-    "code using ONLY the provided helper functions. Do not import anything."
-)
-
 _CODEGEN_USER = """\
 Available helper functions (use ONLY these):
 
-def http_get(url: str, headers: dict = {}) -> dict:
+def http_get(url: str, headers: dict | None = None) -> dict:
     \"\"\"Fetch data from a URL. Returns {'status_code': int, 'body': dict}.\"\"\"
 
 def json_extract(data: any, path: str) -> dict:
@@ -116,7 +112,7 @@ _INTENT = (
 
 def code_generation_approach() -> dict[str, Any]:
     """Return token cost and simulated code for the raw code-gen approach."""
-    prompt = _CODEGEN_SYSTEM + "\n\n" + _CODEGEN_USER
+    prompt = CODEGEN_SYSTEM + "\n\n" + _CODEGEN_USER
     prompt_tokens = count_tokens(prompt)
     output_tokens = count_tokens(_GENERATED_CODE)
     return {
@@ -151,14 +147,12 @@ def bricks_approach() -> dict[str, Any]:
 
 def _execute_blueprint(yaml_str: str, inputs: dict[str, Any]) -> dict[str, Any]:
     """Load and run the blueprint through the Bricks engine."""
+    from benchmark.showcase.bricks import build_showcase_registry
     from benchmark.showcase.bricks.data_bricks import http_get, json_extract
     from benchmark.showcase.bricks.string_bricks import format_result
-    from bricks.core import BrickRegistry, SequenceEngine, SequenceLoader
+    from bricks.core import SequenceEngine, SequenceLoader
 
-    registry = BrickRegistry()
-    for fn in (http_get, json_extract, format_result):
-        registry.register(fn.__name__, fn, fn.__brick_meta__)  # type: ignore[attr-defined]
-
+    registry = build_showcase_registry(http_get, json_extract, format_result)
     loader = SequenceLoader()
     engine = SequenceEngine(registry=registry)
     sequence = loader.load_string(yaml_str)

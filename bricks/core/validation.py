@@ -2,14 +2,12 @@
 
 from __future__ import annotations
 
-import re
 from typing import Any
 
+from bricks.core.constants import _REF_PATTERN
 from bricks.core.exceptions import SequenceValidationError
 from bricks.core.models import SequenceDefinition
 from bricks.core.registry import BrickRegistry
-
-_REF_PATTERN: re.Pattern[str] = re.compile(r"\$\{([^}]+)\}")
 
 
 def _extract_references(value: Any) -> list[str]:
@@ -54,14 +52,14 @@ class SequenceValidator:
         """
         self._registry = registry
 
-    def validate(self, sequence: SequenceDefinition) -> list[str]:
+    def validate(self, sequence: SequenceDefinition) -> None:
         """Validate a sequence definition and return a list of errors.
 
         Args:
             sequence: The sequence definition to validate.
 
         Returns:
-            A list of error message strings. Empty list means valid.
+            None. Raises SequenceValidationError on any error.
 
         Raises:
             SequenceValidationError: If the sequence has validation errors.
@@ -79,18 +77,14 @@ class SequenceValidator:
         # Check 1: All referenced bricks exist
         for step in sequence.steps:
             if not self._registry.has(step.brick):
-                errors.append(
-                    f"Step {step.name!r}: brick {step.brick!r} not found in registry"
-                )
+                errors.append(f"Step {step.name!r}: brick {step.brick!r} not found in registry")
 
         # Check 2: save_as uniqueness
         save_names: list[str] = []
         for step in sequence.steps:
             if step.save_as is not None:
                 if step.save_as in save_names:
-                    errors.append(
-                        f"Step {step.name!r}: duplicate save_as name {step.save_as!r}"
-                    )
+                    errors.append(f"Step {step.name!r}: duplicate save_as name {step.save_as!r}")
                 save_names.append(step.save_as)
 
         # Check 3: Duplicate step names
@@ -108,15 +102,11 @@ class SequenceValidator:
                 if r.startswith("inputs."):
                     input_key = r[len("inputs.") :]
                     if input_key not in sequence.inputs:
-                        errors.append(
-                            f"outputs_map key {key!r}: input {input_key!r} not declared"
-                        )
+                        errors.append(f"outputs_map key {key!r}: input {input_key!r} not declared")
                 else:
                     base = r.split(".")[0]
                     if base not in available_names:
-                        errors.append(
-                            f"outputs_map key {key!r}: reference {r!r} not found"
-                        )
+                        errors.append(f"outputs_map key {key!r}: reference {r!r} not found")
 
         # Check 5: ${inputs.X} references in step params
         declared_inputs = set(sequence.inputs.keys())
@@ -125,9 +115,7 @@ class SequenceValidator:
                 if ref.startswith("inputs."):
                     input_key = ref[len("inputs.") :]
                     if input_key not in declared_inputs:
-                        errors.append(
-                            f"Step {step.name!r}: input {input_key!r} not declared"
-                        )
+                        errors.append(f"Step {step.name!r}: input {input_key!r} not declared")
 
         # Check 6: Result reference completeness (no forward references or undefined)
         prior_save_as: set[str] = set()
@@ -142,9 +130,7 @@ class SequenceValidator:
                 if base in sequence.inputs:
                     continue  # valid input reference
                 if base in all_save_as:
-                    errors.append(
-                        f"Step {step.name!r}: reference {ref!r} is not yet available"
-                    )
+                    errors.append(f"Step {step.name!r}: reference {ref!r} is not yet available")
                 else:
                     errors.append(f"Step {step.name!r}: undefined variable {ref!r}")
             if step.save_as is not None:
@@ -155,5 +141,3 @@ class SequenceValidator:
                 f"Sequence {sequence.name!r} has {len(errors)} validation error(s)",
                 errors=errors,
             )
-
-        return errors

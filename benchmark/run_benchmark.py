@@ -22,9 +22,10 @@ from benchmark.report import (
 )
 from benchmark.runner import BricksRunner, PythonRunner, RunResult
 from benchmark.scenarios import ALL_SCENARIOS, Scenario
+from bricks.core import BrickRegistry
 
 
-def _generate_live_code(scenarios: list[Scenario], registry) -> None:  # type: ignore[no-untyped-def]
+def _generate_live_code(scenarios: list[Scenario], registry: BrickRegistry) -> None:
     """Generate YAML and Python code via API for each scenario."""
     # Build list of available functions for Python generation
     available_functions = [
@@ -116,10 +117,7 @@ def main() -> None:
     parser.add_argument(
         "--live",
         action="store_true",
-        help=(
-            "Use live API calls for YAML/Python generation "
-            "(requires ANTHROPIC_API_KEY)."
-        ),
+        help=("Use live API calls for YAML/Python generation (requires ANTHROPIC_API_KEY)."),
     )
     parser.add_argument(
         "--verbose",

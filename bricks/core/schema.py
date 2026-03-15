@@ -87,11 +87,7 @@ def _callable_params(callable_: Any) -> dict[str, Any]:
         for param_name, param in sig.parameters.items():
             if param_name in ("self", "inputs", "metadata"):
                 continue
-            annotation = (
-                str(param.annotation)
-                if param.annotation is not inspect.Parameter.empty
-                else "Any"
-            )
+            annotation = str(param.annotation) if param.annotation is not inspect.Parameter.empty else "Any"
             params[param_name] = {
                 "type": annotation,
                 "required": param.default is inspect.Parameter.empty,

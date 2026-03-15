@@ -1,5 +1,7 @@
 """Custom exceptions for the Bricks engine."""
 
+from __future__ import annotations
+
 
 class BrickError(Exception):
     """Base exception for all Bricks errors."""

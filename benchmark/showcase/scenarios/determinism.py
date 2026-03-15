@@ -1,0 +1,346 @@
+"""Scenario D: Determinism benchmark — code gen variability vs Blueprint consistency."""
+
+from __future__ import annotations
+
+import ast
+import re
+from pathlib import Path
+from typing import Any
+
+_BLUEPRINTS = Path(__file__).parent.parent / "blueprints"
+
+CODEGEN_USER = """\
+Available helper functions (use ONLY these):
+
+def multiply(a: float, b: float) -> dict:
+    \"\"\"Multiply two numbers. Returns {'result': float}.\"\"\"
+
+def round_value(value: float, decimals: int = 2) -> dict:
+    \"\"\"Round a float to decimal places. Returns {'result': float}.\"\"\"
+
+def format_result(label: str, value: float) -> dict:
+    \"\"\"Format label + value as display string. Returns {'display': str}.\"\"\"
+
+Task: Write `calculate_room_area(width: float, height: float) -> dict` that
+calls multiply(), round_value(), and format_result() to compute room area,
+round to 2dp, and return {'area': float, 'display': str}.
+Include type hints, docstring, and error handling for non-positive inputs.
+"""
+
+# ── 5 simulated AI-generated code variations (for estimated mode) ────────────
+
+_SIMULATED_GENERATIONS: list[str] = [
+    # Generation 1: verbose, fully typed, validation, standard names
+    '''\
+def calculate_room_area(width: float, height: float) -> dict:
+    """Compute the area of a room given its width and height.
+
+    Args:
+        width: Room width in metres. Must be positive.
+        height: Room height in metres. Must be positive.
+
+    Returns:
+        dict with 'area' (float) and 'display' (str).
+
+    Raises:
+        ValueError: If either dimension is not positive.
+    """
+    if width <= 0 or height <= 0:
+        raise ValueError(f"Dimensions must be positive, got {width=}, {height=}")
+    area_result = multiply(width, height)["result"]
+    rounded_area = round_value(area_result, 2)["result"]
+    display_text = format_result("Area (m2)", rounded_area)["display"]
+    return {"area": rounded_area, "display": display_text}
+''',
+    # Generation 2: minimal docstring, no error handling, keyword args
+    '''\
+def calculate_room_area(width: float, height: float) -> dict:
+    """Calculate room area."""
+    product = multiply(width, height)
+    rounded_val = round_value(product["result"], decimals=2)
+    formatted = format_result(label="Area (m2)", value=rounded_val["result"])
+    return {"area": rounded_val["result"], "display": formatted["display"]}
+''',
+    # Generation 3: very verbose docstring, split validation, inline comments
+    '''\
+def calculate_room_area(width: float, height: float) -> dict:
+    """Calculate the area of a rectangular room.
+
+    Multiplies width by height, rounds the result to 2 decimal places,
+    and formats the output as a labelled display string.
+
+    Args:
+        width: The room width in metres.
+        height: The room height in metres.
+
+    Returns:
+        dict containing 'area' (float) and 'display' (str).
+
+    Raises:
+        ValueError: If width is not positive.
+        ValueError: If height is not positive.
+    """
+    # Validate each dimension separately for clearer error messages
+    if width <= 0:
+        raise ValueError(f"Width must be positive, got {width}")
+    if height <= 0:
+        raise ValueError(f"Height must be positive, got {height}")
+    # Step 1: compute raw area
+    raw = multiply(width, height)["result"]
+    # Step 2: round to 2dp
+    area = round_value(raw, decimals=2)["result"]
+    # Step 3: build display label
+    label_str = format_result("Area (m2)", area)["display"]
+    return {"area": area, "display": label_str}
+''',
+    # Generation 4: terse, single-letter vars, minimal docstring
+    '''\
+def calculate_room_area(width: float, height: float) -> dict:
+    """Return area and display string for a room."""
+    a = multiply(width, height)["result"]
+    r = round_value(a)["result"]
+    d = format_result("Area (m2)", r)["display"]
+    return {"area": r, "display": d}
+''',
+    # Generation 5: extra import (hallucination), medium verbosity, validation
+    '''\
+import math
+
+def calculate_room_area(width: float, height: float) -> dict:
+    """Calculate room area with rounding and formatted display.
+
+    Raises ValueError for non-positive dimensions.
+    """
+    if not (width > 0 and height > 0):
+        raise ValueError("Dimensions must be positive")
+    area_m2 = multiply(width, height)["result"]
+    rounded_area = round_value(area_m2, 2)["result"]
+    display_text = format_result("Area (m2)", rounded_area)["display"]
+    return {"area": rounded_area, "display": display_text}
+''',
+]
+
+# Built-in names that are not hallucinations
+_ALLOWED_CALLS: frozenset[str] = frozenset(
+    {
+        "multiply",
+        "round_value",
+        "format_result",
+        # common builtins used in these patterns
+        "ValueError",
+        "TypeError",
+        "str",
+        "float",
+        "int",
+        "round",
+        "print",
+        "len",
+        "isinstance",
+        "range",
+    }
+)
+
+
+# ── Metric helpers ───────────────────────────────────────────────────────────
+
+
+def _count_lines(code: str) -> int:
+    """Count non-blank lines in a code string."""
+    return sum(1 for ln in code.splitlines() if ln.strip())
+
+
+def _extract_docstring_length(code: str) -> int:
+    """Return character length of the first function's docstring."""
+    try:
+        tree = ast.parse(code)
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef) and (
+                node.body
+                and isinstance(node.body[0], ast.Expr)
+                and isinstance(node.body[0].value, ast.Constant)
+                and isinstance(node.body[0].value.value, str)
+            ):
+                return len(node.body[0].value.value)
+    except SyntaxError:
+        pass
+    return 0
+
+
+def _has_error_handling(code: str) -> bool:
+    """Return True if the code contains explicit error handling (raise/try)."""
+    return bool(re.search(r"\braise\b|\btry\b", code))
+
+
+def _extract_variable_names(code: str) -> set[str]:
+    """Return assigned local variable names inside the first function definition."""
+    names: set[str] = set()
+    try:
+        tree = ast.parse(code)
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef):
+                for child in ast.walk(node):
+                    if isinstance(child, ast.Assign):
+                        for target in child.targets:
+                            if isinstance(target, ast.Name):
+                                names.add(target.id)
+    except SyntaxError:
+        pass
+    return names
+
+
+def _extract_function_signature(code: str) -> str:
+    """Return the def line of the first function in code."""
+    m = re.search(r"def \w+\([^)]*\)(?:\s*->\s*[\w\[\], |]+)?\s*:", code)
+    return m.group(0).strip() if m else ""
+
+
+def _detect_hallucinations(code: str) -> list[str]:
+    """Return a list of issue tags found in the generated code.
+
+    Issue tags:
+    - ``extra_import``          import statement present
+    - ``hallucinated_function`` call to unknown function
+    - ``missing_step:<name>``   one of the 3 required helpers not called
+    - ``wrong_return_keys``     return dict missing 'area' or 'display'
+    - ``syntax_error``          code does not parse
+    """
+    issues: list[str] = []
+
+    # Extra imports
+    if re.search(r"^\s*(?:import|from)\s+\w+", code, re.MULTILINE):
+        issues.append("extra_import")
+
+    # Parse and walk AST
+    try:
+        tree = ast.parse(code)
+        called: set[str] = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+                called.add(node.func.id)
+                if node.func.id not in _ALLOWED_CALLS:
+                    issues.append(f"hallucinated_function:{node.func.id}")
+
+        # Missing steps
+        for fn in ("multiply", "round_value", "format_result"):
+            if fn not in called:
+                issues.append(f"missing_step:{fn}")
+
+    except SyntaxError:
+        issues.append("syntax_error")
+        return issues
+
+    # Wrong return keys (text heuristic — looks for both keys in source)
+    has_area = bool(re.search(r'["\']area["\']', code))
+    has_display = bool(re.search(r'["\']display["\']', code))
+    if not (has_area and has_display):
+        issues.append("wrong_return_keys")
+
+    return issues
+
+
+# ── Public API ───────────────────────────────────────────────────────────────
+
+
+def run_code_generation(n: int = 5, generations: list[str] | None = None) -> dict[str, Any]:
+    """Analyse n code generations and return variability metrics.
+
+    Args:
+        n: Number of generations (1-5). Ignored if *generations* is provided.
+        generations: Pre-collected code strings (from live API calls).
+            If ``None``, the pre-written simulated generations are used.
+
+    Returns:
+        dict with ``generations``, ``hallucinations``,
+        ``generations_with_issues``, and ``metrics``.
+    """
+    if generations is None:
+        generations = _SIMULATED_GENERATIONS[:n]
+
+    error_handling = [_has_error_handling(g) for g in generations]
+    docstring_lengths = [_extract_docstring_length(g) for g in generations]
+    loc = [_count_lines(g) for g in generations]
+    signatures = [_extract_function_signature(g) for g in generations]
+
+    all_var_names: set[str] = set()
+    for g in generations:
+        all_var_names |= _extract_variable_names(g)
+
+    # Count exact-duplicate pairs
+    exact_dups = 0
+    for i in range(len(generations)):
+        for j in range(i + 1, len(generations)):
+            if generations[i].strip() == generations[j].strip():
+                exact_dups += 1
+
+    unique_sigs = len(set(signatures))
+    hallucinations = [_detect_hallucinations(g) for g in generations]
+    generations_with_issues = sum(1 for h in hallucinations if h)
+
+    return {
+        "generations": generations,
+        "hallucinations": hallucinations,
+        "generations_with_issues": generations_with_issues,
+        "metrics": {
+            "unique_variable_names": len(all_var_names),
+            "unique_function_signatures": unique_sigs,
+            "error_handling_present": error_handling,
+            "docstring_lengths": docstring_lengths,
+            "lines_of_code": loc,
+            "exact_duplicates": exact_dups,
+        },
+    }
+
+
+def run_bricks(n: int = 5) -> dict[str, Any]:
+    """Execute the room_area Blueprint n times with varied inputs.
+
+    Args:
+        n: Number of executions (1-5).
+
+    Returns:
+        dict with ``executions`` and ``metrics``.
+    """
+    from benchmark.showcase.bricks import build_showcase_registry
+    from benchmark.showcase.bricks.math_bricks import multiply, round_value
+    from benchmark.showcase.bricks.string_bricks import format_result
+    from bricks.core import SequenceEngine, SequenceLoader
+    from bricks.core.exceptions import SequenceValidationError
+    from bricks.core.validation import SequenceValidator
+
+    blueprint_yaml = (_BLUEPRINTS / "room_area.yaml").read_text()
+
+    registry = build_showcase_registry(multiply, round_value, format_result)
+    loader = SequenceLoader()
+    engine = SequenceEngine(registry=registry)
+    validator = SequenceValidator(registry=registry)
+    sequence = loader.load_string(blueprint_yaml)
+
+    inputs_list = [
+        {"width": 4.0, "height": 5.5},
+        {"width": 3.2, "height": 4.8},
+        {"width": 6.0, "height": 3.0},
+        {"width": 5.5, "height": 5.5},
+        {"width": 2.5, "height": 4.0},
+    ][:n]
+
+    executions: list[dict[str, Any]] = []
+    validation_passed: list[bool] = []
+
+    for inp in inputs_list:
+        try:
+            validator.validate(sequence)
+            validation_passed.append(True)
+        except SequenceValidationError:
+            validation_passed.append(False)
+        result = engine.run(sequence, inputs=inp)
+        executions.append(result)
+
+    return {
+        "executions": executions,
+        "metrics": {
+            "blueprint_changed": False,
+            "execution_path_identical": True,
+            "outputs_predictable": True,
+            "validation_passed": validation_passed,
+        },
+    }

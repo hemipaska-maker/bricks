@@ -32,7 +32,7 @@ dev = [
     "ruff>=0.3",
 ]
 ai = [
-    "anthropic>=0.40",
+    "anthropic>=0.45",
 ]
 benchmark = [
     "tiktoken>=0.5",
@@ -55,7 +55,7 @@ build-backend = "setuptools.build_meta"
 include = ["bricks*"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests", "benchmark/tests"]
 
 [tool.mypy]
 strict = true
@@ -63,6 +63,27 @@ plugins = ["pydantic.mypy"]
 
 [tool.ruff]
 target-version = "py310"
+line-length = 120
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "N", "W"]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "I",    # isort
+    "N",    # pep8-naming
+    "W",    # pycodestyle warnings
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "SIM",  # flake8-simplify
+    "RUF",  # ruff-specific rules
+    "C4",   # flake8-comprehensions
+    "PTH",  # flake8-use-pathlib
+    "S",    # flake8-bandit (security)
+    "PLC",  # pylint convention
+    "PLE",  # pylint error
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101", "PLC0415"]
+"benchmark/**/*.py" = ["S101", "PLC0415"]
+"examples/**/*.py" = ["PLC0415"]

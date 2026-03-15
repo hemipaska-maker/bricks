@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import operator as op
-from typing import Any
+from typing import Any, cast
 
 from bricks.core import BrickRegistry, brick
+from bricks.core.brick import BrickFunction
 from bricks.core.models import BrickMeta
 
 
@@ -175,6 +176,7 @@ def build_registry() -> BrickRegistry:
     """Create a BrickRegistry populated with all benchmark domain bricks."""
     registry = BrickRegistry()
     for fn in _ALL_BRICKS:
-        meta: BrickMeta = fn.__brick_meta__  # type: ignore[attr-defined]
-        registry.register(fn.__name__, fn, meta)
+        typed = cast(BrickFunction, fn)
+        meta: BrickMeta = typed.__brick_meta__
+        registry.register(typed.__brick_meta__.name, fn, meta)
     return registry

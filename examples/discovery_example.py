@@ -64,19 +64,19 @@ def main() -> None:
                 required = "required" if info["required"] else "optional"
                 print(f"    param: {param} ({info['type']}, {required})")
 
-        assert len(found) == 3, f"Expected 3 bricks, got {len(found)}"
-        assert registry.has("add"), "Expected 'add' to be registered"
-        assert registry.has("multiply"), "Expected 'multiply' to be registered"
-        assert registry.has("to_upper"), "Expected 'to_upper' to be registered"
+        assert len(found) == 3, f"Expected 3 bricks, got {len(found)}"  # noqa: S101
+        assert registry.has("add"), "Expected 'add' to be registered"  # noqa: S101
+        assert registry.has("multiply"), "Expected 'multiply' to be registered"  # noqa: S101
+        assert registry.has("to_upper"), "Expected 'to_upper' to be registered"  # noqa: S101
 
         # Verify bricks are callable
         add_fn, _ = registry.get("add")
         result = add_fn(a=3.0, b=4.0)
-        assert result == 7.0, f"Expected add(3, 4) == 7.0, got {result}"
+        assert result == 7.0, f"Expected add(3, 4) == 7.0, got {result}"  # noqa: S101
 
         to_upper_fn, _ = registry.get("to_upper")
         upper = to_upper_fn(text="hello")
-        assert upper == "HELLO", f"Expected 'HELLO', got {upper}"
+        assert upper == "HELLO", f"Expected 'HELLO', got {upper}"  # noqa: S101
 
         print("\nAll assertions passed")
 

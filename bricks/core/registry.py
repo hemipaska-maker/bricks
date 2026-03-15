@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from bricks.core.exceptions import BrickNotFoundError, DuplicateBrickError
 from bricks.core.models import BrickMeta
@@ -18,9 +19,7 @@ class BrickRegistry:
     def __init__(self) -> None:
         self._bricks: dict[str, tuple[Callable[..., Any], BrickMeta]] = {}
 
-    def register(
-        self, name: str, callable_: Callable[..., Any], meta: BrickMeta
-    ) -> None:
+    def register(self, name: str, callable_: Callable[..., Any], meta: BrickMeta) -> None:
         """Register a brick by name.
 
         Args:

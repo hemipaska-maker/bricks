@@ -9,7 +9,9 @@ This example demonstrates:
 
 from __future__ import annotations
 
-from bricks.core.brick import brick
+from typing import cast
+
+from bricks.core.brick import BrickFunction, brick
 from bricks.core.engine import SequenceEngine
 from bricks.core.loader import SequenceLoader
 from bricks.core.registry import BrickRegistry
@@ -39,9 +41,9 @@ def format_result(value: float, label: str = "Result") -> str:
 # -- 2. Register bricks --------------------------------------------------------
 
 registry = BrickRegistry()
-registry.register("multiply", multiply, multiply.__brick_meta__)  # type: ignore[attr-defined]
-registry.register("round_value", round_value, round_value.__brick_meta__)  # type: ignore[attr-defined]
-registry.register("format_result", format_result, format_result.__brick_meta__)  # type: ignore[attr-defined]
+for _fn in (multiply, round_value, format_result):
+    _bf = cast(BrickFunction, _fn)
+    registry.register(_bf.__brick_meta__.name, _bf, _bf.__brick_meta__)
 
 # -- 3. Define sequence in YAML ------------------------------------------------
 
@@ -97,8 +99,8 @@ def main() -> None:
     print(f"  area    = {outputs['area']}")
     print(f"  display = {outputs['display']}")
 
-    assert outputs["area"] == 31.5
-    assert outputs["display"] == "Area (m\xb2): 31.5"
+    assert outputs["area"] == 31.5  # noqa: S101
+    assert outputs["display"] == "Area (m\xb2): 31.5"  # noqa: S101
     print("All assertions passed")
 
 

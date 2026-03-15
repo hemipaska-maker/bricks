@@ -17,212 +17,170 @@ class TestCLI:
 
     def test_help_exits_zero(self) -> None:
         result = runner.invoke(app, ["--help"])
-        assert result.exit_code == 0
+        assert result.exit_code == 0, f"Expected exit code 0, got {result.exit_code}"
 
     def test_no_args_shows_help(self) -> None:
         result = runner.invoke(app, [])
-        assert "Usage" in result.output
+        assert "Usage" in result.output, f"Expected 'Usage' in output, got {result.output!r}"
 
 
 class TestInitCommand:
     """Tests for the `init` command."""
 
-    def test_init_creates_files(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_init_creates_files(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(app, ["init"])
-        assert result.exit_code == 0
-        assert (tmp_path / "bricks.config.yaml").exists()
-        assert (tmp_path / "sequences").is_dir()
-        assert (tmp_path / "bricks_lib").is_dir()
-        assert (tmp_path / "bricks_lib" / "__init__.py").exists()
+        assert result.exit_code == 0, f"Expected exit code 0, got {result.exit_code}"
+        assert (tmp_path / "bricks.config.yaml").exists(), "Expected bricks.config.yaml to exist"
+        assert (tmp_path / "sequences").is_dir(), "Expected sequences/ to be a directory"
+        assert (tmp_path / "bricks_lib").is_dir(), "Expected bricks_lib/ to be a directory"
+        assert (tmp_path / "bricks_lib" / "__init__.py").exists(), "Expected bricks_lib/__init__.py to exist"
 
-    def test_init_output_messages(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_init_output_messages(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(app, ["init"])
-        assert result.exit_code == 0
-        assert "bricks.config.yaml" in result.output
-        assert "sequences" in result.output
-        assert "bricks_lib" in result.output
-        assert "initialised" in result.output
+        assert result.exit_code == 0, f"Expected exit code 0, got {result.exit_code}"
+        assert "bricks.config.yaml" in result.output, "Expected 'bricks.config.yaml' in output"
+        assert "sequences" in result.output, "Expected 'sequences' in output"
+        assert "bricks_lib" in result.output, "Expected 'bricks_lib' in output"
+        assert "initialised" in result.output, "Expected 'initialised' in output"
 
-    def test_init_config_content(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_init_config_content(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         runner.invoke(app, ["init"])
         content = (tmp_path / "bricks.config.yaml").read_text()
-        assert "version" in content
-        assert "auto_discover" in content
-        assert "sequences" in content
+        assert "version" in content, "Expected 'version' in config content"
+        assert "auto_discover" in content, "Expected 'auto_discover' in config content"
+        assert "sequences" in content, "Expected 'sequences' in config content"
 
-    def test_init_fails_if_config_exists(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_init_fails_if_config_exists(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         (tmp_path / "bricks.config.yaml").write_text("version: '1'\n")
         result = runner.invoke(app, ["init"])
-        assert result.exit_code == 1
+        assert result.exit_code == 1, f"Expected exit code 1, got {result.exit_code}"
 
-    def test_init_error_message_on_existing_config(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_init_error_message_on_existing_config(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         (tmp_path / "bricks.config.yaml").write_text("version: '1'\n")
         result = runner.invoke(app, ["init"])
-        assert "already exists" in result.output
+        assert "already exists" in result.output, "Expected 'already exists' in output"
 
-    def test_init_idempotent_directories(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_init_idempotent_directories(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """init succeeds even if sequences/ and bricks_lib/ already exist."""
         monkeypatch.chdir(tmp_path)
         (tmp_path / "sequences").mkdir()
         (tmp_path / "bricks_lib").mkdir()
         result = runner.invoke(app, ["init"])
-        assert result.exit_code == 0
+        assert result.exit_code == 0, f"Expected exit code 0, got {result.exit_code}"
 
 
 class TestNewBrickCommand:
     """Tests for the `new brick` command."""
 
-    def test_new_brick_creates_file(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_new_brick_creates_file(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         bricks_lib = tmp_path / "bricks_lib"
         bricks_lib.mkdir()
         result = runner.invoke(app, ["new", "brick", "my_test_brick"])
-        assert result.exit_code == 0
+        assert result.exit_code == 0, f"Expected exit code 0, got {result.exit_code}"
         brick_file = bricks_lib / "my_test_brick.py"
-        assert brick_file.exists()
+        assert brick_file.exists(), f"Expected {brick_file} to exist"
 
-    def test_new_brick_content_has_class(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_new_brick_content_has_class(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         (tmp_path / "bricks_lib").mkdir()
         runner.invoke(app, ["new", "brick", "my_test_brick"])
         content = (tmp_path / "bricks_lib" / "my_test_brick.py").read_text()
-        assert "class MyTestBrick(BaseBrick)" in content
-        assert 'name = "my_test_brick"' in content
-        assert "def execute" in content
+        assert "class MyTestBrick(BaseBrick)" in content, "Expected class definition in content"
+        assert 'name = "my_test_brick"' in content, "Expected name attribute in content"
+        assert "def execute" in content, "Expected execute method in content"
 
-    def test_new_brick_normalises_name_hyphens(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_new_brick_normalises_name_hyphens(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         (tmp_path / "bricks_lib").mkdir()
         result = runner.invoke(app, ["new", "brick", "My-Brick"])
-        assert result.exit_code == 0
-        assert (tmp_path / "bricks_lib" / "my_brick.py").exists()
+        assert result.exit_code == 0, f"Expected exit code 0, got {result.exit_code}"
+        assert (tmp_path / "bricks_lib" / "my_brick.py").exists(), "Expected my_brick.py to exist"
 
-    def test_new_brick_normalises_name_uppercase(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_new_brick_normalises_name_uppercase(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         (tmp_path / "bricks_lib").mkdir()
         result = runner.invoke(app, ["new", "brick", "ReadTemperature"])
-        assert result.exit_code == 0
-        assert (tmp_path / "bricks_lib" / "readtemperature.py").exists()
+        assert result.exit_code == 0, f"Expected exit code 0, got {result.exit_code}"
+        assert (tmp_path / "bricks_lib" / "readtemperature.py").exists(), "Expected readtemperature.py to exist"
 
-    def test_new_brick_creates_parent_dirs(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_new_brick_creates_parent_dirs(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """new brick creates bricks_lib/ if it does not exist."""
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(app, ["new", "brick", "auto_make"])
-        assert result.exit_code == 0
-        assert (tmp_path / "bricks_lib" / "auto_make.py").exists()
+        assert result.exit_code == 0, f"Expected exit code 0, got {result.exit_code}"
+        assert (tmp_path / "bricks_lib" / "auto_make.py").exists(), "Expected auto_make.py to exist"
 
-    def test_new_brick_output_message(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_new_brick_output_message(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         (tmp_path / "bricks_lib").mkdir()
         result = runner.invoke(app, ["new", "brick", "sample"])
-        assert result.exit_code == 0
-        assert "sample.py" in result.output
+        assert result.exit_code == 0, f"Expected exit code 0, got {result.exit_code}"
+        assert "sample.py" in result.output, "Expected 'sample.py' in output"
 
-    def test_new_brick_has_imports(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_new_brick_has_imports(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         (tmp_path / "bricks_lib").mkdir()
         runner.invoke(app, ["new", "brick", "import_check"])
         content = (tmp_path / "bricks_lib" / "import_check.py").read_text()
-        assert "from bricks.core import" in content
-        assert "BaseBrick" in content
-        assert "BrickMeta" in content
-        assert "BrickModel" in content
+        assert "from bricks.core import" in content, "Expected bricks.core import in content"
+        assert "BaseBrick" in content, "Expected BaseBrick in content"
+        assert "BrickMeta" in content, "Expected BrickMeta in content"
+        assert "BrickModel" in content, "Expected BrickModel in content"
 
 
 class TestNewSequenceCommand:
     """Tests for the `new sequence` command."""
 
-    def test_new_sequence_creates_file(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_new_sequence_creates_file(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(app, ["new", "sequence", "power_cycle"])
-        assert result.exit_code == 0
+        assert result.exit_code == 0, f"Expected exit code 0, got {result.exit_code}"
         seq_file = tmp_path / "sequences" / "power_cycle.yaml"
-        assert seq_file.exists()
+        assert seq_file.exists(), f"Expected {seq_file} to exist"
 
-    def test_new_sequence_content(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_new_sequence_content(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         runner.invoke(app, ["new", "sequence", "power_cycle"])
         content = (tmp_path / "sequences" / "power_cycle.yaml").read_text()
-        assert "name: power_cycle" in content
-        assert "steps:" in content
+        assert "name: power_cycle" in content, "Expected 'name: power_cycle' in content"
+        assert "steps:" in content, "Expected 'steps:' in content"
 
-    def test_new_sequence_normalises_hyphens(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_new_sequence_normalises_hyphens(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(app, ["new", "sequence", "my-cool-sequence"])
-        assert result.exit_code == 0
-        assert (tmp_path / "sequences" / "my_cool_sequence.yaml").exists()
+        assert result.exit_code == 0, f"Expected exit code 0, got {result.exit_code}"
+        assert (tmp_path / "sequences" / "my_cool_sequence.yaml").exists(), "Expected my_cool_sequence.yaml to exist"
 
-    def test_new_sequence_uses_config_base_dir(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_new_sequence_uses_config_base_dir(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
-        (tmp_path / "bricks.config.yaml").write_text(
-            "sequences:\n  base_dir: 'my_seqs/'\n"
-        )
+        (tmp_path / "bricks.config.yaml").write_text("sequences:\n  base_dir: 'my_seqs/'\n")
         result = runner.invoke(app, ["new", "sequence", "test_seq"])
-        assert result.exit_code == 0
-        assert (tmp_path / "my_seqs" / "test_seq.yaml").exists()
+        assert result.exit_code == 0, f"Expected exit code 0, got {result.exit_code}"
+        assert (tmp_path / "my_seqs" / "test_seq.yaml").exists(), "Expected test_seq.yaml in my_seqs/"
 
-    def test_new_sequence_output_message(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_new_sequence_output_message(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(app, ["new", "sequence", "foo"])
-        assert result.exit_code == 0
-        assert "foo.yaml" in result.output
+        assert result.exit_code == 0, f"Expected exit code 0, got {result.exit_code}"
+        assert "foo.yaml" in result.output, "Expected 'foo.yaml' in output"
 
-    def test_new_sequence_outputs_map(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_new_sequence_outputs_map(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         runner.invoke(app, ["new", "sequence", "check_outputs"])
         content = (tmp_path / "sequences" / "check_outputs.yaml").read_text()
-        assert "outputs_map:" in content
+        assert "outputs_map:" in content, "Expected 'outputs_map:' in content"
 
 
 class TestCheckCommand:
     """Tests for the `check` command."""
 
-    def _make_valid_sequence(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> tuple[Path, Path]:
+    def _make_valid_sequence(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, Path]:
         """Create a bricks_lib with a registered brick and a valid sequence file."""
         monkeypatch.chdir(tmp_path)
         bricks_lib = tmp_path / "bricks_lib"
@@ -251,64 +209,48 @@ class TestCheckCommand:
         )
         return bricks_lib, seq_file
 
-    def test_check_valid_sequence(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_check_valid_sequence(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         _, seq_file = self._make_valid_sequence(tmp_path, monkeypatch)
         result = runner.invoke(app, ["check", str(seq_file)])
-        assert result.exit_code == 0
-        assert "valid" in result.output
+        assert result.exit_code == 0, f"Expected exit code 0, got {result.exit_code}"
+        assert "valid" in result.output, "Expected 'valid' in output"
 
-    def test_check_missing_file(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_check_missing_file(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(app, ["check", "nonexistent.yaml"])
-        assert result.exit_code == 1
+        assert result.exit_code == 1, f"Expected exit code 1, got {result.exit_code}"
 
-    def test_check_missing_file_error_message(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_check_missing_file_error_message(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(app, ["check", "nonexistent.yaml"])
-        assert "not found" in result.output
+        assert "not found" in result.output, "Expected 'not found' in output"
 
-    def test_check_invalid_yaml(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_check_invalid_yaml(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         bad_file = tmp_path / "bad.yaml"
         bad_file.write_text("invalid: yaml: [unclosed")
         result = runner.invoke(app, ["check", str(bad_file)])
-        assert result.exit_code == 1
+        assert result.exit_code == 1, f"Expected exit code 1, got {result.exit_code}"
 
-    def test_check_unknown_brick_fails(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_check_unknown_brick_fails(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         seq_file = tmp_path / "unknown_brick.yaml"
-        seq_file.write_text(
-            "name: test_seq\nsteps:\n  - name: s1\n    brick: does_not_exist\n"
-        )
+        seq_file.write_text("name: test_seq\nsteps:\n  - name: s1\n    brick: does_not_exist\n")
         result = runner.invoke(app, ["check", str(seq_file)])
-        assert result.exit_code == 1
+        assert result.exit_code == 1, f"Expected exit code 1, got {result.exit_code}"
 
-    def test_check_empty_sequence_fails(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_check_empty_sequence_fails(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         seq_file = tmp_path / "empty.yaml"
         seq_file.write_text("name: empty_seq\nsteps: []\n")
         result = runner.invoke(app, ["check", str(seq_file)])
-        assert result.exit_code == 1
+        assert result.exit_code == 1, f"Expected exit code 1, got {result.exit_code}"
 
 
 class TestDryRunCommand:
     """Tests for the `dry-run` command."""
 
-    def _make_valid_sequence(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> Path:
+    def _make_valid_sequence(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         monkeypatch.chdir(tmp_path)
         bricks_lib = tmp_path / "bricks_lib"
         bricks_lib.mkdir()
@@ -335,63 +277,47 @@ class TestDryRunCommand:
         )
         return seq_file
 
-    def test_dry_run_valid_sequence(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_dry_run_valid_sequence(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         seq_file = self._make_valid_sequence(tmp_path, monkeypatch)
         result = runner.invoke(app, ["dry-run", str(seq_file)])
-        assert result.exit_code == 0
-        assert "valid" in result.output.lower()
+        assert result.exit_code == 0, f"Expected exit code 0, got {result.exit_code}"
+        assert "valid" in result.output.lower(), "Expected 'valid' in output"
 
-    def test_dry_run_valid_message_contains_passed(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_dry_run_valid_message_contains_passed(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         seq_file = self._make_valid_sequence(tmp_path, monkeypatch)
         result = runner.invoke(app, ["dry-run", str(seq_file)])
-        assert result.exit_code == 0
-        assert "passed" in result.output.lower()
+        assert result.exit_code == 0, f"Expected exit code 0, got {result.exit_code}"
+        assert "passed" in result.output.lower(), "Expected 'passed' in output"
 
-    def test_dry_run_missing_file(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_dry_run_missing_file(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(app, ["dry-run", "nonexistent.yaml"])
-        assert result.exit_code == 1
+        assert result.exit_code == 1, f"Expected exit code 1, got {result.exit_code}"
 
-    def test_dry_run_missing_file_error_message(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_dry_run_missing_file_error_message(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(app, ["dry-run", "nonexistent.yaml"])
-        assert "not found" in result.output
+        assert "not found" in result.output, "Expected 'not found' in output"
 
-    def test_dry_run_unknown_brick_fails(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_dry_run_unknown_brick_fails(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         seq_file = tmp_path / "unknown.yaml"
-        seq_file.write_text(
-            "name: test_seq\nsteps:\n  - name: s1\n    brick: unknown_brick\n"
-        )
+        seq_file.write_text("name: test_seq\nsteps:\n  - name: s1\n    brick: unknown_brick\n")
         result = runner.invoke(app, ["dry-run", str(seq_file)])
-        assert result.exit_code == 1
+        assert result.exit_code == 1, f"Expected exit code 1, got {result.exit_code}"
 
-    def test_dry_run_invalid_yaml(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_dry_run_invalid_yaml(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         bad_file = tmp_path / "bad.yaml"
         bad_file.write_text("name: [unclosed")
         result = runner.invoke(app, ["dry-run", str(bad_file)])
-        assert result.exit_code == 1
+        assert result.exit_code == 1, f"Expected exit code 1, got {result.exit_code}"
 
 
 class TestRunCommand:
     """Tests for the `run` command."""
 
-    def _make_runnable_sequence(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> Path:
+    def _make_runnable_sequence(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         monkeypatch.chdir(tmp_path)
         bricks_lib = tmp_path / "bricks_lib"
         bricks_lib.mkdir()
@@ -420,64 +346,48 @@ class TestRunCommand:
         )
         return seq_file
 
-    def test_run_missing_file(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_run_missing_file(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(app, ["run", "nonexistent.yaml"])
-        assert result.exit_code == 1
+        assert result.exit_code == 1, f"Expected exit code 1, got {result.exit_code}"
 
-    def test_run_missing_file_error_message(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_run_missing_file_error_message(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(app, ["run", "nonexistent.yaml"])
-        assert "not found" in result.output
+        assert "not found" in result.output, "Expected 'not found' in output"
 
-    def test_run_invalid_input_format(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_run_invalid_input_format(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         seq_file = self._make_runnable_sequence(tmp_path, monkeypatch)
         result = runner.invoke(app, ["run", str(seq_file), "--input", "no_equals"])
-        assert result.exit_code == 1
-        assert "key=value" in result.output
+        assert result.exit_code == 1, f"Expected exit code 1, got {result.exit_code}"
+        assert "key=value" in result.output, "Expected 'key=value' in output"
 
-    def test_run_invalid_yaml(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_run_invalid_yaml(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         bad_file = tmp_path / "bad.yaml"
         bad_file.write_text("name: [unclosed")
         result = runner.invoke(app, ["run", str(bad_file)])
-        assert result.exit_code == 1
+        assert result.exit_code == 1, f"Expected exit code 1, got {result.exit_code}"
 
-    def test_run_completes_success(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_run_completes_success(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         seq_file = self._make_runnable_sequence(tmp_path, monkeypatch)
         result = runner.invoke(app, ["run", str(seq_file), "--input", "x=5"])
-        assert result.exit_code == 0
-        assert "completed" in result.output
+        assert result.exit_code == 0, f"Expected exit code 0, got {result.exit_code}"
+        assert "completed" in result.output, "Expected 'completed' in output"
 
-    def test_run_outputs_shown(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_run_outputs_shown(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         seq_file = self._make_runnable_sequence(tmp_path, monkeypatch)
         result = runner.invoke(app, ["run", str(seq_file), "--input", "x=3"])
-        assert result.exit_code == 0
-        assert "Outputs:" in result.output
+        assert result.exit_code == 0, f"Expected exit code 0, got {result.exit_code}"
+        assert "Outputs:" in result.output, "Expected 'Outputs:' in output"
 
-    def test_run_input_json_parsing(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_run_input_json_parsing(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """Numeric inputs are parsed as JSON (int/float)."""
         seq_file = self._make_runnable_sequence(tmp_path, monkeypatch)
         result = runner.invoke(app, ["run", str(seq_file), "--input", "x=7"])
-        assert result.exit_code == 0
+        assert result.exit_code == 0, f"Expected exit code 0, got {result.exit_code}"
 
-    def test_run_no_outputs_map(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_run_no_outputs_map(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         bricks_lib = tmp_path / "bricks_lib"
         bricks_lib.mkdir()
@@ -488,28 +398,22 @@ class TestRunCommand:
             "registry:\n  auto_discover: true\n  paths:\n    - 'bricks_lib/'\n"
         )
         seq_file = tmp_path / "noop_seq.yaml"
-        seq_file.write_text(
-            "name: noop_seq\nsteps:\n  - name: do_noop\n    brick: noop\n"
-        )
+        seq_file.write_text("name: noop_seq\nsteps:\n  - name: do_noop\n    brick: noop\n")
         result = runner.invoke(app, ["run", str(seq_file)])
-        assert result.exit_code == 0
-        assert "completed" in result.output
+        assert result.exit_code == 0, f"Expected exit code 0, got {result.exit_code}"
+        assert "completed" in result.output, "Expected 'completed' in output"
 
 
 class TestListCommand:
     """Tests for the `list` command."""
 
-    def test_list_empty_registry(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_list_empty_registry(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(app, ["list"])
-        assert result.exit_code == 0
-        assert "No bricks registered" in result.output
+        assert result.exit_code == 0, f"Expected exit code 0, got {result.exit_code}"
+        assert "No bricks registered" in result.output, "Expected 'No bricks registered' in output"
 
-    def test_list_with_auto_discover(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_list_with_auto_discover(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         bricks_lib = tmp_path / "bricks_lib"
         bricks_lib.mkdir()
@@ -523,90 +427,70 @@ class TestListCommand:
             "registry:\n  auto_discover: true\n  paths:\n    - 'bricks_lib/'\n"
         )
         result = runner.invoke(app, ["list"])
-        assert result.exit_code == 0
-        assert "add_numbers" in result.output
+        assert result.exit_code == 0, f"Expected exit code 0, got {result.exit_code}"
+        assert "add_numbers" in result.output, "Expected 'add_numbers' in output"
 
-    def test_list_shows_brick_count(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_list_shows_brick_count(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         bricks_lib = tmp_path / "bricks_lib"
         bricks_lib.mkdir()
-        (bricks_lib / "b1.py").write_text(
-            "from bricks.core import brick\n\n@brick()\ndef brick_one() -> None: pass\n"
-        )
-        (bricks_lib / "b2.py").write_text(
-            "from bricks.core import brick\n\n@brick()\ndef brick_two() -> None: pass\n"
-        )
+        (bricks_lib / "b1.py").write_text("from bricks.core import brick\n\n@brick()\ndef brick_one() -> None: pass\n")
+        (bricks_lib / "b2.py").write_text("from bricks.core import brick\n\n@brick()\ndef brick_two() -> None: pass\n")
         (tmp_path / "bricks.config.yaml").write_text(
             "registry:\n  auto_discover: true\n  paths:\n    - 'bricks_lib/'\n"
         )
         result = runner.invoke(app, ["list"])
-        assert result.exit_code == 0
-        assert "2" in result.output
+        assert result.exit_code == 0, f"Expected exit code 0, got {result.exit_code}"
+        assert "2" in result.output, "Expected '2' in output"
 
-    def test_list_shows_description(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_list_shows_description(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         bricks_lib = tmp_path / "bricks_lib"
         bricks_lib.mkdir()
         (bricks_lib / "described.py").write_text(
-            "from bricks.core import brick\n\n"
-            "@brick(description='A useful brick')\n"
-            "def useful_brick() -> None: pass\n"
+            "from bricks.core import brick\n\n@brick(description='A useful brick')\ndef useful_brick() -> None: pass\n"
         )
         (tmp_path / "bricks.config.yaml").write_text(
             "registry:\n  auto_discover: true\n  paths:\n    - 'bricks_lib/'\n"
         )
         result = runner.invoke(app, ["list"])
-        assert result.exit_code == 0
-        assert "A useful brick" in result.output
+        assert result.exit_code == 0, f"Expected exit code 0, got {result.exit_code}"
+        assert "A useful brick" in result.output, "Expected 'A useful brick' in output"
 
-    def test_list_shows_destructive_tag(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_list_shows_destructive_tag(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         bricks_lib = tmp_path / "bricks_lib"
         bricks_lib.mkdir()
         (bricks_lib / "dangerous.py").write_text(
-            "from bricks.core import brick\n\n"
-            "@brick(destructive=True)\n"
-            "def destroy_all() -> None: pass\n"
+            "from bricks.core import brick\n\n@brick(destructive=True)\ndef destroy_all() -> None: pass\n"
         )
         (tmp_path / "bricks.config.yaml").write_text(
             "registry:\n  auto_discover: true\n  paths:\n    - 'bricks_lib/'\n"
         )
         result = runner.invoke(app, ["list"])
-        assert result.exit_code == 0
-        assert "DESTRUCTIVE" in result.output
+        assert result.exit_code == 0, f"Expected exit code 0, got {result.exit_code}"
+        assert "DESTRUCTIVE" in result.output, "Expected 'DESTRUCTIVE' in output"
 
-    def test_list_shows_tags(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_list_shows_tags(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.chdir(tmp_path)
         bricks_lib = tmp_path / "bricks_lib"
         bricks_lib.mkdir()
         (bricks_lib / "tagged.py").write_text(
-            "from bricks.core import brick\n\n"
-            "@brick(tags=['hardware', 'sensor'])\n"
-            "def read_sensor() -> None: pass\n"
+            "from bricks.core import brick\n\n@brick(tags=['hardware', 'sensor'])\ndef read_sensor() -> None: pass\n"
         )
         (tmp_path / "bricks.config.yaml").write_text(
             "registry:\n  auto_discover: true\n  paths:\n    - 'bricks_lib/'\n"
         )
         result = runner.invoke(app, ["list"])
-        assert result.exit_code == 0
-        assert "hardware" in result.output
-        assert "sensor" in result.output
+        assert result.exit_code == 0, f"Expected exit code 0, got {result.exit_code}"
+        assert "hardware" in result.output, "Expected 'hardware' in output"
+        assert "sensor" in result.output, "Expected 'sensor' in output"
 
 
 class TestComposeCommand:
     """Tests for the `compose` command (stub behavior)."""
 
-    def test_compose_fails_without_anthropic(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_compose_fails_without_anthropic(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """compose should exit 1 if anthropic is not importable."""
         import sys
         import unittest.mock as mock
@@ -617,11 +501,9 @@ class TestComposeCommand:
             result = runner.invoke(app, ["compose", "do something"])
         # If anthropic IS installed, we'd get a prompt; either way, test
         # that the command doesn't just crash with an unhandled exception.
-        assert result.exit_code in (0, 1)
+        assert result.exit_code in (0, 1), f"Expected exit code 0 or 1, got {result.exit_code}"
 
-    def test_compose_not_implemented_exits_gracefully(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_compose_not_implemented_exits_gracefully(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """compose that raises NotImplementedError should exit 1 with a message."""
         import sys
         import unittest.mock as mock
@@ -635,47 +517,43 @@ class TestComposeCommand:
 
         with mock.patch.dict(sys.modules, {"bricks.ai.composer": mock_module}):
             result = runner.invoke(app, ["compose", "do something"], input="fake_key\n")
-        assert result.exit_code == 1
-        assert "not yet fully implemented" in result.output
+        assert result.exit_code == 1, f"Expected exit code 1, got {result.exit_code}"
+        assert "not yet fully implemented" in result.output, "Expected 'not yet fully implemented' in output"
 
 
 class TestSetupRegistry:
     """Tests for the _setup_registry helper."""
 
-    def test_setup_registry_returns_empty_by_default(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_setup_registry_returns_empty_by_default(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         from bricks.cli.main import _setup_registry
 
         monkeypatch.chdir(tmp_path)
         registry, config = _setup_registry()
-        assert registry.list_all() == []
-        assert config.registry.auto_discover is False
+        assert registry.list_all() == [], f"Expected empty registry, got {registry.list_all()!r}"
+        assert config.registry.auto_discover is False, (
+            f"Expected auto_discover=False, got {config.registry.auto_discover!r}"
+        )
 
-    def test_setup_registry_auto_discover(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_setup_registry_auto_discover(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         from bricks.cli.main import _setup_registry
 
         monkeypatch.chdir(tmp_path)
         bricks_lib = tmp_path / "bricks_lib"
         bricks_lib.mkdir()
         (bricks_lib / "example.py").write_text(
-            "from bricks.core import brick\n\n"
-            "@brick()\n"
-            "def example_fn() -> None: pass\n"
+            "from bricks.core import brick\n\n@brick()\ndef example_fn() -> None: pass\n"
         )
         (tmp_path / "bricks.config.yaml").write_text(
             "registry:\n  auto_discover: true\n  paths:\n    - 'bricks_lib/'\n"
         )
         registry, config = _setup_registry(config_dir=tmp_path)
-        assert config.registry.auto_discover is True
+        assert config.registry.auto_discover is True, (
+            f"Expected auto_discover=True, got {config.registry.auto_discover!r}"
+        )
         names = [n for n, _ in registry.list_all()]
-        assert "example_fn" in names
+        assert "example_fn" in names, f"Expected 'example_fn' in {names!r}"
 
-    def test_setup_registry_skips_nonexistent_path(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_setup_registry_skips_nonexistent_path(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         from bricks.cli.main import _setup_registry
 
         monkeypatch.chdir(tmp_path)
@@ -684,4 +562,4 @@ class TestSetupRegistry:
         )
         registry, _ = _setup_registry(config_dir=tmp_path)
         # Should not raise; just skip the nonexistent path
-        assert registry.list_all() == []
+        assert registry.list_all() == [], f"Expected empty registry, got {registry.list_all()!r}"

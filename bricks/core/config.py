@@ -96,7 +96,7 @@ class ConfigLoader:
         if not path.exists():
             raise FileNotFoundError(f"Config file not found: {path}")
         try:
-            with open(path, "r", encoding="utf-8") as f:
+            with path.open(encoding="utf-8") as f:
                 data = self._yaml.load(f)
         except YAMLError as exc:
             raise ConfigError(str(path), exc) from exc
@@ -136,9 +136,7 @@ class ConfigLoader:
         if data is None:
             return BricksConfig()
         if not isinstance(data, dict):
-            raise ConfigError(
-                source, TypeError(f"Expected mapping, got {type(data).__name__}")
-            )
+            raise ConfigError(source, TypeError(f"Expected mapping, got {type(data).__name__}"))
         try:
             return BricksConfig.model_validate(data)
         except ValidationError as exc:

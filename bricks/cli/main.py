@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import typer
@@ -178,7 +179,7 @@ def check(file: str = typer.Argument(..., help="Path to sequence YAML file.")) -
         sequence = seq_loader.load_file(path)
     except YamlLoadError as exc:
         typer.echo(f"Error loading YAML: {exc}", err=True)
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from exc
 
     registry, _ = _setup_registry()
     validator = SequenceValidator(registry=registry)
@@ -191,13 +192,13 @@ def check(file: str = typer.Argument(..., help="Path to sequence YAML file.")) -
         if exc.errors:
             for error in exc.errors:
                 typer.echo(f"  - {error}", err=True)
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from exc
 
 
 @app.command()
 def run(
     sequence: str = typer.Argument(..., help="Path to sequence YAML file."),
-    input_: list[str] = typer.Option(
+    input_: list[str] = typer.Option(  # noqa: B008
         [], "--input", "-i", help="Input values as key=value."
     ),
 ) -> None:
@@ -212,14 +213,12 @@ def run(
         seq_def = seq_loader.load_file(path)
     except YamlLoadError as exc:
         typer.echo(f"Error loading YAML: {exc}", err=True)
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from exc
 
     inputs: dict[str, object] = {}
     for item in input_:
         if "=" not in item:
-            typer.echo(
-                f"Error: Invalid input format {item!r}. Use key=value.", err=True
-            )
+            typer.echo(f"Error: Invalid input format {item!r}. Use key=value.", err=True)
             raise typer.Exit(code=1)
         k, v = item.split("=", 1)
         try:
@@ -234,7 +233,7 @@ def run(
         outputs = engine.run(seq_def, inputs=inputs or None)
     except BrickExecutionError as exc:
         typer.echo(f"Execution error: {exc}", err=True)
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from exc
 
     typer.echo(f"Sequence {seq_def.name!r} completed.")
     if outputs:
@@ -258,7 +257,7 @@ def dry_run(
         seq_def = seq_loader.load_file(path)
     except YamlLoadError as exc:
         typer.echo(f"Error loading YAML: {exc}", err=True)
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from exc
 
     registry, _ = _setup_registry()
     validator = SequenceValidator(registry=registry)
@@ -271,7 +270,7 @@ def dry_run(
         if exc.errors:
             for error in exc.errors:
                 typer.echo(f"  - {error}", err=True)
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from exc
 
 
 @app.command(name="list")
@@ -281,9 +280,7 @@ def list_bricks() -> None:
     all_bricks = registry.list_all()
 
     if not all_bricks:
-        typer.echo(
-            "No bricks registered. Check your bricks.config.yaml registry paths."
-        )
+        typer.echo("No bricks registered. Check your bricks.config.yaml registry paths.")
         return
 
     typer.echo(f"Registered bricks ({len(all_bricks)}):")
@@ -300,13 +297,13 @@ def compose(
 ) -> None:
     """AI-compose a sequence from a natural language description."""
     try:
-        from bricks.ai.composer import SequenceComposer
-    except ImportError:
+        from bricks.ai.composer import SequenceComposer  # noqa: PLC0415
+    except ImportError as exc:
         typer.echo("Error: AI features require the 'anthropic' package.", err=True)
         typer.echo("Install with: pip install bricks[ai]", err=True)
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from exc
 
-    api_key = typer.prompt("Anthropic API key", hide_input=True)
+    api_key = os.environ.get("ANTHROPIC_API_KEY") or typer.prompt("Anthropic API key", hide_input=True)
     registry, _ = _setup_registry()
     composer = SequenceComposer(registry=registry, api_key=api_key)
 
@@ -314,6 +311,6 @@ def compose(
         result_sequence = composer.compose(intent)
         typer.echo(f"Composed sequence: {result_sequence.name!r}")
         typer.echo(f"  Steps: {len(result_sequence.steps)}")
-    except NotImplementedError:
+    except NotImplementedError as exc:
         typer.echo("AI composition is not yet fully implemented.", err=True)
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from exc

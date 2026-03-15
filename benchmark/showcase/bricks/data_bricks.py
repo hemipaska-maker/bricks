@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 from typing import Any
 
 from bricks.core import brick
@@ -22,7 +23,7 @@ _MOCK_RESPONSE = {
 @brick(tags=["network"], destructive=False)
 def http_get(url: str, headers: dict[str, str] | None = None) -> dict[str, Any]:
     """Fetch data from a URL (mock: returns hardcoded user data for benchmarking)."""
-    return dict(_MOCK_RESPONSE)
+    return copy.deepcopy(_MOCK_RESPONSE)
 
 
 @brick(tags=["data"], destructive=False)
@@ -33,8 +34,8 @@ def json_extract(data: Any, path: str) -> dict[str, Any]:
     """
     current: Any = data
     for part in path.split("."):
-        if isinstance(current, list):
-            current = current[int(part)]
-        else:
-            current = current[part]
+        try:
+            current = current[int(part)] if isinstance(current, list) else current[part]
+        except (KeyError, IndexError, ValueError) as exc:
+            raise ValueError(f"Invalid path segment {part!r} in path {path!r}: {exc}") from exc
     return {"value": current}

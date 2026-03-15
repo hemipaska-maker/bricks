@@ -2,20 +2,14 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 import pytest
 
 from bricks.core.exceptions import SequenceValidationError
-from bricks.core.models import BrickMeta, SequenceDefinition, StepDefinition
+from bricks.core.models import SequenceDefinition, StepDefinition
 from bricks.core.registry import BrickRegistry
 from bricks.core.validation import SequenceValidator
-
-
-def _make_registry(*brick_names: str) -> BrickRegistry:
-    """Create a BrickRegistry with the given brick names registered."""
-    reg = BrickRegistry()
-    for name in brick_names:
-        reg.register(name, lambda: None, BrickMeta(name=name))
-    return reg
 
 
 class TestCheck1MissingBrick:
@@ -29,20 +23,19 @@ class TestCheck1MissingBrick:
         with pytest.raises(SequenceValidationError):
             validator.validate(seq)
 
-    def test_present_brick_passes(self) -> None:
-        reg = _make_registry("my_brick")
+    def test_present_brick_passes(self, stub_registry_factory: Callable[..., BrickRegistry]) -> None:
+        reg = stub_registry_factory("my_brick")
         validator = SequenceValidator(registry=reg)
         seq = SequenceDefinition(
             name="test",
             steps=[StepDefinition(name="s1", brick="my_brick")],
         )
-        result = validator.validate(seq)
-        assert result == []
+        validator.validate(seq)  # raises SequenceValidationError on failure
 
 
 class TestCheck2SaveAsUniqueness:
-    def test_duplicate_save_as_fails(self) -> None:
-        reg = _make_registry("brick_a", "brick_b")
+    def test_duplicate_save_as_fails(self, stub_registry_factory: Callable[..., BrickRegistry]) -> None:
+        reg = stub_registry_factory("brick_a", "brick_b")
         validator = SequenceValidator(registry=reg)
         seq = SequenceDefinition(
             name="test",
@@ -53,10 +46,12 @@ class TestCheck2SaveAsUniqueness:
         )
         with pytest.raises(SequenceValidationError) as exc_info:
             validator.validate(seq)
-        assert any("result" in e for e in exc_info.value.errors)
+        assert any("result" in e for e in exc_info.value.errors), (
+            f"Expected 'result' in errors: {exc_info.value.errors!r}"
+        )
 
-    def test_unique_save_as_passes(self) -> None:
-        reg = _make_registry("brick_a", "brick_b")
+    def test_unique_save_as_passes(self, stub_registry_factory: Callable[..., BrickRegistry]) -> None:
+        reg = stub_registry_factory("brick_a", "brick_b")
         validator = SequenceValidator(registry=reg)
         seq = SequenceDefinition(
             name="test",
@@ -65,13 +60,12 @@ class TestCheck2SaveAsUniqueness:
                 StepDefinition(name="s2", brick="brick_b", save_as="result2"),
             ],
         )
-        result = validator.validate(seq)
-        assert result == []
+        validator.validate(seq)  # raises SequenceValidationError on failure
 
 
 class TestCheck3DuplicateStepNames:
-    def test_duplicate_step_name_fails(self) -> None:
-        reg = _make_registry("brick_a")
+    def test_duplicate_step_name_fails(self, stub_registry_factory: Callable[..., BrickRegistry]) -> None:
+        reg = stub_registry_factory("brick_a")
         validator = SequenceValidator(registry=reg)
         seq = SequenceDefinition(
             name="test",
@@ -82,10 +76,12 @@ class TestCheck3DuplicateStepNames:
         )
         with pytest.raises(SequenceValidationError) as exc_info:
             validator.validate(seq)
-        assert any("Duplicate step name" in e for e in exc_info.value.errors)
+        assert any("Duplicate step name" in e for e in exc_info.value.errors), (
+            f"Expected 'Duplicate step name' in errors: {exc_info.value.errors!r}"
+        )
 
-    def test_unique_step_names_pass(self) -> None:
-        reg = _make_registry("brick_a")
+    def test_unique_step_names_pass(self, stub_registry_factory: Callable[..., BrickRegistry]) -> None:
+        reg = stub_registry_factory("brick_a")
         validator = SequenceValidator(registry=reg)
         seq = SequenceDefinition(
             name="test",
@@ -94,13 +90,12 @@ class TestCheck3DuplicateStepNames:
                 StepDefinition(name="s2", brick="brick_a"),
             ],
         )
-        result = validator.validate(seq)
-        assert result == []
+        validator.validate(seq)  # raises SequenceValidationError on failure
 
 
 class TestCheck4OutputsMapReferences:
-    def test_outputs_map_undefined_reference_fails(self) -> None:
-        reg = _make_registry("brick_a")
+    def test_outputs_map_undefined_reference_fails(self, stub_registry_factory: Callable[..., BrickRegistry]) -> None:
+        reg = stub_registry_factory("brick_a")
         validator = SequenceValidator(registry=reg)
         seq = SequenceDefinition(
             name="test",
@@ -110,19 +105,18 @@ class TestCheck4OutputsMapReferences:
         with pytest.raises(SequenceValidationError):
             validator.validate(seq)
 
-    def test_outputs_map_valid_save_as_passes(self) -> None:
-        reg = _make_registry("brick_a")
+    def test_outputs_map_valid_save_as_passes(self, stub_registry_factory: Callable[..., BrickRegistry]) -> None:
+        reg = stub_registry_factory("brick_a")
         validator = SequenceValidator(registry=reg)
         seq = SequenceDefinition(
             name="test",
             steps=[StepDefinition(name="s1", brick="brick_a", save_as="val")],
             outputs_map={"out": "${val}"},
         )
-        result = validator.validate(seq)
-        assert result == []
+        validator.validate(seq)  # raises SequenceValidationError on failure
 
-    def test_outputs_map_valid_input_ref_passes(self) -> None:
-        reg = _make_registry("brick_a")
+    def test_outputs_map_valid_input_ref_passes(self, stub_registry_factory: Callable[..., BrickRegistry]) -> None:
+        reg = stub_registry_factory("brick_a")
         validator = SequenceValidator(registry=reg)
         seq = SequenceDefinition(
             name="test",
@@ -130,13 +124,12 @@ class TestCheck4OutputsMapReferences:
             steps=[StepDefinition(name="s1", brick="brick_a")],
             outputs_map={"out": "${inputs.x}"},
         )
-        result = validator.validate(seq)
-        assert result == []
+        validator.validate(seq)  # raises SequenceValidationError on failure
 
 
 class TestCheck5InputReferences:
-    def test_undeclared_input_ref_fails(self) -> None:
-        reg = _make_registry("brick_a")
+    def test_undeclared_input_ref_fails(self, stub_registry_factory: Callable[..., BrickRegistry]) -> None:
+        reg = stub_registry_factory("brick_a")
         validator = SequenceValidator(registry=reg)
         seq = SequenceDefinition(
             name="test",
@@ -151,10 +144,10 @@ class TestCheck5InputReferences:
         )
         with pytest.raises(SequenceValidationError) as exc_info:
             validator.validate(seq)
-        assert any("y" in e for e in exc_info.value.errors)
+        assert any("y" in e for e in exc_info.value.errors), f"Expected 'y' in errors: {exc_info.value.errors!r}"
 
-    def test_declared_input_ref_passes(self) -> None:
-        reg = _make_registry("brick_a")
+    def test_declared_input_ref_passes(self, stub_registry_factory: Callable[..., BrickRegistry]) -> None:
+        reg = stub_registry_factory("brick_a")
         validator = SequenceValidator(registry=reg)
         seq = SequenceDefinition(
             name="test",
@@ -167,47 +160,36 @@ class TestCheck5InputReferences:
                 )
             ],
         )
-        result = validator.validate(seq)
-        assert result == []
+        validator.validate(seq)  # raises SequenceValidationError on failure
 
-    def test_nested_dict_params_checked(self) -> None:
-        reg = _make_registry("brick_a")
+    @pytest.mark.parametrize(
+        "params,label",
+        [
+            ({"nested": {"key": "${inputs.missing}"}}, "dict"),
+            ({"items": ["${inputs.missing}"]}, "list"),
+        ],
+    )
+    def test_nested_params_checked(
+        self,
+        params: dict[str, object],
+        label: str,
+        stub_registry_factory: Callable[..., BrickRegistry],
+    ) -> None:
+        """References inside nested dict and list params are validated."""
+        reg = stub_registry_factory("brick_a")
         validator = SequenceValidator(registry=reg)
         seq = SequenceDefinition(
             name="test",
             inputs={},
-            steps=[
-                StepDefinition(
-                    name="s1",
-                    brick="brick_a",
-                    params={"nested": {"key": "${inputs.missing}"}},
-                )
-            ],
-        )
-        with pytest.raises(SequenceValidationError):
-            validator.validate(seq)
-
-    def test_nested_list_params_checked(self) -> None:
-        reg = _make_registry("brick_a")
-        validator = SequenceValidator(registry=reg)
-        seq = SequenceDefinition(
-            name="test",
-            inputs={},
-            steps=[
-                StepDefinition(
-                    name="s1",
-                    brick="brick_a",
-                    params={"items": ["${inputs.missing}"]},
-                )
-            ],
+            steps=[StepDefinition(name="s1", brick="brick_a", params=params)],
         )
         with pytest.raises(SequenceValidationError):
             validator.validate(seq)
 
 
 class TestCheck6ResultReferences:
-    def test_forward_reference_fails(self) -> None:
-        reg = _make_registry("brick_a", "brick_b")
+    def test_forward_reference_fails(self, stub_registry_factory: Callable[..., BrickRegistry]) -> None:
+        reg = stub_registry_factory("brick_a", "brick_b")
         validator = SequenceValidator(registry=reg)
         seq = SequenceDefinition(
             name="test",
@@ -226,10 +208,12 @@ class TestCheck6ResultReferences:
         )
         with pytest.raises(SequenceValidationError) as exc_info:
             validator.validate(seq)
-        assert any("not yet available" in e for e in exc_info.value.errors)
+        assert any("not yet available" in e for e in exc_info.value.errors), (
+            f"Expected 'not yet available' in errors: {exc_info.value.errors!r}"
+        )
 
-    def test_undefined_variable_fails(self) -> None:
-        reg = _make_registry("brick_a")
+    def test_undefined_variable_fails(self, stub_registry_factory: Callable[..., BrickRegistry]) -> None:
+        reg = stub_registry_factory("brick_a")
         validator = SequenceValidator(registry=reg)
         seq = SequenceDefinition(
             name="test",
@@ -243,10 +227,12 @@ class TestCheck6ResultReferences:
         )
         with pytest.raises(SequenceValidationError) as exc_info:
             validator.validate(seq)
-        assert any("undefined variable" in e for e in exc_info.value.errors)
+        assert any("undefined variable" in e for e in exc_info.value.errors), (
+            f"Expected 'undefined variable' in errors: {exc_info.value.errors!r}"
+        )
 
-    def test_valid_backward_reference_passes(self) -> None:
-        reg = _make_registry("brick_a", "brick_b")
+    def test_valid_backward_reference_passes(self, stub_registry_factory: Callable[..., BrickRegistry]) -> None:
+        reg = stub_registry_factory("brick_a", "brick_b")
         validator = SequenceValidator(registry=reg)
         seq = SequenceDefinition(
             name="test",
@@ -259,11 +245,10 @@ class TestCheck6ResultReferences:
                 ),
             ],
         )
-        result = validator.validate(seq)
-        assert result == []
+        validator.validate(seq)  # raises SequenceValidationError on failure
 
-    def test_multiple_errors_collected(self) -> None:
-        reg = _make_registry("brick_a")
+    def test_multiple_errors_collected(self, stub_registry_factory: Callable[..., BrickRegistry]) -> None:
+        reg = stub_registry_factory("brick_a")
         validator = SequenceValidator(registry=reg)
         seq = SequenceDefinition(
             name="test",
@@ -278,7 +263,7 @@ class TestCheck6ResultReferences:
         with pytest.raises(SequenceValidationError) as exc_info:
             validator.validate(seq)
         err = exc_info.value
-        assert len(err.errors) >= 2
+        assert len(err.errors) >= 2, f"Expected at least 2 errors, got {len(err.errors)}"
 
 
 class TestCheck7EmptySequence:
@@ -288,4 +273,6 @@ class TestCheck7EmptySequence:
         seq = SequenceDefinition(name="empty")
         with pytest.raises(SequenceValidationError) as exc_info:
             validator.validate(seq)
-        assert any("no steps" in e for e in exc_info.value.errors)
+        assert any("no steps" in e for e in exc_info.value.errors), (
+            f"Expected 'no steps' in errors: {exc_info.value.errors!r}"
+        )

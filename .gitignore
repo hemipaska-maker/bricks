@@ -31,4 +31,4 @@ venv/
 # OS
 .DS_Store
 Thumbs.db
-benchmark/showcase/results/benchmark_live.log
+*.log

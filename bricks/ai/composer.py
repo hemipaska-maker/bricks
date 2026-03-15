@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import re
 from typing import Any
 
 from bricks.core.exceptions import BrickError
@@ -11,6 +10,7 @@ from bricks.core.loader import SequenceLoader
 from bricks.core.models import SequenceDefinition
 from bricks.core.registry import BrickRegistry
 from bricks.core.schema import registry_schema
+from bricks.core.utils import strip_code_fence
 
 
 class ComposerError(BrickError):
@@ -101,13 +101,12 @@ class SequenceComposer:
             ImportError: If the ``anthropic`` package is not installed.
         """
         try:
-            import anthropic  # type: ignore[import-not-found]  # noqa: PLC0415
+            import anthropic  # noqa: PLC0415
 
             self._client = anthropic.Anthropic(api_key=api_key)
         except ImportError as exc:
             raise ImportError(
-                "The 'anthropic' package is required for AI composition. "
-                "Install with: pip install bricks[ai]"
+                "The 'anthropic' package is required for AI composition. Install with: pip install bricks[ai]"
             ) from exc
 
         self._registry = registry
@@ -221,10 +220,7 @@ class SequenceComposer:
         raise ComposerError("AI response contained no text block")
 
     def _extract_yaml(self, text: str) -> str:
-        """Extract YAML content from a markdown code block.
-
-        Looks for ```yaml ... ``` or ``` ... ``` blocks. Falls back to the
-        raw text if no code block is found.
+        """Extract YAML from the AI response text.
 
         Args:
             text: Raw text from the AI response.
@@ -232,10 +228,4 @@ class SequenceComposer:
         Returns:
             The YAML string to parse.
         """
-        # Match ```yaml ... ``` or ``` ... ```
-        pattern = re.compile(r"```(?:yaml)?\s*\n(.*?)```", re.DOTALL)
-        match = pattern.search(text)
-        if match:
-            return match.group(1).strip()
-        # Fall back to the entire text (the model may not have used a code block)
-        return text.strip()
+        return strip_code_fence(text)

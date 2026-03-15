@@ -14,16 +14,16 @@ class TestSequenceLoaderFromString:
     def test_load_minimal_sequence(self) -> None:
         loader = SequenceLoader()
         seq = loader.load_string("name: test_seq\n")
-        assert seq.name == "test_seq"
-        assert seq.steps == []
+        assert seq.name == "test_seq", f"Expected 'test_seq', got {seq.name!r}"
+        assert seq.steps == [], f"Expected [], got {seq.steps!r}"
 
     def test_load_sequence_with_steps(self) -> None:
         loader = SequenceLoader()
         yaml = "name: my_seq\nsteps:\n  - name: s1\n    brick: do_thing\n"
         seq = loader.load_string(yaml)
-        assert len(seq.steps) == 1
-        assert seq.steps[0].name == "s1"
-        assert seq.steps[0].brick == "do_thing"
+        assert len(seq.steps) == 1, f"Expected length 1, got {len(seq.steps)}"
+        assert seq.steps[0].name == "s1", f"Expected 's1', got {seq.steps[0].name!r}"
+        assert seq.steps[0].brick == "do_thing", f"Expected 'do_thing', got {seq.steps[0].brick!r}"
 
     def test_load_sequence_with_params_and_save_as(self) -> None:
         loader = SequenceLoader()
@@ -37,8 +37,8 @@ class TestSequenceLoaderFromString:
             "    save_as: reading\n"
         )
         seq = loader.load_string(yaml)
-        assert seq.steps[0].params == {"channel": 3}
-        assert seq.steps[0].save_as == "reading"
+        assert seq.steps[0].params == {"channel": 3}, f"Expected {{'channel': 3}}, got {seq.steps[0].params!r}"
+        assert seq.steps[0].save_as == "reading", f"Expected 'reading', got {seq.steps[0].save_as!r}"
 
     def test_load_sequence_with_inputs_and_outputs_map(self) -> None:
         loader = SequenceLoader()
@@ -54,8 +54,8 @@ class TestSequenceLoaderFromString:
             '  final: "${result}"\n'
         )
         seq = loader.load_string(yaml)
-        assert seq.inputs == {"voltage": "float"}
-        assert seq.outputs_map == {"final": "${result}"}
+        assert seq.inputs == {"voltage": "float"}, f"Expected {{'voltage': 'float'}}, got {seq.inputs!r}"
+        assert seq.outputs_map == {"final": "${result}"}, "Expected outputs_map mismatch"
 
     def test_invalid_yaml_syntax_raises(self) -> None:
         loader = SequenceLoader()
@@ -79,7 +79,7 @@ class TestSequenceLoaderFromFile:
         yaml_file.write_text("name: file_test\nsteps:\n  - name: s1\n    brick: x\n")
         loader = SequenceLoader()
         seq = loader.load_file(yaml_file)
-        assert seq.name == "file_test"
+        assert seq.name == "file_test", f"Expected 'file_test', got {seq.name!r}"
 
     def test_file_not_found_raises(self) -> None:
         loader = SequenceLoader()

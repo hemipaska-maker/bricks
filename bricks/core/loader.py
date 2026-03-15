@@ -37,7 +37,7 @@ class SequenceLoader:
         if not path.exists():
             raise FileNotFoundError(f"Sequence file not found: {path}")
         try:
-            with open(path, "r", encoding="utf-8") as f:
+            with path.open(encoding="utf-8") as f:
                 data = self._yaml.load(f)
         except YAMLError as exc:
             raise YamlLoadError(str(path), exc) from exc
@@ -80,9 +80,7 @@ class SequenceLoader:
             YamlLoadError: If data is not a mapping or fails Pydantic validation.
         """
         if not isinstance(data, dict):
-            raise YamlLoadError(
-                source, TypeError(f"Expected mapping, got {type(data).__name__}")
-            )
+            raise YamlLoadError(source, TypeError(f"Expected mapping, got {type(data).__name__}"))
         try:
             return SequenceDefinition.model_validate(data)
         except ValidationError as exc:

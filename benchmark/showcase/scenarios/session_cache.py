@@ -6,7 +6,10 @@ import json
 from pathlib import Path
 from typing import Any
 
+from benchmark.showcase.scenarios import CODEGEN_SYSTEM
 from benchmark.showcase.tokens import count_tokens
+from bricks.core import SequenceEngine
+from bricks.core.models import SequenceDefinition
 
 _BLUEPRINTS = Path(__file__).parent.parent / "blueprints"
 
@@ -23,11 +26,6 @@ ROOM_INPUTS = [
     {"width": 3.0, "height": 3.0},
     {"width": 5.0, "height": 5.0},
 ]
-
-_CODEGEN_SYSTEM = (
-    "You are an expert Python programmer. Generate production-ready Python "
-    "code using ONLY the provided helper functions. Do not import anything."
-)
 
 # Each code-gen call includes the full function context (fair comparison).
 _CODEGEN_USER_TEMPLATE = """\
@@ -88,7 +86,7 @@ def code_generation_approach() -> dict[str, Any]:
 
     for i, inp in enumerate(ROOM_INPUTS):
         user_prompt = _CODEGEN_USER_TEMPLATE.format(**inp)
-        prompt = _CODEGEN_SYSTEM + "\n\n" + user_prompt
+        prompt = CODEGEN_SYSTEM + "\n\n" + user_prompt
         prompt_tokens = count_tokens(prompt)
         output_tokens = count_tokens(_SIMULATED_PYTHON_OUTPUT)
         run_total = prompt_tokens + output_tokens
@@ -168,18 +166,19 @@ def bricks_approach() -> dict[str, Any]:
     }
 
 
-def _build_engine() -> Any:
+def _build_engine() -> SequenceEngine:
+    """Build a SequenceEngine with math and string bricks registered."""
+    from benchmark.showcase.bricks import build_showcase_registry
     from benchmark.showcase.bricks.math_bricks import multiply, round_value
     from benchmark.showcase.bricks.string_bricks import format_result
-    from bricks.core import BrickRegistry, SequenceEngine
+    from bricks.core import SequenceEngine
 
-    registry = BrickRegistry()
-    for fn in (multiply, round_value, format_result):
-        registry.register(fn.__name__, fn, fn.__brick_meta__)  # type: ignore[attr-defined]
+    registry = build_showcase_registry(multiply, round_value, format_result)
     return SequenceEngine(registry=registry)
 
 
-def _load_sequence(yaml_str: str) -> Any:
+def _load_sequence(yaml_str: str) -> SequenceDefinition:
+    """Load a SequenceDefinition from a YAML string."""
     from bricks.core import SequenceLoader
 
     return SequenceLoader().load_string(yaml_str)

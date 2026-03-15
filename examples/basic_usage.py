@@ -1,10 +1,13 @@
 """Basic Bricks usage: register bricks and run a simple sequence."""
 
+from typing import cast
+
 from bricks.core import (
     BrickRegistry,
     SequenceEngine,
     brick,
 )
+from bricks.core.brick import BrickFunction
 from bricks.core.models import SequenceDefinition, StepDefinition
 
 # --- Create a registry ---
@@ -25,8 +28,8 @@ def multiply(a: float, b: float) -> float:
 
 
 # --- Register bricks ---
-registry.register("add", add, add.__brick_meta__)  # type: ignore[attr-defined]
-registry.register("multiply", multiply, multiply.__brick_meta__)  # type: ignore[attr-defined]
+registry.register("add", cast(BrickFunction, add), cast(BrickFunction, add).__brick_meta__)
+registry.register("multiply", cast(BrickFunction, multiply), cast(BrickFunction, multiply).__brick_meta__)
 
 # --- List registered bricks ---
 print("Registered bricks:")

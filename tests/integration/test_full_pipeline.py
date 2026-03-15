@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import textwrap
 from pathlib import Path
+from typing import cast
 
 import pytest
 
-from bricks.core.brick import brick
+from bricks.core.brick import BrickFunction, brick
 from bricks.core.engine import SequenceEngine
 from bricks.core.exceptions import BrickExecutionError, SequenceValidationError
 from bricks.core.loader import SequenceLoader
@@ -34,10 +35,10 @@ def _make_math_registry() -> BrickRegistry:
     def to_string(value: float) -> str:
         return str(value)
 
-    reg.register("add", add, add.__brick_meta__)  # type: ignore[attr-defined]
-    reg.register("multiply", multiply, multiply.__brick_meta__)  # type: ignore[attr-defined]
-    reg.register("round_val", round_val, round_val.__brick_meta__)  # type: ignore[attr-defined]
-    reg.register("to_string", to_string, to_string.__brick_meta__)  # type: ignore[attr-defined]
+    reg.register("add", cast(BrickFunction, add), cast(BrickFunction, add).__brick_meta__)
+    reg.register("multiply", cast(BrickFunction, multiply), cast(BrickFunction, multiply).__brick_meta__)
+    reg.register("round_val", cast(BrickFunction, round_val), cast(BrickFunction, round_val).__brick_meta__)
+    reg.register("to_string", cast(BrickFunction, to_string), cast(BrickFunction, to_string).__brick_meta__)
     return reg
 
 
@@ -62,7 +63,7 @@ outputs_map:
 """)
         engine = SequenceEngine(registry=reg)
         out = engine.run(seq, inputs={"x": 3.0, "y": 4.0})
-        assert out["result"] == 7.0
+        assert out["result"] == 7.0, f"Expected 7.0, got {out['result']!r}"
 
     def test_literal_params(self) -> None:
         reg = _make_math_registry()
@@ -81,7 +82,7 @@ outputs_map:
 """)
         engine = SequenceEngine(registry=reg)
         out = engine.run(seq)
-        assert out["result"] == 15.0
+        assert out["result"] == 15.0, f"Expected 15.0, got {out['result']!r}"
 
     def test_string_output(self) -> None:
         reg = _make_math_registry()
@@ -99,7 +100,7 @@ outputs_map:
 """)
         engine = SequenceEngine(registry=reg)
         out = engine.run(seq)
-        assert out["label"] == "42.0"
+        assert out["label"] == "42.0", f"Expected '42.0', got {out['label']!r}"
 
     def test_no_outputs_map(self) -> None:
         reg = _make_math_registry()
@@ -115,7 +116,7 @@ steps:
 """)
         engine = SequenceEngine(registry=reg)
         out = engine.run(seq)
-        assert out == {}
+        assert out == {}, f"Expected {{}}, got {out!r}"
 
 
 class TestMultiStepPipeline:
@@ -146,7 +147,7 @@ outputs_map:
 """)
         engine = SequenceEngine(registry=reg)
         out = engine.run(seq, inputs={"a": 1.0, "b": 2.0, "c": 3.0})
-        assert out["total"] == 6.0
+        assert out["total"] == 6.0, f"Expected 6.0, got {out['total']!r}"
 
     def test_multiply_then_round(self) -> None:
         reg = _make_math_registry()
@@ -174,7 +175,7 @@ outputs_map:
 """)
         engine = SequenceEngine(registry=reg)
         out = engine.run(seq, inputs={"x": 7.5, "y": 4.2})
-        assert out["result"] == 31.5
+        assert out["result"] == 31.5, f"Expected 31.5, got {out['result']!r}"
 
     def test_three_steps_chained(self) -> None:
         reg = _make_math_registry()
@@ -205,7 +206,7 @@ outputs_map:
 """)
         engine = SequenceEngine(registry=reg)
         out = engine.run(seq)
-        assert out["result"] == 20.0  # (2+3)*4 = 20
+        assert out["result"] == 20.0, f"Expected 20.0, got {out['result']!r}"  # (2+3)*4 = 20
 
     def test_add_then_stringify(self) -> None:
         reg = _make_math_registry()
@@ -229,7 +230,7 @@ outputs_map:
 """)
         engine = SequenceEngine(registry=reg)
         out = engine.run(seq)
-        assert out["label"] == "10.0"
+        assert out["label"] == "10.0", f"Expected '10.0', got {out['label']!r}"
 
 
 class TestValidationIntegration:
@@ -251,27 +252,32 @@ outputs_map:
   result: "${doubled}"
 """)
         validator = SequenceValidator(registry=reg)
-        errors = validator.validate(seq)
-        assert errors == []
+        validator.validate(seq)  # raises on failure
 
         engine = SequenceEngine(registry=reg)
         out = engine.run(seq, inputs={"n": 5.0})
-        assert out["result"] == 10.0
+        assert out["result"] == 10.0, f"Expected 10.0, got {out['result']!r}"
 
-    def test_validation_catches_missing_brick(self) -> None:
+    @pytest.mark.parametrize(
+        "brick_name",
+        ["nonexistent_brick", "unknown_op"],
+    )
+    def test_validation_catches_missing_brick(self, brick_name: str) -> None:
+        """Validation raises for any unregistered brick name."""
         reg = BrickRegistry()
         loader = SequenceLoader()
-        seq = loader.load_string("""
+        seq = loader.load_string(f"""
 name: bad_seq
 steps:
   - name: s1
-    brick: nonexistent_brick
+    brick: {brick_name}
 """)
         validator = SequenceValidator(registry=reg)
         with pytest.raises(SequenceValidationError) as exc_info:
             validator.validate(seq)
-        # The brick name appears in the errors list
-        assert any("nonexistent_brick" in e for e in exc_info.value.errors)
+        assert any(brick_name in e for e in exc_info.value.errors), (
+            f"Expected {brick_name!r} in errors: {exc_info.value.errors!r}"
+        )
 
     def test_execution_error_propagates(self) -> None:
         reg = BrickRegistry()
@@ -282,8 +288,8 @@ steps:
 
         reg.register(
             "always_fails",
-            always_fails,
-            always_fails.__brick_meta__,  # type: ignore[attr-defined]
+            cast(BrickFunction, always_fails),
+            cast(BrickFunction, always_fails).__brick_meta__,
         )
         loader = SequenceLoader()
         seq = loader.load_string("""
@@ -297,20 +303,7 @@ steps:
         engine = SequenceEngine(registry=reg)
         with pytest.raises(BrickExecutionError) as exc_info:
             engine.run(seq)
-        assert "always_fails" in str(exc_info.value)
-
-    def test_validation_empty_registry_fails(self) -> None:
-        reg = BrickRegistry()
-        loader = SequenceLoader()
-        seq = loader.load_string("""
-name: seq_with_unknown
-steps:
-  - name: step1
-    brick: unknown_op
-""")
-        validator = SequenceValidator(registry=reg)
-        with pytest.raises(SequenceValidationError):
-            validator.validate(seq)
+        assert "always_fails" in str(exc_info.value), f"Expected 'always_fails' in {str(exc_info.value)!r}"
 
 
 class TestDiscoveryIntegration:
@@ -331,7 +324,7 @@ class TestDiscoveryIntegration:
         reg = BrickRegistry()
         disc = BrickDiscovery(registry=reg)
         disc.discover_path(brick_file)
-        assert reg.has("square")
+        assert reg.has("square"), "Expected 'square' to be registered"
 
         loader = SequenceLoader()
         seq = loader.load_string("""
@@ -349,7 +342,7 @@ outputs_map:
 """)
         engine = SequenceEngine(registry=reg)
         out = engine.run(seq, inputs={"n": 4.0})
-        assert out["result"] == 16.0
+        assert out["result"] == 16.0, f"Expected 16.0, got {out['result']!r}"
 
     def test_discover_package_and_run(self, tmp_path: Path) -> None:
         pkg_dir = tmp_path / "ops"
@@ -369,7 +362,7 @@ outputs_map:
         reg = BrickRegistry()
         disc = BrickDiscovery(registry=reg)
         disc.discover_package(pkg_dir)
-        assert reg.has("add_one")
+        assert reg.has("add_one"), "Expected 'add_one' to be registered"
 
         loader = SequenceLoader()
         seq = loader.load_string("""
@@ -385,26 +378,10 @@ outputs_map:
 """)
         engine = SequenceEngine(registry=reg)
         out = engine.run(seq)
-        assert out["out"] == 10.0
+        assert out["out"] == 10.0, f"Expected 10.0, got {out['out']!r}"
 
 
 class TestOutputsMap:
-    def test_empty_outputs_map_returns_empty(self) -> None:
-        reg = _make_math_registry()
-        loader = SequenceLoader()
-        seq = loader.load_string("""
-name: no_outputs
-steps:
-  - name: step
-    brick: add
-    params:
-      a: 1.0
-      b: 2.0
-""")
-        engine = SequenceEngine(registry=reg)
-        out = engine.run(seq)
-        assert out == {}
-
     def test_multiple_outputs(self) -> None:
         reg = _make_math_registry()
         loader = SequenceLoader()
@@ -432,8 +409,8 @@ outputs_map:
 """)
         engine = SequenceEngine(registry=reg)
         out = engine.run(seq, inputs={"x": 3.0, "y": 4.0})
-        assert out["sum"] == 7.0
-        assert out["product"] == 12.0
+        assert out["sum"] == 7.0, f"Expected 7.0, got {out['sum']!r}"
+        assert out["product"] == 12.0, f"Expected 12.0, got {out['product']!r}"
 
     def test_literal_output_value(self) -> None:
         """Outputs map with a literal value (no reference) passthrough."""
@@ -454,8 +431,8 @@ outputs_map:
 """)
         engine = SequenceEngine(registry=reg)
         out = engine.run(seq)
-        assert out["result"] == 10.0
-        assert out["label"] == "computed"
+        assert out["result"] == 10.0, f"Expected 10.0, got {out['result']!r}"
+        assert out["label"] == "computed", f"Expected 'computed', got {out['label']!r}"
 
 
 class TestLoaderIntegration:
@@ -476,7 +453,7 @@ outputs_map:
 """)
         engine = SequenceEngine(registry=reg)
         out = engine.run(seq)
-        assert out["pi_approx"] == 3.14
+        assert out["pi_approx"] == 3.14, f"Expected 3.14, got {out['pi_approx']!r}"
 
     def test_load_file_and_run(self, tmp_path: Path) -> None:
         seq_file = tmp_path / "test_seq.yaml"
@@ -499,4 +476,4 @@ outputs_map:
         seq = loader.load_file(seq_file)
         engine = SequenceEngine(registry=reg)
         out = engine.run(seq)
-        assert out["result"] == 150.0
+        assert out["result"] == 150.0, f"Expected 150.0, got {out['result']!r}"

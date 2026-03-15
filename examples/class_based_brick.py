@@ -9,7 +9,7 @@ This example demonstrates:
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, ClassVar
 
 from bricks.core.brick import BaseBrick, BrickModel
 from bricks.core.engine import SequenceEngine
@@ -26,7 +26,7 @@ class ReadTemperature(BaseBrick):
         """Brick metadata."""
 
         name = "read_temperature"
-        tags = ["hardware", "sensor"]
+        tags: ClassVar[list[str]] = ["hardware", "sensor"]
         destructive = False
         idempotent = True
         description = "Read temperature from a simulated sensor channel"
@@ -44,7 +44,7 @@ class ReadTemperature(BaseBrick):
         unit: str
 
     # Simulated temperature readings per channel
-    _READINGS: dict[int, float] = {0: 22.5, 1: 37.0, 2: -5.3, 3: 100.0}
+    _READINGS: ClassVar[dict[int, float]] = {0: 22.5, 1: 37.0, 2: -5.3, 3: 100.0}
 
     def execute(self, inputs: BrickModel, metadata: BrickMeta) -> dict[str, Any]:
         """Simulate reading from a sensor channel.
@@ -69,7 +69,7 @@ class ConvertTemperature(BaseBrick):
         """Brick metadata."""
 
         name = "convert_temperature"
-        tags = ["math", "conversion"]
+        tags: ClassVar[list[str]] = ["math", "conversion"]
         destructive = False
         idempotent = True
         description = "Convert temperature between Celsius and Fahrenheit"
@@ -224,8 +224,8 @@ def main() -> None:
     print(f"  Celsius:    {outputs['celsius']}C")
     print(f"  Fahrenheit: {outputs['fahrenheit']}F")
 
-    assert outputs["celsius"] == 37.0
-    assert outputs["fahrenheit"] == 98.6
+    assert outputs["celsius"] == 37.0  # noqa: S101
+    assert outputs["fahrenheit"] == 98.6  # noqa: S101
     print("\nAll assertions passed")
 
 

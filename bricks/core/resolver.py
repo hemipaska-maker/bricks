@@ -5,11 +5,9 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from bricks.core.constants import _REF_PATTERN
 from bricks.core.context import ExecutionContext
 from bricks.core.exceptions import VariableResolutionError
-
-# Pattern matches ${inputs.channel}, ${measured_voltage.value}, ${some_var}
-_REF_PATTERN: re.Pattern[str] = re.compile(r"\$\{([^}]+)\}")
 
 
 class ReferenceResolver:
@@ -64,10 +62,7 @@ class ReferenceResolver:
         try:
             current: Any = context.get_variable(parts[0])
             for part in parts[1:]:
-                if isinstance(current, dict):
-                    current = current[part]
-                else:
-                    current = getattr(current, part)
+                current = current[part] if isinstance(current, dict) else getattr(current, part)
             return current
         except (KeyError, AttributeError) as exc:
             raise VariableResolutionError(f"${{{path}}}") from exc

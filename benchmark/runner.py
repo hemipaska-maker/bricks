@@ -85,10 +85,7 @@ class BricksRunner:
         except BrickExecutionError as exc:
             return RunResult(
                 status="runtime_error",
-                errors=[
-                    f"BrickExecutionError in step '{exc.step_name}', "
-                    f"brick '{exc.brick_name}': {exc.cause}"
-                ],
+                errors=[f"BrickExecutionError in step '{exc.step_name}', brick '{exc.brick_name}': {exc.cause}"],
                 error_quality="clear",
                 tokens=self._estimator.estimate_bricks(scenario, had_error=True),
                 security_safe=True,
@@ -137,6 +134,9 @@ class PythonRunner:
         }
 
         try:
+            # SECURITY: exec() is intentional here — this runner exists to demonstrate
+            # the security risks of code generation. The namespace is restricted to
+            # domain functions only. This code is never used in production.
             exec(scenario.python_code, namespace)  # noqa: S102
         except Exception as exc:
             return RunResult(

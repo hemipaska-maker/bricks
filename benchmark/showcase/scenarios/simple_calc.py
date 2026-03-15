@@ -6,16 +6,11 @@ import json
 from pathlib import Path
 from typing import Any
 
+from benchmark.showcase.scenarios import CODEGEN_SYSTEM
 from benchmark.showcase.tokens import count_tokens
 
 # ── paths ──────────────────────────────────────────────────────────────────
 _BLUEPRINTS = Path(__file__).parent.parent / "blueprints"
-
-# ── code generation payload ────────────────────────────────────────────────
-_CODEGEN_SYSTEM = (
-    "You are an expert Python programmer. Generate production-ready Python "
-    "code using ONLY the provided helper functions. Do not import anything."
-)
 
 # Python code-gen must include full function signatures + docstrings so the
 # AI knows exact calling conventions -- a fair equivalent to Bricks schemas.
@@ -81,15 +76,12 @@ _BRICK_SCHEMAS = [
     },
 ]
 
-_INTENT = (
-    "Calculate room area for given width and height, "
-    "round to 2 decimal places, format as display string."
-)
+_INTENT = "Calculate room area for given width and height, round to 2 decimal places, format as display string."
 
 
 def code_generation_approach() -> dict[str, Any]:
     """Return token cost and simulated code for the raw code-gen approach."""
-    prompt = _CODEGEN_SYSTEM + "\n\n" + _CODEGEN_USER
+    prompt = CODEGEN_SYSTEM + "\n\n" + _CODEGEN_USER
     prompt_tokens = count_tokens(prompt)
     output_tokens = count_tokens(_GENERATED_CODE)
     return {
@@ -122,14 +114,12 @@ def bricks_approach() -> dict[str, Any]:
 
 def _execute_blueprint(yaml_str: str, inputs: dict[str, Any]) -> dict[str, Any]:
     """Load and run the blueprint through the Bricks engine."""
+    from benchmark.showcase.bricks import build_showcase_registry
     from benchmark.showcase.bricks.math_bricks import multiply, round_value
     from benchmark.showcase.bricks.string_bricks import format_result
-    from bricks.core import BrickRegistry, SequenceEngine, SequenceLoader
+    from bricks.core import SequenceEngine, SequenceLoader
 
-    registry = BrickRegistry()
-    for fn in (multiply, round_value, format_result):
-        registry.register(fn.__name__, fn, fn.__brick_meta__)  # type: ignore[attr-defined]
-
+    registry = build_showcase_registry(multiply, round_value, format_result)
     loader = SequenceLoader()
     engine = SequenceEngine(registry=registry)
     sequence = loader.load_string(yaml_str)

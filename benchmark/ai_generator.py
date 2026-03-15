@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import os
-import re
 from typing import Any
 
 from bricks.core import BrickRegistry
+from bricks.core.utils import sequence_to_yaml, strip_code_fence
 
 
 def generate_bricks_yaml(
@@ -31,35 +31,26 @@ def generate_bricks_yaml(
     """
     try:
         from bricks.ai import SequenceComposer
-    except ImportError:
-        raise RuntimeError(
-            "anthropic package not installed. Run: pip install -e '.[ai]'"
-        )
+    except ImportError as exc:
+        raise RuntimeError("anthropic package not installed. Run: pip install -e '.[ai]'") from exc
 
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
-        raise ValueError(
-            "ANTHROPIC_API_KEY environment variable not set. "
-            "Set it or use demo mode (no --live flag)."
-        )
+        raise ValueError("ANTHROPIC_API_KEY environment variable not set. Set it or use demo mode (no --live flag).")
 
     # Enrich the intent with exact input/output constraints so the AI
     # generates YAML that is compatible with the scenario's test data.
     enriched_intent = intent
     if inputs:
         input_names = ", ".join(inputs.keys())
-        enriched_intent += (
-            f"\n\nYou MUST use exactly these input parameter names: {input_names}"
-        )
+        enriched_intent += f"\n\nYou MUST use exactly these input parameter names: {input_names}"
     if expected_outputs:
         output_names = ", ".join(expected_outputs)
-        enriched_intent += (
-            f"\nYou MUST use exactly these keys in outputs_map: {output_names}"
-        )
+        enriched_intent += f"\nYou MUST use exactly these keys in outputs_map: {output_names}"
 
     composer = SequenceComposer(registry=registry, api_key=api_key)
     sequence, input_tokens, output_tokens = composer.compose_with_usage(enriched_intent)
-    yaml_str = _sequence_to_yaml(sequence)
+    yaml_str = sequence_to_yaml(sequence)
     return yaml_str, input_tokens + output_tokens
 
 
@@ -83,23 +74,16 @@ def generate_python_code(
     """
     try:
         import anthropic
-    except ImportError:
-        raise RuntimeError(
-            "anthropic package not installed. Run: pip install -e '.[ai]'"
-        )
+    except ImportError as exc:
+        raise RuntimeError("anthropic package not installed. Run: pip install -e '.[ai]'") from exc
 
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
-        raise ValueError(
-            "ANTHROPIC_API_KEY environment variable not set. "
-            "Set it or use demo mode (no --live flag)."
-        )
+        raise ValueError("ANTHROPIC_API_KEY environment variable not set. Set it or use demo mode (no --live flag).")
 
     client = anthropic.Anthropic(api_key=api_key)
 
-    func_descriptions = "\n".join(
-        f"- {name}: {doc}" for name, doc in available_functions
-    )
+    func_descriptions = "\n".join(f"- {name}: {doc}" for name, doc in available_functions)
 
     inputs_hint = ""
     if inputs:
@@ -121,9 +105,7 @@ def generate_python_code(
         "- Output ONLY raw Python code -- no markdown, no code fences"
     )
 
-    user_prompt = (
-        f"Task: {intent}{inputs_hint}\n\nGenerate Python code that solves this task."
-    )
+    user_prompt = f"Task: {intent}{inputs_hint}\n\nGenerate Python code that solves this task."
 
     response = client.messages.create(
         model="claude-haiku-4-5-20251001",
@@ -133,45 +115,6 @@ def generate_python_code(
     )
 
     code = response.content[0].text
-    code = _strip_markdown_fences(code)
+    code = strip_code_fence(code)
     total_tokens = response.usage.input_tokens + response.usage.output_tokens
     return code, total_tokens
-
-
-def _strip_markdown_fences(code: str) -> str:
-    """Remove ```python ... ``` or ``` ... ``` wrappers if present."""
-    match = re.search(r"```(?:python)?\s*\n(.*?)```", code, re.DOTALL)
-    if match:
-        return match.group(1).strip()
-    return code.strip()
-
-
-def _sequence_to_yaml(sequence: Any) -> str:
-    """Convert a SequenceDefinition to YAML string."""
-    import io
-
-    from ruamel.yaml import YAML
-
-    yaml = YAML()
-    yaml.preserve_quotes = True
-    yaml.default_flow_style = False
-
-    data = {
-        "name": sequence.name,
-        "description": sequence.description,
-        "inputs": sequence.inputs,
-        "steps": [
-            {
-                "name": step.name,
-                "brick": step.brick,
-                "params": step.params,
-                **({"save_as": step.save_as} if step.save_as else {}),
-            }
-            for step in sequence.steps
-        ],
-        "outputs_map": sequence.outputs_map,
-    }
-
-    stream = io.StringIO()
-    yaml.dump(data, stream)
-    return stream.getvalue()

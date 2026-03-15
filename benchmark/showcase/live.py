@@ -2,15 +2,13 @@
 
 from __future__ import annotations
 
-import io
 import logging
 import os
-import re
 import time
 from pathlib import Path
-from typing import Any
 
 from bricks.core import BrickRegistry
+from bricks.core.utils import sequence_to_yaml, strip_code_fence
 
 
 def setup_logger(output_dir: Path) -> tuple[logging.Logger, Path]:
@@ -81,7 +79,7 @@ def bricks_api_call(
         elapsed,
     )
 
-    yaml_str = _sequence_to_yaml(sequence)
+    yaml_str = sequence_to_yaml(sequence)
     logger.debug("[%s] generated YAML:\n%s", label, yaml_str)
 
     return yaml_str, in_tok, out_tok
@@ -123,7 +121,7 @@ def python_api_call(
 
     in_tok: int = response.usage.input_tokens
     out_tok: int = response.usage.output_tokens
-    code = _strip_fences(response.content[0].text)
+    code = strip_code_fence(response.content[0].text)
 
     logger.info(
         "[%s] done  input=%d  output=%d  total=%d tokens  (%.2fs)",
@@ -144,38 +142,5 @@ def python_api_call(
 def _require_api_key() -> str:
     key = os.environ.get("ANTHROPIC_API_KEY", "")
     if not key:
-        raise ValueError(
-            "ANTHROPIC_API_KEY is not set.\n"
-            "Export it before running:  export ANTHROPIC_API_KEY=sk-..."
-        )
+        raise ValueError("ANTHROPIC_API_KEY is not set.\nExport it before running:  export ANTHROPIC_API_KEY=sk-...")
     return key
-
-
-def _strip_fences(text: str) -> str:
-    m = re.search(r"```(?:python)?\s*\n(.*?)```", text, re.DOTALL)
-    return m.group(1).strip() if m else text.strip()
-
-
-def _sequence_to_yaml(sequence: Any) -> str:
-    from ruamel.yaml import YAML
-
-    yaml = YAML()
-    yaml.default_flow_style = False
-    data = {
-        "name": sequence.name,
-        "description": sequence.description,
-        "inputs": sequence.inputs,
-        "steps": [
-            {
-                "name": step.name,
-                "brick": step.brick,
-                "params": step.params,
-                **({"save_as": step.save_as} if step.save_as else {}),
-            }
-            for step in sequence.steps
-        ],
-        "outputs_map": sequence.outputs_map,
-    }
-    stream = io.StringIO()
-    yaml.dump(data, stream)
-    return stream.getvalue()
