@@ -1,24 +1,24 @@
 {
-  "timestamp": "2026-03-15T07:23:30.603766+00:00",
-  "mode": "estimated",
+  "timestamp": "2026-03-15T07:42:56.834462+00:00",
+  "mode": "live",
   "scenarios": {
     "simple_calc": {
-      "code_gen_tokens": 367,
-      "bricks_tokens": 355,
-      "savings_ratio": 1.03,
-      "savings_pct": 3
+      "code_gen_tokens": 739,
+      "bricks_tokens": 921,
+      "savings_ratio": 0.8,
+      "savings_pct": -25
     },
     "api_pipeline": {
-      "code_gen_tokens": 611,
-      "bricks_tokens": 414,
-      "savings_ratio": 1.48,
-      "savings_pct": 32
+      "code_gen_tokens": 1069,
+      "bricks_tokens": 1024,
+      "savings_ratio": 1.04,
+      "savings_pct": 4
     },
     "session_cache": {
-      "code_gen_tokens": 2420,
-      "bricks_tokens": 325,
-      "savings_ratio": 7.45,
-      "savings_pct": 87
+      "code_gen_tokens": 5186,
+      "bricks_tokens": 921,
+      "savings_ratio": 5.63,
+      "savings_pct": 82
     }
   }
 }

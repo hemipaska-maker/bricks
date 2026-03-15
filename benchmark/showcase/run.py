@@ -240,10 +240,7 @@ def _build_api_registry() -> object:
 def run_scenario_a_live(logger: logging.Logger) -> tuple[int, int]:
     """Scenario A live: 1 bricks call vs 1 python call."""
     from benchmark.showcase.live import bricks_api_call, python_api_call
-    from benchmark.showcase.scenarios.simple_calc import (
-        _CODEGEN_SYSTEM,
-        _CODEGEN_USER_TEMPLATE,
-    )
+    from benchmark.showcase.scenarios.simple_calc import _CODEGEN_SYSTEM, _CODEGEN_USER
 
     logger.info("=== Scenario A: Simple Calc ===")
     registry = _build_math_registry()
@@ -253,8 +250,7 @@ def run_scenario_a_live(logger: logging.Logger) -> tuple[int, int]:
     br_tokens = b_in + b_out
 
     # Python: 1 API call -> Python function
-    user_prompt = _CODEGEN_USER_TEMPLATE.format(width=4.0, height=5.5)
-    _, c_in, c_out = python_api_call(_CODEGEN_SYSTEM, user_prompt, logger, "A-python")
+    _, c_in, c_out = python_api_call(_CODEGEN_SYSTEM, _CODEGEN_USER, logger, "A-python")
     cg_tokens = c_in + c_out
 
     logger.info(
