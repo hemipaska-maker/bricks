@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import inspect
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from bricks.core.models import BlueprintDefinition
 from bricks.core.registry import BrickRegistry
+
+if TYPE_CHECKING:
+    from bricks.core.catalog import TieredCatalog
 
 
 def brick_schema(name: str, registry: BrickRegistry) -> dict[str, Any]:
@@ -71,6 +74,29 @@ def registry_schema(registry: BrickRegistry) -> list[dict[str, Any]]:
         A list of brick schema dicts, sorted by brick name.
     """
     return [brick_schema(name, registry) for name, _meta in registry.list_all()]
+
+
+def catalog_schema(catalog: TieredCatalog) -> dict[str, Any]:
+    """Generate a schema dict describing a TieredCatalog's current visible bricks.
+
+    Returns the bricks currently visible via :meth:`~TieredCatalog.list_bricks`
+    (Tier 1 common set + Tier 3 session cache), intended for AI agent consumption.
+
+    Args:
+        catalog: The TieredCatalog to describe.
+
+    Returns:
+        A dict with ``"bricks"`` (list of visible brick schemas) and
+        ``"hint"`` (instructions for the AI on how to discover more bricks).
+    """
+    return {
+        "bricks": catalog.list_bricks(),
+        "hint": (
+            "This is your current brick view (common set + recently accessed). "
+            "Use lookup_brick(query) to search by name, tag, or description. "
+            "Use get_brick(name) to fetch a specific brick."
+        ),
+    }
 
 
 def _callable_params(callable_: Any) -> dict[str, Any]:

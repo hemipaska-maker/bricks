@@ -33,6 +33,16 @@ class AiConfig(BaseModel):
     max_tokens: int = 4096
 
 
+class CatalogConfig(BaseModel):
+    """Tiered catalog configuration.
+
+    ``common_set`` lists brick names that are always shown by
+    :meth:`~bricks.core.catalog.TieredCatalog.list_bricks` (Tier 1).
+    """
+
+    common_set: list[str] = Field(default_factory=list)
+
+
 class BricksConfig(BaseModel):
     """Top-level Bricks project configuration.
 
@@ -43,6 +53,7 @@ class BricksConfig(BaseModel):
     registry: RegistryConfig = Field(default_factory=RegistryConfig)
     sequences: BlueprintsConfig = Field(default_factory=BlueprintsConfig)
     ai: AiConfig = Field(default_factory=AiConfig)
+    catalog: CatalogConfig = Field(default_factory=CatalogConfig)
 
 
 class ConfigLoader:

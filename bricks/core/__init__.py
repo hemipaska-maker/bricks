@@ -1,10 +1,12 @@
 """Bricks core: engine, context, validation, and Brick base classes."""
 
 from bricks.core.brick import BaseBrick, BrickModel, brick
+from bricks.core.catalog import TieredCatalog
 from bricks.core.config import (
     AiConfig,
     BlueprintsConfig,
     BricksConfig,
+    CatalogConfig,
     ConfigLoader,
     RegistryConfig,
 )
@@ -25,7 +27,7 @@ from bricks.core.loader import BlueprintLoader
 from bricks.core.models import BlueprintDefinition, BrickMeta, StepDefinition
 from bricks.core.registry import BrickRegistry
 from bricks.core.resolver import ReferenceResolver
-from bricks.core.schema import blueprint_schema, brick_schema, registry_schema
+from bricks.core.schema import blueprint_schema, brick_schema, catalog_schema, registry_schema
 from bricks.core.utils import blueprint_to_yaml
 from bricks.core.validation import BlueprintValidator
 
@@ -56,6 +58,7 @@ __all__ = [
     "BrickNotFoundError",
     "BrickRegistry",
     "BricksConfig",
+    "CatalogConfig",
     "ConfigError",
     "ConfigLoader",
     "DuplicateBrickError",
@@ -70,12 +73,14 @@ __all__ = [
     "SequenceValidator",
     "SequencesConfig",
     "StepDefinition",
+    "TieredCatalog",
     "VariableResolutionError",
     "YamlLoadError",
     "blueprint_schema",
     "blueprint_to_yaml",
     "brick",
     "brick_schema",
+    "catalog_schema",
     "registry_schema",
     "sequence_schema",
     "sequence_to_yaml",

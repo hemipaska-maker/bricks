@@ -7,6 +7,26 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.3.1] — 2026-03-18
+
+### Summary
+Tiered Catalog (Mission 006, Phase 2). Smart three-tier brick discovery for AI agents — replaces full registry dumps with a focused, progressive view.
+
+### Added
+- `TieredCatalog` class in `bricks/core/catalog.py`
+  - Tier 1: `common_set` (user-configured, always shown)
+  - Tier 2: `lookup_brick(query)` — case-insensitive search by name, tag, or description; adds hits to session cache
+  - Tier 3: session cache — recently accessed bricks included in `list_bricks()`
+  - `get_brick(name)` — exact fetch by name; raises `BrickNotFoundError` if missing
+  - `clear_session_cache()` — reset Tier 3
+- `CatalogConfig` model in `bricks/core/config.py` with `common_set: list[str]` field
+- `BricksConfig.catalog: CatalogConfig` field (configurable via `bricks.config.yaml`)
+- `catalog_schema(catalog)` in `bricks/core/schema.py` — returns visible bricks + AI usage hint
+- All exports added to `bricks/core/__init__.py`
+- 19 new tests in `tests/core/test_catalog.py`
+
+---
+
 ## [0.3.0] — 2026-03-18
 
 ### Summary
