@@ -18,13 +18,21 @@ def multiply(a: float, b: float) -> dict:
 def round_value(value: float, decimals: int = 2) -> dict:
     \"\"\"Round a float to decimal places. Returns {'result': float}.\"\"\"
 
+def add(a: float, b: float) -> dict:
+    \"\"\"Add two numbers. Returns {'result': float}.\"\"\"
+
 def format_result(label: str, value: float) -> dict:
     \"\"\"Format label + value as display string. Returns {'display': str}.\"\"\"
 
-Task: Write `calculate_room_area(width: float, height: float) -> dict` that
-calls multiply(), round_value(), and format_result() to compute room area,
-round to 2dp, and return {'area': float, 'display': str}.
-Include type hints, docstring, and error handling for non-positive inputs.
+Task: Write `calculate_property_price(width: float, height: float,
+price_per_sqm: float, tax_rate: float) -> dict` that:
+1. Computes area = width * height, rounded to 2dp
+2. Computes base_price = area * price_per_sqm
+3. Computes tax_amount = base_price * tax_rate
+4. Computes total = base_price + tax_amount
+5. Formats total as a display string labelled "Total (EUR)"
+Returns {'total': float, 'display': str}.
+Include type hints, docstring, and error handling for non-positive dimensions.
 """
 
 # ── 5 simulated AI-generated code variations (for estimated mode) ────────────
@@ -32,15 +40,19 @@ Include type hints, docstring, and error handling for non-positive inputs.
 _SIMULATED_GENERATIONS: list[str] = [
     # Generation 1: verbose, fully typed, validation, standard names
     '''\
-def calculate_room_area(width: float, height: float) -> dict:
-    """Compute the area of a room given its width and height.
+def calculate_property_price(
+    width: float, height: float, price_per_sqm: float, tax_rate: float
+) -> dict:
+    """Compute property price with tax from room dimensions.
 
     Args:
         width: Room width in metres. Must be positive.
         height: Room height in metres. Must be positive.
+        price_per_sqm: Price per square metre in EUR.
+        tax_rate: Tax rate as a decimal (e.g. 0.17 for 17%).
 
     Returns:
-        dict with 'area' (float) and 'display' (str).
+        dict with 'total' (float) and 'display' (str).
 
     Raises:
         ValueError: If either dimension is not positive.
@@ -49,74 +61,95 @@ def calculate_room_area(width: float, height: float) -> dict:
         raise ValueError(f"Dimensions must be positive, got {width=}, {height=}")
     area_result = multiply(width, height)["result"]
     rounded_area = round_value(area_result, 2)["result"]
-    display_text = format_result("Area (m2)", rounded_area)["display"]
-    return {"area": rounded_area, "display": display_text}
+    base_price_value = multiply(rounded_area, price_per_sqm)["result"]
+    tax_value = multiply(base_price_value, tax_rate)["result"]
+    total_price = add(base_price_value, tax_value)["result"]
+    display_text = format_result("Total (EUR)", total_price)["display"]
+    return {"total": total_price, "display": display_text}
 ''',
-    # Generation 2: minimal docstring, no error handling, keyword args
+    # Generation 2: minimal docstring, no validation, short names
     '''\
-def calculate_room_area(width: float, height: float) -> dict:
-    """Calculate room area."""
-    product = multiply(width, height)
-    rounded_val = round_value(product["result"], decimals=2)
-    formatted = format_result(label="Area (m2)", value=rounded_val["result"])
-    return {"area": rounded_val["result"], "display": formatted["display"]}
+def calculate_property_price(
+    width: float, height: float, price_per_sqm: float, tax_rate: float
+) -> dict:
+    """Calculate property price including tax."""
+    area = round_value(multiply(width, height)["result"], 2)["result"]
+    base = multiply(area, price_per_sqm)["result"]
+    tax = multiply(base, tax_rate)["result"]
+    total = add(base, tax)["result"]
+    return {"total": total, "display": format_result("Total (EUR)", total)["display"]}
 ''',
-    # Generation 3: very verbose docstring, split validation, inline comments
+    # Generation 3: verbose docstring, split validation, inline comments
     '''\
-def calculate_room_area(width: float, height: float) -> dict:
-    """Calculate the area of a rectangular room.
+def calculate_property_price(
+    width: float, height: float, price_per_sqm: float, tax_rate: float
+) -> dict:
+    """Calculate the total price for a property including VAT.
 
-    Multiplies width by height, rounds the result to 2 decimal places,
-    and formats the output as a labelled display string.
+    First computes the floor area from width and height, then applies
+    the price per square metre to get the base price, adds tax,
+    and returns the total with a formatted display string.
 
     Args:
-        width: The room width in metres.
-        height: The room height in metres.
+        width: Width of the property in metres.
+        height: Depth of the property in metres.
+        price_per_sqm: Price per square metre in EUR.
+        tax_rate: VAT rate as a decimal fraction.
 
     Returns:
-        dict containing 'area' (float) and 'display' (str).
+        dict containing 'total' (float) and 'display' (str).
 
     Raises:
         ValueError: If width is not positive.
         ValueError: If height is not positive.
     """
-    # Validate each dimension separately for clearer error messages
     if width <= 0:
         raise ValueError(f"Width must be positive, got {width}")
     if height <= 0:
         raise ValueError(f"Height must be positive, got {height}")
-    # Step 1: compute raw area
-    raw = multiply(width, height)["result"]
-    # Step 2: round to 2dp
-    area = round_value(raw, decimals=2)["result"]
-    # Step 3: build display label
-    label_str = format_result("Area (m2)", area)["display"]
-    return {"area": area, "display": label_str}
+    # Step 1: compute area
+    raw_area = multiply(width, height)["result"]
+    # Step 2: round area
+    floor_area = round_value(raw_area, decimals=2)["result"]
+    # Step 3: base price
+    price_base = multiply(floor_area, price_per_sqm)["result"]
+    # Step 4: tax
+    tax_component = multiply(price_base, tax_rate)["result"]
+    # Step 5: total
+    grand_total = add(price_base, tax_component)["result"]
+    # Step 6: format
+    label_output = format_result("Total (EUR)", grand_total)["display"]
+    return {"total": grand_total, "display": label_output}
 ''',
-    # Generation 4: terse, single-letter vars, minimal docstring
+    # Generation 4: terse, single-letter vars, no docstring body
     '''\
-def calculate_room_area(width: float, height: float) -> dict:
-    """Return area and display string for a room."""
-    a = multiply(width, height)["result"]
-    r = round_value(a)["result"]
-    d = format_result("Area (m2)", r)["display"]
-    return {"area": r, "display": d}
+def calculate_property_price(
+    width: float, height: float, price_per_sqm: float, tax_rate: float
+) -> dict:
+    """Return total price and display string."""
+    a = round_value(multiply(width, height)["result"])["result"]
+    b = multiply(a, price_per_sqm)["result"]
+    t = multiply(b, tax_rate)["result"]
+    s = add(b, t)["result"]
+    d = format_result("Total (EUR)", s)["display"]
+    return {"total": s, "display": d}
 ''',
     # Generation 5: extra import (hallucination), medium verbosity, validation
     '''\
 import math
 
-def calculate_room_area(width: float, height: float) -> dict:
-    """Calculate room area with rounding and formatted display.
-
-    Raises ValueError for non-positive dimensions.
-    """
+def calculate_property_price(
+    width: float, height: float, price_per_sqm: float, tax_rate: float
+) -> dict:
+    """Calculate property price with tax. Raises ValueError for bad inputs."""
     if not (width > 0 and height > 0):
         raise ValueError("Dimensions must be positive")
-    area_m2 = multiply(width, height)["result"]
-    rounded_area = round_value(area_m2, 2)["result"]
-    display_text = format_result("Area (m2)", rounded_area)["display"]
-    return {"area": rounded_area, "display": display_text}
+    area_m2 = round_value(multiply(width, height)["result"], 2)["result"]
+    base_amount = multiply(area_m2, price_per_sqm)["result"]
+    tax_amount = multiply(base_amount, tax_rate)["result"]
+    total_amount = add(base_amount, tax_amount)["result"]
+    display_str = format_result("Total (EUR)", total_amount)["display"]
+    return {"total": total_amount, "display": display_str}
 ''',
 ]
 
@@ -125,8 +158,8 @@ _ALLOWED_CALLS: frozenset[str] = frozenset(
     {
         "multiply",
         "round_value",
+        "add",
         "format_result",
-        # common builtins used in these patterns
         "ValueError",
         "TypeError",
         "str",
@@ -139,6 +172,8 @@ _ALLOWED_CALLS: frozenset[str] = frozenset(
         "range",
     }
 )
+
+_REQUIRED_FUNCTIONS = ("multiply", "round_value", "add", "format_result")
 
 
 # ── Metric helpers ───────────────────────────────────────────────────────────
@@ -200,17 +235,15 @@ def _detect_hallucinations(code: str) -> list[str]:
     Issue tags:
     - ``extra_import``          import statement present
     - ``hallucinated_function`` call to unknown function
-    - ``missing_step:<name>``   one of the 3 required helpers not called
-    - ``wrong_return_keys``     return dict missing 'area' or 'display'
+    - ``missing_step:<name>``   one of the 4 required helpers not called
+    - ``wrong_return_keys``     return dict missing 'total' or 'display'
     - ``syntax_error``          code does not parse
     """
     issues: list[str] = []
 
-    # Extra imports
     if re.search(r"^\s*(?:import|from)\s+\w+", code, re.MULTILINE):
         issues.append("extra_import")
 
-    # Parse and walk AST
     try:
         tree = ast.parse(code)
         called: set[str] = set()
@@ -220,8 +253,7 @@ def _detect_hallucinations(code: str) -> list[str]:
                 if node.func.id not in _ALLOWED_CALLS:
                     issues.append(f"hallucinated_function:{node.func.id}")
 
-        # Missing steps
-        for fn in ("multiply", "round_value", "format_result"):
+        for fn in _REQUIRED_FUNCTIONS:
             if fn not in called:
                 issues.append(f"missing_step:{fn}")
 
@@ -229,10 +261,9 @@ def _detect_hallucinations(code: str) -> list[str]:
         issues.append("syntax_error")
         return issues
 
-    # Wrong return keys (text heuristic — looks for both keys in source)
-    has_area = bool(re.search(r'["\']area["\']', code))
+    has_total = bool(re.search(r'["\']total["\']', code))
     has_display = bool(re.search(r'["\']display["\']', code))
-    if not (has_area and has_display):
+    if not (has_total and has_display):
         issues.append("wrong_return_keys")
 
     return issues
@@ -265,7 +296,6 @@ def run_code_generation(n: int = 5, generations: list[str] | None = None) -> dic
     for g in generations:
         all_var_names |= _extract_variable_names(g)
 
-    # Count exact-duplicate pairs
     exact_dups = 0
     for i in range(len(generations)):
         for j in range(i + 1, len(generations)):
@@ -292,7 +322,7 @@ def run_code_generation(n: int = 5, generations: list[str] | None = None) -> dic
 
 
 def run_bricks(n: int = 5) -> dict[str, Any]:
-    """Execute the room_area Blueprint n times with varied inputs.
+    """Execute the property_price Blueprint n times with varied inputs.
 
     Args:
         n: Number of executions (1-5).
@@ -301,26 +331,26 @@ def run_bricks(n: int = 5) -> dict[str, Any]:
         dict with ``executions`` and ``metrics``.
     """
     from benchmark.showcase.bricks import build_showcase_registry
-    from benchmark.showcase.bricks.math_bricks import multiply, round_value
+    from benchmark.showcase.bricks.math_bricks import add, multiply, round_value
     from benchmark.showcase.bricks.string_bricks import format_result
     from bricks.core import SequenceEngine, SequenceLoader
     from bricks.core.exceptions import SequenceValidationError
     from bricks.core.validation import SequenceValidator
 
-    blueprint_yaml = (_BLUEPRINTS / "room_area.yaml").read_text()
+    blueprint_yaml = (_BLUEPRINTS / "property_price.yaml").read_text()
 
-    registry = build_showcase_registry(multiply, round_value, format_result)
+    registry = build_showcase_registry(multiply, round_value, add, format_result)
     loader = SequenceLoader()
     engine = SequenceEngine(registry=registry)
     validator = SequenceValidator(registry=registry)
     sequence = loader.load_string(blueprint_yaml)
 
     inputs_list = [
-        {"width": 4.0, "height": 5.5},
-        {"width": 3.2, "height": 4.8},
-        {"width": 6.0, "height": 3.0},
-        {"width": 5.5, "height": 5.5},
-        {"width": 2.5, "height": 4.0},
+        {"width": 7.5, "height": 4.2, "price_per_sqm": 3500.0, "tax_rate": 0.17},
+        {"width": 5.0, "height": 3.0, "price_per_sqm": 4200.0, "tax_rate": 0.17},
+        {"width": 10.0, "height": 8.0, "price_per_sqm": 2800.0, "tax_rate": 0.10},
+        {"width": 6.5, "height": 4.0, "price_per_sqm": 5000.0, "tax_rate": 0.17},
+        {"width": 3.5, "height": 3.5, "price_per_sqm": 6000.0, "tax_rate": 0.20},
     ][:n]
 
     executions: list[dict[str, Any]] = []

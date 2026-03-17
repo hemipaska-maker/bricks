@@ -1,4 +1,4 @@
-# Bricks Benchmark: Token Savings & Determinism
+# Bricks Benchmark: Complexity Curve, Reuse Economics & Determinism
 
 > Real numbers from real API calls. No simulations, no estimates.
 
@@ -12,109 +12,101 @@ Every time an AI agent needs to perform a task, it generates Python code from sc
 
 Bricks solves this. Instead of generating code, the AI composes a YAML Blueprint that wires together pre-tested Python building blocks. The engine validates and executes it. Same Blueprint, same result. Every time.
 
+## Three Scenarios
+
+### Scenario A: Complexity Curve
+
+The same domain (property valuation) at three step counts. Shows how token costs scale differently:
+
+| Sub-scenario | Steps | Task |
+|---|---|---|
+| A-3 | 3 steps | Room area: multiply, round, format |
+| A-6 | 6 steps | Property price: area + price per sqm + tax + format |
+| A-12 | 12 steps | Full valuation: area + price + discount + tax + monthly payment + 2 formats |
+
+**Key insight:** Code generation scales with task complexity (larger prompt + larger output). Bricks scales with schema size — the Blueprint grows, but the schema per brick stays the same.
+
+### Scenario C: Reuse Economics
+
+The A-6 Blueprint (property price) run 10 times with different property inputs.
+
+- **Code generation:** 10 separate API calls, one per input set. Full token cost every time.
+- **Bricks:** 1 API call to generate the Blueprint. Runs 2–10 cost zero AI tokens — the Blueprint is stored and executed locally.
+
+This is the core economic argument: **a Blueprint is a reusable artifact.**
+
+### Scenario D: Determinism
+
+The A-6 prompt sent 5 times to the same model. Compare the 5 generated functions.
+
+Then run the A-6 Blueprint 5 times and confirm identical execution every time.
+
+**Key insight:** Code generation produces a different program every time — different variable names, different docstrings, different error handling, different line count. Blueprints are identical on every run. You validate once, trust forever.
+
 ## How We Measured
 
-We ran three token-usage scenarios and one determinism scenario using **live Anthropic API calls** (Claude claude-sonnet-4-20250514). Every number below comes from actual `response.usage` token counts — not estimates.
+Live Anthropic API calls (Claude claude-haiku-4-5-20251001). Every token count from real `response.usage` — not estimates.
 
-For each scenario, the AI was given the same task twice: once asked to generate Python code, once asked to compose a Blueprint from Brick schemas. We compared the total tokens consumed.
+For each scenario:
+- **Code gen side:** AI asked to write a Python function using provided helper signatures
+- **Bricks side:** AI asked to compose a Blueprint from Brick schemas
 
-## Results: Token Usage
+## Run It Yourself
 
-| Scenario | Code Generation | Bricks | Ratio | Savings |
-|---|---|---|---|---|
-| A: Simple Calc (single call) | 671 tokens | 921 tokens | 0.73x | **-37%** (Bricks costs more) |
-| B: API Pipeline (single call) | 1,039 tokens | 1,025 tokens | 1.01x | **1%** (roughly even) |
-| C: Reusable Artifact (10 runs) | 5,518 tokens | 922 tokens | 5.98x | **83% fewer tokens** |
-| **Total** | **7,228 tokens** | **2,868 tokens** | **2.52x** | **60% fewer tokens** |
+```bash
+# From the project root
+pip install -e ".[ai,benchmark]"
+export ANTHROPIC_API_KEY=your-key-here
 
-### Reading the Results Honestly
+# All scenarios (estimated mode — no API calls)
+python -m benchmark.showcase.run
 
-**Bricks does not save tokens on a single call.** Scenario A shows this clearly — for a simple calculation, generating Python code (671 tokens) is actually cheaper than sending Brick schemas + composing a Blueprint (921 tokens). Scenario B is roughly a wash.
+# All scenarios (live mode — real API calls)
+python -m benchmark.showcase.run --live
 
-**Bricks saves tokens through reuse.** Scenario C is where the economics flip. The same "calculate room area" task was run 10 times with different inputs:
+# Single scenario
+python -m benchmark.showcase.run --scenario A
+python -m benchmark.showcase.run --scenario C
+python -m benchmark.showcase.run --scenario D
 
-- Code generation paid full price 10 times: **5,518 tokens** (10 separate API calls, each generating the full function)
-- Bricks paid once for the Blueprint, then reused it 9 more times at zero AI cost: **922 tokens** (1 API call + 9 local executions)
-
-This is the core economic argument: **a Blueprint is a reusable artifact.** Once composed, it runs forever without AI involvement. Code generation pays full price every time.
-
-### When This Matters in the Real World
-
-The 10-run scenario isn't artificial. These are everyday patterns where the same operation runs repeatedly:
-
-- **CI/CD pipelines** running the same test sequence on every commit
-- **Data processing** applying the same transformation to hundreds of files
-- **Scheduled automation** running hourly or daily tasks
-- **Hardware test sequences** running identical checks on multiple devices
-- **Multi-tenant SaaS** where every user triggers the same workflow
-
-In these scenarios, code generation costs scale linearly with usage. Bricks costs are nearly flat.
-
-## Results: Determinism
-
-We asked Claude to generate the **exact same function** 5 times with the **identical prompt**. Then we compared the outputs.
-
-| Metric | Code Generation (5 runs) | Bricks Blueprint (5 runs) |
-|---|---|---|
-| Unique variable names | **18** distinct names across runs | N/A — no variables, just YAML wiring |
-| Function signatures identical | 1 (same signature, different internals) | Blueprint schema is fixed |
-| Error handling consistent | Present in all 5, but **implemented differently** each time | Built into the Brick — always the same |
-| Docstring length | Varied: 594 to 738 characters | Fixed description in Brick metadata |
-| Lines of code | Ranged from 34 to 38 | Blueprint is always 27 lines |
-| Exact duplicates | **0 out of 5** — every generation was unique | All 5 executions identical |
-| Pre-execution validation | None — run it and hope | Dry-run validation before every execution |
-
-### What 18 Variable Names Means
-
-Across 5 generations of the same function, the AI used 18 distinct variable names. Here is a sample — same prompt, same model, same task:
-
-- Generation 1: `width_float`, `height_float`, `area_value`, `format_result_dict`
-- Generation 2: `multiplication_result`, `area_value`, `format_result_output`
-- Generation 3: `area_value`, `format_result_data`
-- Generation 4: `raw_area`, `area`, `format_result_output`
-- Generation 5: `area_raw`, `area_rounded`, `format_result_dict`, `multiply_result`
-
-The logic is similar. The code is never the same. If you are building systems that depend on consistent, predictable behavior — testing, auditing, compliance — this matters.
-
-### The Blueprint Alternative
-
-This is the Blueprint that ran all 5 times. It never changed.
-
-```yaml
-name: room_area
-description: "Calculate room area, round it, and format a display string"
-inputs:
-  width: "float"
-  height: "float"
-steps:
-  - name: calculate_area
-    brick: multiply
-    params:
-      a: "${inputs.width}"
-      b: "${inputs.height}"
-    save_as: area
-  - name: round_area
-    brick: round_value
-    params:
-      value: "${area.result}"
-      decimals: 2
-    save_as: rounded
-  - name: format_display
-    brick: format_result
-    params:
-      label: "Area (m2)"
-      value: "${rounded.result}"
-    save_as: formatted
-outputs_map:
-  area: "${rounded.result}"
-  display: "${formatted.display}"
+# Custom output directory
+python -m benchmark.showcase.run --output-dir /tmp/my-results
 ```
 
-No variables to rename. No docstrings to vary. No error handling to forget. The AI's only job is picking the right Bricks and wiring their outputs to inputs. The engine does the rest — the same way, every time.
+Each run creates a unique timestamped folder inside the output directory:
 
-### Hallucination Detection
+```
+results/
+└── run_20260317_143022_v0.1.0/
+    ├── results.json           # machine-readable results
+    ├── summary.md             # human-readable summary
+    ├── determinism_report.md  # Scenario D detailed report
+    ├── comparison_chart.png   # bar chart (requires matplotlib)
+    ├── benchmark.log          # full execution log
+    └── run_metadata.json      # reproducibility metadata
+```
 
-In this benchmark run, **0 out of 5** code generations contained hallucinations (wrong function names, missing steps, syntax errors, or incorrect return types). This rate varies across runs — which itself proves the non-determinism. With Blueprints, hallucination risk is structurally eliminated: the engine validates every step against the Brick's schema before execution begins.
+## Reproducibility
+
+`run_metadata.json` captures everything needed to reproduce a run:
+
+```json
+{
+    "bricks_version": "0.1.0",
+    "python_version": "3.10.12",
+    "timestamp": "2026-03-17T14:30:22",
+    "ai_model": "claude-haiku-4-5-20251001",
+    "ai_provider": "anthropic",
+    "anthropic_sdk_version": "0.45.0",
+    "mode": "live",
+    "command": "python -m benchmark.showcase.run --live",
+    "scenarios_run": ["A-3", "A-6", "A-12", "C", "D"],
+    "os": "Windows 10.0",
+    "git_commit": "abc1234",
+    "git_branch": "development",
+    "git_dirty": false
+}
+```
 
 ## How It Works
 
@@ -128,44 +120,4 @@ With Bricks:
   → Blueprint saved → Reuse forever at zero AI cost
 ```
 
-The AI never sees source code. It only sees input/output schemas — what each Brick accepts and returns. This keeps the AI's context small and focused, which is why Bricks wins on repeated usage even though the initial schema payload is larger than a single code generation.
-
-## Run It Yourself
-
-```bash
-# From the project root
-cd benchmark/showcase
-
-# Install dependencies
-pip install tiktoken matplotlib anthropic
-
-# Run with real API calls (requires ANTHROPIC_API_KEY)
-export ANTHROPIC_API_KEY=your-key-here
-python run_benchmark.py --real
-
-# Run specific scenarios
-python run_benchmark.py --real --scenario A
-python run_benchmark.py --real --scenario D
-
-# Results are written to results/
-ls results/
-# results.json  summary.md  determinism_report.md
-```
-
-## Benchmark Details
-
-**Model:** Claude claude-sonnet-4-20250514 via Anthropic API
-**Token counting:** Real `response.usage.input_tokens` + `response.usage.output_tokens` from API responses
-**Date:** March 15, 2026
-**Scenarios:**
-
-- **A (Simple Calc):** Calculate room area → multiply, round, format. Single call.
-- **B (API Pipeline):** Fetch API data → extract field → format. Single call.
-- **C (Reusable Artifact):** Same as A, but run 10 times with different inputs. Code gen pays 10x. Bricks pays 1x.
-- **D (Determinism):** Generate the same function 5 times. Compare variable names, structure, error handling. Then run the Blueprint 5 times and confirm identical execution.
-
-## What This Proves
-
-1. **Bricks is not cheaper for one-off tasks.** If you need a function once, code generation is fine.
-2. **Bricks is dramatically cheaper for repeated tasks.** The more you reuse a Blueprint, the more tokens you save.
-3. **Bricks is deterministic.** Code generation produces different code every time. Blueprints produce identical execution every time. You validate once, trust forever.
+The AI never sees source code. It only sees input/output schemas — what each Brick accepts and returns. This keeps the AI's context small and focused. The more you reuse a Blueprint, the larger the token savings.

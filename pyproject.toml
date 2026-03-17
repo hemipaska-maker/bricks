@@ -85,5 +85,5 @@ select = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["S101", "PLC0415"]
-"benchmark/**/*.py" = ["S101", "PLC0415"]
+"benchmark/**/*.py" = ["S101", "PLC0415", "S607"]
 "examples/**/*.py" = ["PLC0415"]

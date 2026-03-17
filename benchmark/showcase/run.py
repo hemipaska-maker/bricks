@@ -3,7 +3,9 @@
 Usage:
     python -m benchmark.showcase.run                # all scenarios, estimated tokens
     python -m benchmark.showcase.run --live         # real API calls (needs API key)
-    python -m benchmark.showcase.run --scenario A   # single scenario
+    python -m benchmark.showcase.run --scenario A   # complexity curve only
+    python -m benchmark.showcase.run --scenario C   # reuse scenario only
+    python -m benchmark.showcase.run --scenario D   # determinism scenario only
     python -m benchmark.showcase.run --scenario all # all (default)
     python -m benchmark.showcase.run --output-dir /tmp/results
 """
@@ -14,6 +16,8 @@ import argparse
 import difflib
 import json
 import logging
+import platform
+import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -25,20 +29,103 @@ from bricks.core import BrickRegistry
 _DEFAULT_OUTPUT = Path(__file__).parent / "results"
 
 # Intents used for live mode YAML generation
-_INTENT_SIMPLE_CALC = (
+_INTENT_A3 = (
     "Calculate room area: multiply width * height, round to 2 decimal places, "
     "format label 'Area (m2)' with value. "
     "Inputs: width (float), height (float). Outputs: area (float), display (str)."
 )
-_INTENT_API_PIPELINE = (
-    "Fetch user data from an API URL, extract a specific field from a user "
-    "at a given index, and format the result as a display string. "
-    "Inputs: api_url (str), user_index (int), field (str). "
-    "Outputs: value (any), display (str)."
+_INTENT_A6 = (
+    "Calculate property price: compute area from width * height, round to 2dp, "
+    "multiply by price_per_sqm for base price, multiply base price by tax_rate for tax, "
+    "add base + tax for total, format total as 'Total (EUR)' display string. "
+    "Inputs: width (float), height (float), price_per_sqm (float), tax_rate (float). "
+    "Outputs: total (float), display (str)."
+)
+_INTENT_A12 = (
+    "Calculate full property valuation: compute area from dimensions, apply price per sqm, "
+    "apply discount to base price, compute tax on net price, calculate total, "
+    "derive monthly payment, format both total and monthly as display strings. "
+    "Inputs: width, height, price_per_sqm, discount_rate, tax_rate, monthly_factor (all float). "
+    "Outputs: total (float), monthly (float), total_display (str), monthly_display (str)."
 )
 
 
-# ── helpers ────────────────────────────────────────────────────────────────
+# ── git helpers ─────────────────────────────────────────────────────────────
+
+
+def _git_info() -> tuple[str, str, bool]:
+    """Return (commit_hash, branch, is_dirty)."""
+    try:
+        commit = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+        branch = subprocess.run(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+        dirty = bool(
+            subprocess.run(
+                ["git", "status", "--porcelain"],
+                capture_output=True,
+                text=True,
+                check=True,
+            ).stdout.strip()
+        )
+        return commit, branch, dirty
+    except Exception:
+        return "unknown", "unknown", False
+
+
+def _anthropic_sdk_version() -> str:
+    """Return installed anthropic SDK version or 'not installed'."""
+    try:
+        import anthropic  # type: ignore[import-not-found]
+
+        return str(anthropic.__version__)
+    except Exception:
+        return "not installed"
+
+
+# ── run folder + metadata ────────────────────────────────────────────────────
+
+
+def _make_run_dir(output_dir: Path) -> Path:
+    """Create and return a unique timestamped run directory."""
+    ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    run_dir = output_dir / f"run_{ts}_v{__version__}"
+    run_dir.mkdir(parents=True, exist_ok=True)
+    return run_dir
+
+
+def _write_metadata(run_dir: Path, mode: str, scenarios_run: list[str]) -> Path:
+    """Write run_metadata.json to run_dir and return the path."""
+    commit, branch, dirty = _git_info()
+    metadata: dict[str, object] = {
+        "bricks_version": __version__,
+        "python_version": sys.version.split()[0],
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "ai_model": "claude-haiku-4-5-20251001",
+        "ai_provider": "anthropic",
+        "anthropic_sdk_version": _anthropic_sdk_version(),
+        "mode": mode,
+        "command": " ".join(["python", "-m", "benchmark.showcase.run", *sys.argv[1:]]),
+        "scenarios_run": scenarios_run,
+        "os": f"{platform.system()} {platform.release()}",
+        "git_commit": commit,
+        "git_branch": branch,
+        "git_dirty": dirty,
+    }
+    out = run_dir / "run_metadata.json"
+    out.write_text(json.dumps(metadata, indent=2))
+    return out
+
+
+# ── helpers ─────────────────────────────────────────────────────────────────
 
 
 def _savings_ratio(codegen: int, bricks: int) -> float:
@@ -60,9 +147,9 @@ def _col(text: str, width: int) -> str:
     return str(text).ljust(width)
 
 
-def _print_table(rows: list[dict[str, object]]) -> None:
-    """Print the comparison table to stdout."""
-    w = [24, 14, 14, 9]
+def _print_curve_table(curve: list[dict[str, object]]) -> None:
+    """Print the complexity curve table to stdout."""
+    w = [20, 14, 14, 9]
     sep = "+" + "+".join("-" * (c + 2) for c in w) + "+"
 
     def row(*cells: str) -> str:
@@ -70,96 +157,119 @@ def _print_table(rows: list[dict[str, object]]) -> None:
         return "|" + "|".join(parts) + "|"
 
     print(sep)
-    print(row("Scenario", "Code Gen", "Bricks", "Savings"))
+    print(row("Sub-scenario", "Code Gen", "Bricks", "Savings"))
     print(sep)
-    for r in rows:
+    for r in curve:
+        ratio = _savings_ratio(int(r["codegen_tokens"]), int(r["bricks_tokens"]))  # type: ignore[arg-type]
         print(
             row(
-                str(r["scenario"]),
+                f"{r['label']} ({r['steps']} steps)",
                 f"{r['codegen_tokens']:,} tokens",
                 f"{r['bricks_tokens']:,} tokens",
-                f"{r['ratio']}x",
+                f"{ratio}x",
             )
         )
     print(sep)
 
 
+# ── output writers ───────────────────────────────────────────────────────────
+
+
 def _write_json(
-    rows: list[dict[str, object]],
-    output_dir: Path,
-    mode: str = "estimated",
+    run_dir: Path,
+    mode: str,
+    curve: list[dict[str, object]] | None = None,
+    reuse: dict[str, object] | None = None,
     determinism: dict[str, object] | None = None,
 ) -> Path:
-    """Write results to a JSON file and return the path."""
+    """Write results.json to run_dir and return the path."""
     data: dict[str, object] = {
         "bricks_version": __version__,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "mode": mode,
-        "scenarios": {
-            str(r["key"]): {
-                "code_gen_tokens": r["codegen_tokens"],
-                "bricks_tokens": r["bricks_tokens"],
-                "savings_ratio": r["ratio"],
-                "savings_pct": r["pct"],
-            }
-            for r in rows
-        },
     }
+    if curve is not None:
+        data["complexity_curve"] = {
+            r["label"]: {
+                "steps": r["steps"],
+                "codegen_tokens": r["codegen_tokens"],
+                "bricks_tokens": r["bricks_tokens"],
+                "savings_ratio": _savings_ratio(
+                    int(r["codegen_tokens"]),
+                    int(r["bricks_tokens"]),  # type: ignore[arg-type]
+                ),
+                "savings_pct": _savings_pct(
+                    int(r["codegen_tokens"]),
+                    int(r["bricks_tokens"]),  # type: ignore[arg-type]
+                ),
+            }
+            for r in curve
+        }
+    if reuse is not None:
+        data["reuse"] = reuse
     if determinism is not None:
         data["determinism"] = determinism
-    out = output_dir / "results.json"
+    out = run_dir / "results.json"
     out.write_text(json.dumps(data, indent=2))
     return out
 
 
-def _write_markdown(rows: list[dict[str, object]], output_dir: Path) -> Path:
-    """Write a markdown summary of results and return the path."""
+def _write_markdown(
+    run_dir: Path,
+    curve: list[dict[str, object]] | None = None,
+    reuse: dict[str, object] | None = None,
+) -> Path:
+    """Write summary.md to run_dir and return the path."""
     lines = [
         f"# Bricks v{__version__} -- Benchmark Results",
         "",
-        "| Scenario | Code Gen | Bricks | Savings |",
-        "|---|---|---|---|",
-    ]
-    for r in rows:
-        lines.append(
-            f"| {r['scenario']} "
-            f"| {r['codegen_tokens']:,} tokens "
-            f"| {r['bricks_tokens']:,} tokens "
-            f"| {r['ratio']}x ({r['pct']}% less) |"
-        )
-
-    total_cg = sum(int(r["codegen_tokens"]) for r in rows)  # type: ignore[arg-type]
-    total_br = sum(int(r["bricks_tokens"]) for r in rows)  # type: ignore[arg-type]
-    overall_ratio = _savings_ratio(total_cg, total_br)
-    overall_pct = _savings_pct(total_cg, total_br)
-
-    lines += [
-        "",
-        "## Interpretation",
-        "",
-        f"Across all {len(rows)} scenarios Bricks used **{total_br:,} tokens** "
-        f"vs **{total_cg:,} tokens** for raw code generation — a **{overall_ratio}x "
-        f"reduction ({overall_pct}% fewer tokens)**. "
-        f"The savings grow with repetition: Scenario C shows that once a Blueprint "
-        f"is generated it can be re-executed with different inputs at near-zero "
-        f"additional token cost, while code generation must regenerate the full "
-        f"function for every new input set.",
     ]
 
-    out = output_dir / "summary.md"
+    if curve is not None:
+        lines += [
+            "## Scenario A: Complexity Curve",
+            "",
+            "| Sub-scenario | Steps | Code Gen | Bricks | Savings |",
+            "|---|---|---|---|---|",
+        ]
+        for r in curve:
+            ratio = _savings_ratio(int(r["codegen_tokens"]), int(r["bricks_tokens"]))  # type: ignore[arg-type]
+            pct = _savings_pct(int(r["codegen_tokens"]), int(r["bricks_tokens"]))  # type: ignore[arg-type]
+            lines.append(
+                f"| {r['label']} | {r['steps']} "
+                f"| {r['codegen_tokens']:,} tokens "
+                f"| {r['bricks_tokens']:,} tokens "
+                f"| {ratio}x ({pct}% less) |"
+            )
+        lines.append("")
+
+    if reuse is not None:
+        cg_total = int(reuse["codegen_tokens_total"])  # type: ignore[arg-type]
+        br_total = int(reuse["bricks_tokens_total"])  # type: ignore[arg-type]
+        lines += [
+            "## Scenario C: Reuse Economics",
+            "",
+            f"10 runs of the 6-step property price Blueprint: "
+            f"**{br_total:,} tokens** (Bricks) vs **{cg_total:,} tokens** (Code Gen). "
+            f"**{_savings_ratio(cg_total, br_total)}x reduction ({_savings_pct(cg_total, br_total)}% fewer tokens)**.",
+            "",
+        ]
+
+    out = run_dir / "summary.md"
     out.write_text("\n".join(lines))
     return out
 
 
-def _write_chart(rows: list[dict[str, object]], output_dir: Path) -> Path | None:
+def _write_chart(curve: list[dict[str, object]], run_dir: Path) -> Path | None:
+    """Write comparison_chart.png to run_dir if matplotlib is available."""
     try:
         import matplotlib.pyplot as plt  # type: ignore[import-not-found]
     except ImportError:
         return None
 
-    labels = [str(r["scenario"]) for r in rows]
-    codegen = [int(r["codegen_tokens"]) for r in rows]  # type: ignore[arg-type]
-    bricks = [int(r["bricks_tokens"]) for r in rows]  # type: ignore[arg-type]
+    labels = [f"{r['label']}\n({r['steps']} steps)" for r in curve]
+    codegen = [int(r["codegen_tokens"]) for r in curve]  # type: ignore[arg-type]
+    bricks = [int(r["bricks_tokens"]) for r in curve]  # type: ignore[arg-type]
 
     x = range(len(labels))
     width = 0.35
@@ -170,7 +280,7 @@ def _write_chart(rows: list[dict[str, object]], output_dir: Path) -> Path | None
     ax.bar(left, codegen, width, label="Code Generation", color="#4c72b0")
     ax.bar(right, bricks, width, label="Bricks", color="#55a868")
 
-    ax.set_title("Token Usage: Code Generation vs. Bricks", fontsize=13)
+    ax.set_title(f"Token Usage: Code Generation vs. Bricks (v{__version__})", fontsize=13)
     ax.set_ylabel("Tokens")
     ax.set_xticks(list(x))
     ax.set_xticklabels(labels)
@@ -179,201 +289,18 @@ def _write_chart(rows: list[dict[str, object]], output_dir: Path) -> Path | None
     ax.spines["right"].set_visible(False)
     plt.tight_layout()
 
-    out = output_dir / "comparison_chart.png"
+    out = run_dir / "comparison_chart.png"
     plt.savefig(out, dpi=120)
     plt.close()
     return out
 
 
-# ── demo runners (no API, token estimation) ─────────────────────────────────
-
-
-def run_scenario_a() -> tuple[int, int]:
-    """Run Scenario A and return (codegen_tokens, bricks_tokens)."""
-    from benchmark.showcase.scenarios.simple_calc import (
-        bricks_approach,
-        code_generation_approach,
-    )
-
-    cg = code_generation_approach()
-    br = bricks_approach()
-    return cg["total_tokens"], br["total_tokens"]
-
-
-def run_scenario_b() -> tuple[int, int]:
-    """Run Scenario B and return (codegen_tokens, bricks_tokens)."""
-    from benchmark.showcase.scenarios.api_pipeline import (
-        bricks_approach,
-        code_generation_approach,
-    )
-
-    cg = code_generation_approach()
-    br = bricks_approach()
-    return cg["total_tokens"], br["total_tokens"]
-
-
-def run_scenario_c() -> tuple[int, int]:
-    """Run Scenario C (10 repetitions) and return (codegen_tokens, bricks_tokens)."""
-    from benchmark.showcase.scenarios.session_cache import (
-        bricks_approach,
-        code_generation_approach,
-    )
-
-    cg = code_generation_approach()
-    br = bricks_approach()
-    return cg["total_tokens"], br["total_tokens"]
-
-
-def run_scenario_d() -> tuple[dict[str, object], dict[str, object]]:
-    """Run Scenario D (determinism) and return (cg_result, bricks_result)."""
-    from benchmark.showcase.scenarios.determinism import run_bricks, run_code_generation
-
-    return run_code_generation(), run_bricks()
-
-
-# ── live runners (real Anthropic API calls) ──────────────────────────────────
-
-
-def _build_math_registry() -> BrickRegistry:
-    """Build a registry with multiply, round_value, format_result."""
-    from benchmark.showcase.bricks import build_showcase_registry
-    from benchmark.showcase.bricks.math_bricks import multiply, round_value
-    from benchmark.showcase.bricks.string_bricks import format_result
-
-    return build_showcase_registry(multiply, round_value, format_result)
-
-
-def _build_api_registry() -> BrickRegistry:
-    """Build a registry with http_get, json_extract, format_result."""
-    from benchmark.showcase.bricks import build_showcase_registry
-    from benchmark.showcase.bricks.data_bricks import http_get, json_extract
-    from benchmark.showcase.bricks.string_bricks import format_result
-
-    return build_showcase_registry(http_get, json_extract, format_result)
-
-
-def run_scenario_a_live(logger: logging.Logger) -> tuple[int, int]:
-    """Scenario A live: 1 bricks call vs 1 python call."""
-    from benchmark.showcase.live import bricks_api_call, python_api_call
-    from benchmark.showcase.scenarios import CODEGEN_SYSTEM
-    from benchmark.showcase.scenarios.simple_calc import _CODEGEN_USER
-
-    logger.info("=== Scenario A: Simple Calc ===")
-    registry = _build_math_registry()
-
-    # Bricks: 1 API call -> YAML
-    _, b_in, b_out = bricks_api_call(_INTENT_SIMPLE_CALC, registry, logger, "A-bricks")
-    br_tokens = b_in + b_out
-
-    # Python: 1 API call -> Python function
-    _, c_in, c_out = python_api_call(CODEGEN_SYSTEM, _CODEGEN_USER, logger, "A-python")
-    cg_tokens = c_in + c_out
-
-    logger.info(
-        "Scenario A result: codegen=%d  bricks=%d  ratio=%.2fx",
-        cg_tokens,
-        br_tokens,
-        cg_tokens / br_tokens if br_tokens else float("inf"),
-    )
-    return cg_tokens, br_tokens
-
-
-def run_scenario_b_live(logger: logging.Logger) -> tuple[int, int]:
-    """Scenario B live: 1 bricks call vs 1 python call (API pipeline)."""
-    from benchmark.showcase.live import bricks_api_call, python_api_call
-    from benchmark.showcase.scenarios import CODEGEN_SYSTEM
-    from benchmark.showcase.scenarios.api_pipeline import _CODEGEN_USER
-
-    logger.info("=== Scenario B: API Pipeline ===")
-    registry = _build_api_registry()
-
-    # Bricks: 1 API call -> YAML
-    _, b_in, b_out = bricks_api_call(_INTENT_API_PIPELINE, registry, logger, "B-bricks")
-    br_tokens = b_in + b_out
-
-    # Python: 1 API call -> Python function
-    _, c_in, c_out = python_api_call(CODEGEN_SYSTEM, _CODEGEN_USER, logger, "B-python")
-    cg_tokens = c_in + c_out
-
-    logger.info(
-        "Scenario B result: codegen=%d  bricks=%d  ratio=%.2fx",
-        cg_tokens,
-        br_tokens,
-        cg_tokens / br_tokens if br_tokens else float("inf"),
-    )
-    return cg_tokens, br_tokens
-
-
-def run_scenario_c_live(logger: logging.Logger) -> tuple[int, int]:
-    """Scenario C live: 1 bricks call vs 10 python calls (reuse advantage).
-
-    Bricks: generate the blueprint once, run 10 times at 0 extra tokens.
-    Python: must make a separate API call for each of the 10 input sets.
-    """
-    from benchmark.showcase.live import bricks_api_call, python_api_call
-    from benchmark.showcase.scenarios import CODEGEN_SYSTEM
-    from benchmark.showcase.scenarios.session_cache import (
-        _CODEGEN_USER_TEMPLATE,
-        ROOM_INPUTS,
-    )
-
-    logger.info("=== Scenario C: 10x Session (reuse) ===")
-    registry = _build_math_registry()
-
-    # Bricks: 1 API call -> YAML; 9 subsequent runs cost 0 tokens
-    _, b_in, b_out = bricks_api_call(_INTENT_SIMPLE_CALC, registry, logger, "C-bricks")
-    br_tokens = b_in + b_out
-    logger.info("[C-bricks] Runs 2-10 cost 0 tokens (YAML reuse, no API calls)")
-
-    # Python: 10 separate API calls, one per input set
-    cg_tokens = 0
-    for i, inp in enumerate(ROOM_INPUTS):
-        user_prompt = _CODEGEN_USER_TEMPLATE.format(**inp)
-        _, c_in, c_out = python_api_call(CODEGEN_SYSTEM, user_prompt, logger, f"C-python-run{i + 1}")
-        cg_tokens += c_in + c_out
-
-    logger.info(
-        "Scenario C result: codegen=%d  bricks=%d  ratio=%.2fx",
-        cg_tokens,
-        br_tokens,
-        cg_tokens / br_tokens if br_tokens else float("inf"),
-    )
-    return cg_tokens, br_tokens
-
-
-def run_scenario_d_live(
-    logger: logging.Logger,
-) -> tuple[dict[str, object], dict[str, object]]:
-    """Scenario D live: call Claude 5x with same prompt, measure variability."""
-    from benchmark.showcase.live import python_api_call
-    from benchmark.showcase.scenarios import CODEGEN_SYSTEM
-    from benchmark.showcase.scenarios.determinism import (
-        CODEGEN_USER,
-        run_bricks,
-        run_code_generation,
-    )
-
-    logger.info("=== Scenario D: Determinism ===")
-
-    generations: list[str] = []
-    for i in range(5):
-        code, _, _ = python_api_call(CODEGEN_SYSTEM, CODEGEN_USER, logger, f"D-gen{i + 1}")
-        generations.append(code)
-
-    cg_result = run_code_generation(generations=generations)
-    bricks_result = run_bricks()
-    return cg_result, bricks_result
-
-
-# ── determinism report ───────────────────────────────────────────────────────
-
-
 def _write_determinism_report(
     cg: dict[str, object],
     br: dict[str, object],
-    output_dir: Path,
+    run_dir: Path,
 ) -> Path:
-    """Write results/determinism_report.md from Scenario D results."""
+    """Write determinism_report.md to run_dir from Scenario D results."""
     from pathlib import Path as _Path
 
     generations: list[str] = cg["generations"]  # type: ignore[assignment]
@@ -382,7 +309,7 @@ def _write_determinism_report(
     hallucinations: list[list[str]] = cg["hallucinations"]  # type: ignore[assignment]
     issues_count: int = int(cg["generations_with_issues"])  # type: ignore[arg-type]
 
-    blueprint_yaml = (_Path(__file__).parent / "blueprints" / "room_area.yaml").read_text()
+    blueprint_yaml = (_Path(__file__).parent / "blueprints" / "property_price.yaml").read_text()
 
     eh: list[bool] = metrics["error_handling_present"]  # type: ignore[assignment]
     dl: list[int] = metrics["docstring_lengths"]  # type: ignore[assignment]
@@ -391,7 +318,6 @@ def _write_determinism_report(
 
     lines: list[str] = []
 
-    # ── Header ───────────────────────────────────────────────────────────────
     lines += [
         f"# Bricks v{__version__} -- Scenario D: Determinism Benchmark",
         "",
@@ -400,7 +326,6 @@ def _write_determinism_report(
         "",
     ]
 
-    # ── 1. Side-by-side diff of generation 1 vs generation 3 ────────────────
     gen1_lines = generations[0].splitlines(keepends=True)
     gen3_lines = generations[2].splitlines(keepends=True)
     diff = list(
@@ -425,12 +350,11 @@ def _write_determinism_report(
         lines.append("(generations are identical — no diff)")
     lines += ["```", ""]
 
-    # ── 2. Metrics table ─────────────────────────────────────────────────────
     n = len(generations)
-    eh_str = ", ".join("✓" if v else "✗" for v in eh)
+    eh_str = ", ".join("Y" if v else "N" for v in eh)
     dl_str = ", ".join(str(v) for v in dl)
     loc_str = ", ".join(str(v) for v in loc)
-    val_str = ", ".join("✓" if v else "✗" for v in val_passed)
+    val_str = ", ".join("Y" if v else "N" for v in val_passed)
 
     lines += [
         "## Metrics",
@@ -447,9 +371,8 @@ def _write_determinism_report(
         "",
     ]
 
-    # ── 3. Blueprint (shown once) ─────────────────────────────────────────────
     lines += [
-        "## The Blueprint",
+        "## The Blueprint (6 steps)",
         "",
         "This is the same file used in all 5 executions. It will never change.",
         "",
@@ -459,7 +382,6 @@ def _write_determinism_report(
         "",
     ]
 
-    # ── 4. Conclusion ─────────────────────────────────────────────────────────
     lines += [
         "## Conclusion",
         "",
@@ -478,7 +400,6 @@ def _write_determinism_report(
         "",
     ]
 
-    # ── 5. Hallucination detection ────────────────────────────────────────────
     lines += [
         "## Hallucination Detection",
         "",
@@ -500,112 +421,300 @@ def _write_determinism_report(
         "",
     ]
 
-    out = output_dir / "determinism_report.md"
+    out = run_dir / "determinism_report.md"
     out.write_text("\n".join(lines), encoding="utf-8")
     return out
 
 
-# ── scenario dispatch ────────────────────────────────────────────────────────
+# ── demo runners (no API, token estimation) ─────────────────────────────────
 
-_SCENARIO_MAP = {
-    "A": ("A: Simple Calc", "simple_calc", run_scenario_a, run_scenario_a_live),
-    "B": ("B: API Pipeline", "api_pipeline", run_scenario_b, run_scenario_b_live),
-    "C": ("C: 10x Session", "session_cache", run_scenario_c, run_scenario_c_live),
-}
 
-# Scenario D is handled separately (different return type — not a token comparison)
-_SCENARIO_D_KEY = "D"
+def run_scenario_a() -> list[dict[str, object]]:
+    """Run Scenario A (complexity curve) and return list of curve dicts."""
+    from benchmark.showcase.scenarios.complexity_curve import run_complexity_curve
+
+    return run_complexity_curve()  # type: ignore[return-value]
+
+
+def run_scenario_c() -> tuple[int, int]:
+    """Run Scenario C (reuse) and return (codegen_tokens, bricks_tokens)."""
+    from benchmark.showcase.scenarios.session_cache import (
+        bricks_approach,
+        code_generation_approach,
+    )
+
+    cg = code_generation_approach()
+    br = bricks_approach()
+    return cg["total_tokens"], br["total_tokens"]
+
+
+def run_scenario_d() -> tuple[dict[str, object], dict[str, object]]:
+    """Run Scenario D (determinism) and return (cg_result, bricks_result)."""
+    from benchmark.showcase.scenarios.determinism import run_bricks, run_code_generation
+
+    return run_code_generation(), run_bricks()
+
+
+# ── live runners (real Anthropic API calls) ──────────────────────────────────
+
+
+def _build_math_registry_a3() -> BrickRegistry:
+    """Build registry for A-3 (multiply, round_value, format_result)."""
+    from benchmark.showcase.bricks import build_showcase_registry
+    from benchmark.showcase.bricks.math_bricks import multiply, round_value
+    from benchmark.showcase.bricks.string_bricks import format_result
+
+    return build_showcase_registry(multiply, round_value, format_result)
+
+
+def _build_math_registry_a6() -> BrickRegistry:
+    """Build registry for A-6 (multiply, round_value, add, format_result)."""
+    from benchmark.showcase.bricks import build_showcase_registry
+    from benchmark.showcase.bricks.math_bricks import add, multiply, round_value
+    from benchmark.showcase.bricks.string_bricks import format_result
+
+    return build_showcase_registry(multiply, round_value, add, format_result)
+
+
+def _build_math_registry_a12() -> BrickRegistry:
+    """Build registry for A-12 (multiply, round_value, add, subtract, format_result)."""
+    from benchmark.showcase.bricks import build_showcase_registry
+    from benchmark.showcase.bricks.math_bricks import add, multiply, round_value, subtract
+    from benchmark.showcase.bricks.string_bricks import format_result
+
+    return build_showcase_registry(multiply, round_value, add, subtract, format_result)
+
+
+def _run_sub_scenario_live(
+    label: str,
+    steps: int,
+    intent: str,
+    codegen_user: str,
+    registry: BrickRegistry,
+    logger: logging.Logger,
+) -> dict[str, object]:
+    """Run one sub-scenario in live mode and return curve dict."""
+    from benchmark.showcase.live import bricks_api_call, python_api_call
+    from benchmark.showcase.scenarios import CODEGEN_SYSTEM
+
+    logger.info("=== Sub-scenario %s (%d steps) ===", label, steps)
+
+    _, b_in, b_out = bricks_api_call(intent, registry, logger, f"{label}-bricks")
+    br_tokens = b_in + b_out
+
+    _, c_in, c_out = python_api_call(CODEGEN_SYSTEM, codegen_user, logger, f"{label}-python")
+    cg_tokens = c_in + c_out
+
+    logger.info(
+        "Sub-scenario %s: codegen=%d  bricks=%d  ratio=%.2fx",
+        label,
+        cg_tokens,
+        br_tokens,
+        cg_tokens / br_tokens if br_tokens else float("inf"),
+    )
+    return {"label": label, "steps": steps, "codegen_tokens": cg_tokens, "bricks_tokens": br_tokens}
+
+
+def run_scenario_a_live(logger: logging.Logger) -> list[dict[str, object]]:
+    """Scenario A live: complexity curve with 3 live API calls per sub-scenario."""
+    from benchmark.showcase.scenarios.complexity_curve import (
+        _CODEGEN_USER_A3,
+        _CODEGEN_USER_A6,
+        _CODEGEN_USER_A12,
+        INTENT_A3,
+        INTENT_A6,
+        INTENT_A12,
+    )
+
+    logger.info("=== Scenario A: Complexity Curve ===")
+    curve = []
+    for label, steps, intent, codegen_user, registry in [
+        ("A-3", 3, INTENT_A3, _CODEGEN_USER_A3, _build_math_registry_a3()),
+        ("A-6", 6, INTENT_A6, _CODEGEN_USER_A6, _build_math_registry_a6()),
+        ("A-12", 12, INTENT_A12, _CODEGEN_USER_A12, _build_math_registry_a12()),
+    ]:
+        curve.append(_run_sub_scenario_live(label, steps, intent, codegen_user, registry, logger))
+    return curve
+
+
+def run_scenario_c_live(logger: logging.Logger) -> tuple[int, int]:
+    """Scenario C live: 1 bricks call vs 10 python calls using A-6 task."""
+    from benchmark.showcase.live import bricks_api_call, python_api_call
+    from benchmark.showcase.scenarios import CODEGEN_SYSTEM
+    from benchmark.showcase.scenarios.session_cache import (
+        _CODEGEN_USER_TEMPLATE,
+        PROPERTY_INPUTS,
+    )
+
+    logger.info("=== Scenario C: Reuse Economics (A-6, 10 runs) ===")
+    registry = _build_math_registry_a6()
+
+    _, b_in, b_out = bricks_api_call(_INTENT_A6, registry, logger, "C-bricks")
+    br_tokens = b_in + b_out
+    logger.info("[C-bricks] Runs 2-10 cost 0 tokens (Blueprint reuse, no API calls)")
+
+    cg_tokens = 0
+    for i, inp in enumerate(PROPERTY_INPUTS):
+        user_prompt = _CODEGEN_USER_TEMPLATE.format(**inp)
+        _, c_in, c_out = python_api_call(CODEGEN_SYSTEM, user_prompt, logger, f"C-python-run{i + 1}")
+        cg_tokens += c_in + c_out
+
+    logger.info(
+        "Scenario C result: codegen=%d  bricks=%d  ratio=%.2fx",
+        cg_tokens,
+        br_tokens,
+        cg_tokens / br_tokens if br_tokens else float("inf"),
+    )
+    return cg_tokens, br_tokens
+
+
+def run_scenario_d_live(
+    logger: logging.Logger,
+) -> tuple[dict[str, object], dict[str, object]]:
+    """Scenario D live: call Claude 5x with A-6 prompt, measure variability."""
+    from benchmark.showcase.live import python_api_call
+    from benchmark.showcase.scenarios import CODEGEN_SYSTEM
+    from benchmark.showcase.scenarios.determinism import (
+        CODEGEN_USER,
+        run_bricks,
+        run_code_generation,
+    )
+
+    logger.info("=== Scenario D: Determinism (A-6, 5 generations) ===")
+
+    generations: list[str] = []
+    for i in range(5):
+        code, _, _ = python_api_call(CODEGEN_SYSTEM, CODEGEN_USER, logger, f"D-gen{i + 1}")
+        generations.append(code)
+
+    cg_result = run_code_generation(generations=generations)
+    bricks_result = run_bricks()
+    return cg_result, bricks_result
+
+
+# ── main ─────────────────────────────────────────────────────────────────────
 
 
 def main() -> None:
     """Parse args and run the benchmark showcase."""
     parser = argparse.ArgumentParser(
-        description="Bricks benchmark showcase: token savings vs code generation",
+        description="Bricks benchmark showcase: complexity curve, reuse economics, determinism",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
         "--scenario",
         default="all",
-        choices=["A", "B", "C", "D", "all"],
+        choices=["A", "C", "D", "all"],
         help="Which scenario to run (default: all).",
     )
     parser.add_argument(
         "--output-dir",
         default=str(_DEFAULT_OUTPUT),
-        help="Directory for results.json, summary.md, comparison_chart.png.",
+        help="Base directory for results (a timestamped subfolder is created inside).",
     )
     parser.add_argument(
         "--live",
         action="store_true",
         default=False,
-        help=(
-            "Make real Anthropic API calls instead of using estimates. Requires ANTHROPIC_API_KEY environment variable."
-        ),
+        help="Make real Anthropic API calls instead of using estimates. Requires ANTHROPIC_API_KEY.",
     )
     args = parser.parse_args()
 
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Set up logger for live mode
+    # Create unique timestamped run directory
+    run_dir = _make_run_dir(output_dir)
+
+    mode = "live" if args.live else "estimated"
+    run_a = args.scenario in ("A", "all")
+    run_c = args.scenario in ("C", "all")
+    run_d = args.scenario in ("D", "all")
+
+    scenarios_run = []
+    if run_a:
+        scenarios_run += ["A-3", "A-6", "A-12"]
+    if run_c:
+        scenarios_run.append("C")
+    if run_d:
+        scenarios_run.append("D")
+
+    # Set up logger
     logger: logging.Logger | None = None
-    log_path: Path | None = None
     if args.live:
         from benchmark.showcase.live import setup_logger
 
-        logger, log_path = setup_logger(output_dir)
+        logger, _ = setup_logger(run_dir)
         logger.info("Live mode: real API calls via Anthropic SDK")
+    else:
+        # Also set up file logger for estimated mode
+        log_path = run_dir / "benchmark.log"
+        _logger = logging.getLogger("bricks.showcase")
+        _logger.setLevel(logging.DEBUG)
+        _logger.handlers.clear()
+        fh = logging.FileHandler(log_path, encoding="utf-8")
+        fh.setLevel(logging.DEBUG)
+        fh.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
+        _logger.addHandler(fh)
+        logger = _logger
 
-    run_d = args.scenario in ("D", "all")
-    token_scenario_keys = (
-        list(_SCENARIO_MAP) if args.scenario == "all" else ([args.scenario] if args.scenario in _SCENARIO_MAP else [])
-    )
-    token_scenarios = [(k, _SCENARIO_MAP[k]) for k in token_scenario_keys]
-
-    rows: list[dict[str, object]] = []
-    mode = "live" if args.live else "estimated"
-    determinism_data: dict[str, object] | None = None
     print()
     print(f"Bricks v{__version__}")
+    print(f"Run folder: {run_dir}")
     print(f"Running Bricks benchmark showcase ({mode} mode)...")
     print()
 
-    # ── Token-savings scenarios (A / B / C) ──────────────────────────────────
-    for key, (label, skey, fn_demo, fn_live) in token_scenarios:
-        print(f"  Running scenario {key}...", end=" ", flush=True)
+    curve: list[dict[str, object]] | None = None
+    reuse_data: dict[str, object] | None = None
+    determinism_data: dict[str, object] | None = None
+    det_path: Path | None = None
+
+    # ── Scenario A: Complexity Curve ─────────────────────────────────────────
+    if run_a:
+        print("  Running scenario A (complexity curve: 3 / 6 / 12 steps)...", end=" ", flush=True)
         try:
             if args.live:
                 if logger is None:
                     raise RuntimeError("Logger must be initialized for live mode")
-                cg_tokens, br_tokens = fn_live(logger)
+                curve = run_scenario_a_live(logger)
             else:
-                cg_tokens, br_tokens = fn_demo()
-            ratio = _savings_ratio(cg_tokens, br_tokens)
-            pct = _savings_pct(cg_tokens, br_tokens)
-            rows.append(
-                {
-                    "key": skey,
-                    "scenario": label,
-                    "codegen_tokens": cg_tokens,
-                    "bricks_tokens": br_tokens,
-                    "ratio": ratio,
-                    "pct": pct,
-                }
-            )
-            print(f"done  (code gen: {cg_tokens:,}  bricks: {br_tokens:,}  {ratio}x)")
+                curve = run_scenario_a()
+            print("done")
+            print()
+            _print_curve_table(curve)
+            print()
         except Exception as exc:
             print(f"FAILED: {exc}")
             sys.exit(1)
 
-    if rows:
-        print()
-        _print_table(rows)
-        print()
+    # ── Scenario C: Reuse Economics ───────────────────────────────────────────
+    if run_c:
+        print("  Running scenario C (reuse: 10 runs of A-6 Blueprint)...", end=" ", flush=True)
+        try:
+            if args.live:
+                if logger is None:
+                    raise RuntimeError("Logger must be initialized for live mode")
+                cg_tokens, br_tokens = run_scenario_c_live(logger)
+            else:
+                cg_tokens, br_tokens = run_scenario_c()
+            ratio = _savings_ratio(cg_tokens, br_tokens)
+            pct = _savings_pct(cg_tokens, br_tokens)
+            print(f"done  (code gen: {cg_tokens:,}  bricks: {br_tokens:,}  {ratio}x)")
+            reuse_data = {
+                "runs": 10,
+                "step_count": 6,
+                "codegen_tokens_total": cg_tokens,
+                "bricks_tokens_total": br_tokens,
+                "savings_ratio": ratio,
+                "savings_pct": pct,
+            }
+        except Exception as exc:
+            print(f"FAILED: {exc}")
+            sys.exit(1)
 
     # ── Scenario D: Determinism ───────────────────────────────────────────────
-    det_path: Path | None = None
     if run_d:
-        print("  Running scenario D (determinism)...", end=" ", flush=True)
+        print("  Running scenario D (determinism: 5 A-6 generations)...", end=" ", flush=True)
         try:
             if args.live:
                 if logger is None:
@@ -619,7 +728,6 @@ def main() -> None:
             br_metrics: dict[str, object] = br_result["metrics"]  # type: ignore[assignment]
             print(f"done  (unique var names: {cg_metrics['unique_variable_names']}  hallucinations: {issues}/5)")
 
-            # Print determinism metrics table
             print()
             print("  Determinism metrics:")
             eh: list[bool] = cg_metrics["error_handling_present"]  # type: ignore[assignment]
@@ -637,15 +745,16 @@ def main() -> None:
             print(f"    Bricks  -- execution path same    : {ep}")
             print()
 
-            det_path = _write_determinism_report(cg_result, br_result, output_dir)
+            det_path = _write_determinism_report(cg_result, br_result, run_dir)
 
             determinism_data = {
+                "step_count": 6,
+                "generations": 5,
                 "unique_variable_names": cg_metrics["unique_variable_names"],
-                "unique_function_signatures": (cg_metrics["unique_function_signatures"]),
+                "unique_function_signatures": cg_metrics["unique_function_signatures"],
                 "exact_duplicates": cg_metrics["exact_duplicates"],
-                "generations_with_issues": issues,
-                "bricks_execution_path_identical": (br_metrics["execution_path_identical"]),
-                "bricks_validation_passed_all": all(val),
+                "hallucinations": issues,
+                "lines_of_code": cg_metrics["lines_of_code"],
             }
 
         except Exception as exc:
@@ -653,23 +762,21 @@ def main() -> None:
             sys.exit(1)
 
     # ── Write outputs ─────────────────────────────────────────────────────────
-    json_path = _write_json(rows, output_dir, mode=mode, determinism=determinism_data)
-    print(f"  results.json -> {json_path}")
+    json_path = _write_json(run_dir, mode, curve=curve, reuse=reuse_data, determinism=determinism_data)
+    md_path = _write_markdown(run_dir, curve=curve, reuse=reuse_data)
+    meta_path = _write_metadata(run_dir, mode, scenarios_run)
+    chart_path = _write_chart(curve, run_dir) if curve else None
 
-    if rows:
-        md_path = _write_markdown(rows, output_dir)
-        chart_path = _write_chart(rows, output_dir)
-        print(f"  summary.md   -> {md_path}")
-        if chart_path:
-            print(f"  chart        -> {chart_path}")
-        else:
-            print("  chart        -> skipped (install matplotlib: pip install matplotlib)")
-
+    print(f"  results.json    -> {json_path}")
+    print(f"  summary.md      -> {md_path}")
+    print(f"  run_metadata    -> {meta_path}")
     if det_path:
-        print(f"  determinism  -> {det_path}")
-
-    if log_path:
-        print(f"  log          -> {log_path}")
+        print(f"  determinism     -> {det_path}")
+    if chart_path:
+        print(f"  chart           -> {chart_path}")
+    else:
+        print("  chart           -> skipped (install matplotlib: pip install matplotlib)")
+    print(f"  log             -> {run_dir / 'benchmark.log'}")
     print()
 
 
