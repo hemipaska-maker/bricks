@@ -18,6 +18,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+from bricks import __version__
 from bricks.core import BrickRegistry
 
 # ── default output dir ─────────────────────────────────────────────────────
@@ -91,6 +92,7 @@ def _write_json(
 ) -> Path:
     """Write results to a JSON file and return the path."""
     data: dict[str, object] = {
+        "bricks_version": __version__,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "mode": mode,
         "scenarios": {
@@ -113,7 +115,7 @@ def _write_json(
 def _write_markdown(rows: list[dict[str, object]], output_dir: Path) -> Path:
     """Write a markdown summary of results and return the path."""
     lines = [
-        "# Bricks Benchmark Results",
+        f"# Bricks v{__version__} -- Benchmark Results",
         "",
         "| Scenario | Code Gen | Bricks | Savings |",
         "|---|---|---|---|",
@@ -391,7 +393,7 @@ def _write_determinism_report(
 
     # ── Header ───────────────────────────────────────────────────────────────
     lines += [
-        "# Scenario D: Determinism Benchmark",
+        f"# Bricks v{__version__} -- Scenario D: Determinism Benchmark",
         "",
         "> **Claim:** Code generation produces a different program every time.  ",
         "> Bricks Blueprints produce identical execution every time.",
@@ -564,6 +566,7 @@ def main() -> None:
     mode = "live" if args.live else "estimated"
     determinism_data: dict[str, object] | None = None
     print()
+    print(f"Bricks v{__version__}")
     print(f"Running Bricks benchmark showcase ({mode} mode)...")
     print()
 

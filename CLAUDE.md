@@ -83,3 +83,30 @@ bricks --help
 - Tests mirror source structure in `tests/` (e.g., `tests/core/test_brick.py`)
 - All exceptions inherit from `BrickError`
 - Decorator returns unwrapped functions -- no behavior change
+
+## Versioning
+
+- Scheme: semantic versioning -- `0.PHASE.PATCH`
+- `0.x.0` = phase completion (major milestone)
+- `0.0.x` = feature or fix within a phase
+- Version lives in two places (always keep in sync): `pyproject.toml` `version` field and `bricks/__init__.py` `__version__`
+- Every version bump gets a git tag: `v0.1.0`, `v0.2.0`, etc.
+- Version map: v0.1.0 (benchmark), v0.2.0 (Phase 1), v0.3.0 (Phase 2), v0.4.0 (Phase 3), v0.5.0 (Phase 4), v1.0.0 (public release)
+
+## File Maintenance Contract
+
+After every version bump, update: `pyproject.toml`, `bricks/__init__.py`, `CHANGELOG.md`, git tag.
+After every phase completion, also update: `PROGRESS.md`, `CLAUDE.md`, `MY-WORKFLOW.md`, `README.md`.
+After any rename (e.g., Sequence -> Blueprint), update ALL of: `CLAUDE.md`, `MY-WORKFLOW.md`, `PROGRESS.md`, `README.md`, `CHANGELOG.md`.
+
+## Benchmark Reproducibility
+
+The benchmark runner must embed `bricks.__version__` in ALL output: `results.json`, `summary.md`, `determinism_report.md`, stdout.
+
+## Missions
+
+When the user says **"new mission"**, do the following:
+1. Read `.missions/PROTOCOL.md`
+2. Find the highest-numbered `MISSION_XXX.md` file in `.missions/`
+3. Read it and execute the task
+4. Fill in the Results section when done
