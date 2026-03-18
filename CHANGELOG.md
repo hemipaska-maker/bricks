@@ -7,6 +7,32 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.4.7] — 2026-03-19
+
+### Summary
+Single-call YAML generation — no tool_use (Mission 016). Rewrote `BlueprintComposer` to generate Blueprint YAML in 1 LLM call (max 2 on retry), eliminating multi-turn tool_use overhead. Added `BrickSelector` protocol for Stage 1 brick filtering, `ComposeResult` Pydantic model for structured output, and `--mode compose` benchmark flag.
+
+### Added
+- `bricks/core/selector.py` — `BrickSelector` ABC + `AllBricksSelector` (Stage 1 filtering)
+- `ComposeResult` Pydantic model with task, YAML, validation status, token counts
+- `--mode compose` flag on benchmark CLI (`python -m benchmark.showcase.run --live --mode compose`)
+- `run_benchmark_compose()` — compose-mode benchmark runner with comparison table
+- Tests: `test_selector.py` (3 tests), rewritten `test_composer.py` (11 tests), CLI mode flag tests
+
+### Changed
+- `BlueprintComposer` — complete rewrite: single-call text generation with 1-retry on validation failure, no tool_use
+- `BlueprintComposer.__init__` — now takes `api_key, model, selector` (no registry in init)
+- `BlueprintComposer.compose()` — new signature `compose(task, registry) -> ComposeResult`
+- `bricks/ai/__init__.py` — exports `ComposeResult`
+- `bricks/core/__init__.py` — exports `AllBricksSelector`, `BrickSelector`
+- CLI `compose` command updated for new `ComposeResult` API
+
+### Removed
+- Old `compose_with_usage()` method (replaced by `ComposeResult` fields)
+- Old `_build_bricks_context()` method (replaced by `compact_brick_signatures()`)
+
+---
+
 ## [0.4.6] — 2026-03-18
 
 ### Summary

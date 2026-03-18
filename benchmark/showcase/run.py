@@ -39,6 +39,9 @@ _PRICE_OUTPUT_PER_M = 4.00
 # Valid --scenario values
 VALID_SCENARIOS = {"all", "A2", "A2-3", "A2-6", "A2-12", "C2", "D2"}
 
+# Valid --mode values
+VALID_MODES = {"tool_use", "compose"}
+
 
 # ── git helpers ─────────────────────────────────────────────────────────────
 
@@ -352,6 +355,96 @@ def run_benchmark(
     print(f"  summary.md   -> {md_path}")
 
 
+# ── compose mode runner ────────────────────────────────────────────────────
+
+
+def run_benchmark_compose(
+    scenarios: list[str],
+    run_dir: Path,
+    logger: logging.Logger,
+) -> None:
+    """Run the compose-mode benchmark (single-call YAML, no tool_use).
+
+    Args:
+        scenarios: List of scenario labels (e.g. ``['A2-12']``).
+        run_dir: Timestamped run directory.
+        logger: Logger for recording progress.
+    """
+    from benchmark.mcp.agent_runner import AgentRunner
+    from benchmark.mcp.scenarios import TASK_A2_3, TASK_A2_6, TASK_A2_12
+    from bricks.ai.composer import BlueprintComposer
+    from bricks.core.engine import BlueprintEngine
+    from bricks.core.loader import BlueprintLoader
+
+    api_key = _require_api_key()
+    composer = BlueprintComposer(api_key=api_key)
+    runner = AgentRunner(api_key=api_key)
+    loader = BlueprintLoader()
+
+    total_input = 0
+    total_output = 0
+    t0 = time.monotonic()
+
+    a2_tasks: dict[str, tuple[str, Any]] = {
+        "A2-3": (TASK_A2_3, _build_math_registry_a3),
+        "A2-6": (TASK_A2_6, _build_math_registry_a6),
+        "A2-12": (TASK_A2_12, _build_math_registry_a12),
+    }
+
+    a2_scenarios = [s for s in scenarios if s.startswith("A2-")]
+
+    print()
+    print("  +----------+--------+-----------+---------+-----------+---------+-------+")
+    print("  | Task     | Calls  | Compose   | Valid?  | No-tools  | Ratio   | Retry |")
+    print("  +----------+--------+-----------+---------+-----------+---------+-------+")
+
+    for label in a2_scenarios:
+        task_str, reg_fn = a2_tasks[label]
+        registry = reg_fn()
+        logger.info("=== %s (compose) ===", label)
+        print(f"  [{label}] Composing...", flush=True)
+
+        result = composer.compose(task_str, registry)
+        total_input += result.total_input_tokens
+        total_output += result.total_output_tokens
+
+        # Run no-tools for comparison
+        nt_result = runner.run_without_tools(task_str)
+        total_input += nt_result.total_input_tokens
+        total_output += nt_result.total_output_tokens
+        nt_tokens = nt_result.total_tokens
+
+        # Execute the composed blueprint if valid
+        if result.is_valid:
+            try:
+                bp_def = loader.load_string(result.blueprint_yaml)
+                engine = BlueprintEngine(registry=registry)
+                exec_result = engine.run(bp_def, inputs={})
+                logger.info("%s compose outputs: %s", label, exec_result.outputs)
+            except Exception as exc:
+                logger.warning("%s compose execution failed: %s", label, exc)
+
+        ratio = f"{result.total_tokens / nt_tokens:.1f}x" if nt_tokens > 0 else "N/A"
+        retry = "Yes" if result.api_calls > 1 else "No"
+        valid = "Yes" if result.is_valid else "No"
+
+        print(
+            f"  | {label:<8} | {result.api_calls:>6} | {result.total_tokens:>9,} "
+            f"| {valid:<7} | {nt_tokens:>9,} | {ratio:>7} | {retry:<5} |"
+        )
+
+    print("  +----------+--------+-----------+---------+-----------+---------+-------+")
+    print()
+
+    elapsed = time.monotonic() - t0
+    cost = _estimate_cost(total_input, total_output)
+
+    print(f"  Total: {total_input + total_output:,} tokens (input: {total_input:,} + output: {total_output:,})")
+    print(f"  Estimated cost: ~${cost:.3f} ({_MODEL})")
+    print(f"  Elapsed: {elapsed:.1f}s")
+    print()
+
+
 # ── logger setup ────────────────────────────────────────────────────────────
 
 
@@ -410,6 +503,12 @@ def main() -> None:
         help="Base directory for results (a timestamped subfolder is created inside).",
     )
     parser.add_argument(
+        "--mode",
+        default="tool_use",
+        choices=sorted(VALID_MODES),
+        help="Benchmark mode: tool_use (multi-turn) or compose (single-call YAML). Default: tool_use.",
+    )
+    parser.add_argument(
         "--live",
         action="store_true",
         default=False,
@@ -445,14 +544,19 @@ def main() -> None:
     logger.info("Live mode: real API calls via Anthropic SDK")
     logger.info("Scenarios: %s", ", ".join(scenarios))
 
+    mode = args.mode
     print()
     print(f"Bricks v{__version__}")
     print(f"Run folder: {run_dir}")
+    print(f"Mode: {mode}")
     print(f"Scenarios: {', '.join(scenarios)}")
     print()
 
     try:
-        run_benchmark(scenarios, run_dir, logger)
+        if mode == "compose":
+            run_benchmark_compose(scenarios, run_dir, logger)
+        else:
+            run_benchmark(scenarios, run_dir, logger)
     except Exception as exc:
         print(f"FAILED: {exc}")
         sys.exit(1)

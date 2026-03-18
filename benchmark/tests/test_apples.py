@@ -351,6 +351,21 @@ outputs_map:
 # ── CLI flag parsing ──────────────────────────────────────────────────────────
 
 
+class TestCLIModeFlag:
+    """Tests for the --mode flag."""
+
+    def test_valid_modes(self) -> None:
+        from benchmark.showcase.run import VALID_MODES
+
+        assert "tool_use" in VALID_MODES
+        assert "compose" in VALID_MODES
+
+    def test_compose_mode_exists(self) -> None:
+        from benchmark.showcase.run import run_benchmark_compose
+
+        assert callable(run_benchmark_compose)
+
+
 class TestCLIScenarioExpansion:
     """Tests for the --scenario flag parsing logic."""
 

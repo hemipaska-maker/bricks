@@ -35,6 +35,7 @@ from bricks.core.models import (
 from bricks.core.registry import BrickRegistry
 from bricks.core.resolver import ReferenceResolver
 from bricks.core.schema import blueprint_schema, brick_schema, catalog_schema, registry_schema
+from bricks.core.selector import AllBricksSelector, BrickSelector
 from bricks.core.utils import blueprint_to_yaml
 from bricks.core.validation import BlueprintValidator
 
@@ -50,6 +51,7 @@ sequence_to_yaml = blueprint_to_yaml
 
 __all__ = [
     "AiConfig",
+    "AllBricksSelector",
     "BaseBrick",
     "BlueprintDefinition",
     "BlueprintEngine",
@@ -64,6 +66,7 @@ __all__ = [
     "BrickModel",
     "BrickNotFoundError",
     "BrickRegistry",
+    "BrickSelector",
     "BricksConfig",
     "CatalogConfig",
     "ConfigError",

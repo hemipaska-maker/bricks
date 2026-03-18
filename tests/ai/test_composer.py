@@ -6,218 +6,213 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from bricks.ai.composer import BlueprintComposer, ComposerError
+from bricks.ai.composer import BlueprintComposer, ComposerError, ComposeResult
 from bricks.core.registry import BrickRegistry
 
+# ── helpers ──────────────────────────────────────────────────────────────────
 
-class TestComposerInit:
-    def test_raises_import_error_when_anthropic_missing(self, math_registry: BrickRegistry) -> None:
-        """ComposerError wraps ImportError when anthropic is not installed."""
-        with (
-            patch.dict("sys.modules", {"anthropic": None}),
-            pytest.raises(ImportError, match="anthropic"),
-        ):
-            BlueprintComposer(registry=math_registry, api_key="test_key")
-
-
-class TestComposerCompose:
-    def _make_mock_response(self, yaml_content: str) -> MagicMock:
-        """Build a mock Anthropic response containing the given YAML."""
-        block = MagicMock()
-        block.text = f"```yaml\n{yaml_content}\n```"
-        response = MagicMock()
-        response.content = [block]
-        return response
-
-    def _make_composer(self, registry: BrickRegistry) -> BlueprintComposer:
-        """Create a BlueprintComposer with a mocked Anthropic client."""
-        mock_client = MagicMock()
-        composer = BlueprintComposer.__new__(BlueprintComposer)
-        composer._registry = registry
-        composer._model = "claude-haiku-4-5-20251001"
-        composer._max_tokens = 4096
-        composer._client = mock_client
-        from bricks.core.loader import BlueprintLoader
-
-        composer._loader = BlueprintLoader()
-        return composer
-
-    def test_compose_valid_yaml(self, math_registry: BrickRegistry) -> None:
-        """A valid YAML response should produce a BlueprintDefinition."""
-        composer = self._make_composer(math_registry)
-
-        valid_yaml = """
-name: add_sequence
-description: "Adds two numbers"
-inputs:
-  a: "float"
-  b: "float"
+_VALID_YAML = """\
+name: add_two
 steps:
   - name: add_step
     brick: add
     params:
-      a: "${inputs.a}"
-      b: "${inputs.b}"
+      a: 3.0
+      b: 4.0
     save_as: result
 outputs_map:
-  sum: "${result}"
+  sum: "${result.result}"
 """
-        mock_response = self._make_mock_response(valid_yaml)
-        composer._client.messages.create.return_value = mock_response
 
-        blueprint = composer.compose("Add two numbers a and b")
+_INVALID_YAML = """\
+name: bad
+steps:
+  - name: step1
+    brick: nonexistent
+    params:
+      a: 1.0
+    save_as: r1
+outputs_map:
+  result: "${r1.result}"
+"""
 
-        assert blueprint.name == "add_sequence", f"Expected 'add_sequence', got {blueprint.name!r}"
-        assert len(blueprint.steps) == 1, f"Expected length 1, got {len(blueprint.steps)}"
-        assert blueprint.steps[0].brick == "add", f"Expected 'add', got {blueprint.steps[0].brick!r}"
 
-    def test_compose_invalid_yaml_raises_composer_error(self, math_registry: BrickRegistry) -> None:
-        """Invalid YAML in response raises ComposerError."""
-        composer = self._make_composer(math_registry)
+def _make_mock_response(text: str, in_tok: int = 100, out_tok: int = 50) -> MagicMock:
+    """Build a mock Anthropic response with the given text."""
+    block = MagicMock()
+    block.text = text
+    resp = MagicMock()
+    resp.content = [block]
+    resp.usage.input_tokens = in_tok
+    resp.usage.output_tokens = out_tok
+    return resp
 
-        block = MagicMock()
-        block.text = "```yaml\nnot: valid: yaml: [unclosed\n```"
-        mock_response = MagicMock()
-        mock_response.content = [block]
-        composer._client.messages.create.return_value = mock_response
 
-        with pytest.raises(ComposerError):
-            composer.compose("something")
+def _make_composer(registry: BrickRegistry) -> BlueprintComposer:
+    """Create a BlueprintComposer with a mocked Anthropic client."""
+    composer = BlueprintComposer.__new__(BlueprintComposer)
+    composer._client = MagicMock()
+    composer._model = "claude-haiku-4-5-20251001"
+    from bricks.core.loader import BlueprintLoader
+    from bricks.core.selector import AllBricksSelector
+
+    composer._loader = BlueprintLoader()
+    composer._selector = AllBricksSelector()
+    return composer
+
+
+# ── ComposeResult model ──────────────────────────────────────────────────────
+
+
+class TestComposeResult:
+    """Tests for ComposeResult Pydantic model."""
+
+    def test_default_fields(self) -> None:
+        """ComposeResult has sensible defaults."""
+        result = ComposeResult(task="test")
+        assert result.task == "test"
+        assert result.blueprint_yaml == ""
+        assert result.is_valid is False
+        assert result.validation_errors == []
+        assert result.api_calls == 0
+        assert result.total_tokens == 0
+
+    def test_all_fields(self) -> None:
+        """ComposeResult accepts all fields."""
+        result = ComposeResult(
+            task="calc",
+            blueprint_yaml="name: test",
+            is_valid=True,
+            validation_errors=[],
+            api_calls=1,
+            total_input_tokens=100,
+            total_output_tokens=50,
+            total_tokens=150,
+            model="claude-haiku-4-5-20251001",
+            duration_seconds=1.5,
+        )
+        assert result.is_valid is True
+        assert result.api_calls == 1
+        assert result.total_tokens == 150
+
+
+# ── BlueprintComposer.compose ────────────────────────────────────────────────
+
+
+class TestComposerCompose:
+    """Tests for BlueprintComposer.compose()."""
+
+    def test_compose_valid_yaml_returns_compose_result(self, math_registry: BrickRegistry) -> None:
+        """A valid YAML response returns ComposeResult with is_valid=True."""
+        composer = _make_composer(math_registry)
+        composer._client.messages.create.return_value = _make_mock_response(_VALID_YAML)
+
+        result = composer.compose("Add 3 + 4", math_registry)
+
+        assert isinstance(result, ComposeResult)
+        assert result.is_valid is True
+        assert result.api_calls == 1
+        assert result.total_input_tokens == 100
+        assert result.total_output_tokens == 50
+        assert result.total_tokens == 150
+        assert result.validation_errors == []
+
+    def test_compose_retry_on_validation_failure(self, math_registry: BrickRegistry) -> None:
+        """Invalid YAML triggers one retry; second call returns valid YAML."""
+        composer = _make_composer(math_registry)
+        composer._client.messages.create.side_effect = [
+            _make_mock_response(_INVALID_YAML, in_tok=100, out_tok=50),
+            _make_mock_response(_VALID_YAML, in_tok=120, out_tok=60),
+        ]
+
+        result = composer.compose("Add numbers", math_registry)
+
+        assert result.is_valid is True
+        assert result.api_calls == 2
+        assert result.total_input_tokens == 220
+        assert result.total_output_tokens == 110
+        assert result.total_tokens == 330
+
+    def test_compose_max_two_calls_on_double_failure(self, math_registry: BrickRegistry) -> None:
+        """If both calls fail validation, return is_valid=False with errors."""
+        composer = _make_composer(math_registry)
+        composer._client.messages.create.side_effect = [
+            _make_mock_response(_INVALID_YAML),
+            _make_mock_response(_INVALID_YAML),
+        ]
+
+        result = composer.compose("Do something", math_registry)
+
+        assert result.is_valid is False
+        assert result.api_calls == 2
+        assert len(result.validation_errors) > 0
 
     def test_compose_api_error_raises_composer_error(self, math_registry: BrickRegistry) -> None:
         """API exceptions are wrapped as ComposerError."""
-        composer = self._make_composer(math_registry)
+        composer = _make_composer(math_registry)
         composer._client.messages.create.side_effect = RuntimeError("network error")
 
         with pytest.raises(ComposerError, match="API call failed"):
-            composer.compose("something")
+            composer.compose("something", math_registry)
 
     def test_compose_no_text_block_raises_composer_error(self, math_registry: BrickRegistry) -> None:
         """A response with no text block raises ComposerError."""
-        composer = self._make_composer(math_registry)
-
+        composer = _make_composer(math_registry)
         block = MagicMock(spec=[])  # no 'text' attribute
-        mock_response = MagicMock()
-        mock_response.content = [block]
-        composer._client.messages.create.return_value = mock_response
+        resp = MagicMock()
+        resp.content = [block]
+        resp.usage.input_tokens = 10
+        resp.usage.output_tokens = 5
+        composer._client.messages.create.return_value = resp
 
         with pytest.raises(ComposerError, match="no text block"):
-            composer.compose("something")
+            composer.compose("something", math_registry)
 
-    def test_compose_empty_content_list_raises_composer_error(self, math_registry: BrickRegistry) -> None:
-        """A response with an empty content list raises ComposerError."""
-        composer = self._make_composer(math_registry)
+    def test_compose_strips_code_fences(self, math_registry: BrickRegistry) -> None:
+        """Code fences around YAML are stripped before parsing."""
+        composer = _make_composer(math_registry)
+        fenced = f"```yaml\n{_VALID_YAML}\n```"
+        composer._client.messages.create.return_value = _make_mock_response(fenced)
 
-        mock_response = MagicMock()
-        mock_response.content = []
-        composer._client.messages.create.return_value = mock_response
-
-        with pytest.raises(ComposerError, match="no text block"):
-            composer.compose("something")
+        result = composer.compose("Add numbers", math_registry)
+        assert result.is_valid is True
 
 
-class TestExtractYaml:
-    def _make_bare_composer(self) -> BlueprintComposer:
-        """Create a BlueprintComposer with mocked internals for unit testing."""
-        reg = BrickRegistry()
-        composer = BlueprintComposer.__new__(BlueprintComposer)
-        composer._registry = reg
-        composer._model = "test"
-        composer._max_tokens = 1024
-        composer._client = MagicMock()
-        from bricks.core.loader import BlueprintLoader
-
-        composer._loader = BlueprintLoader()
-        return composer
-
-    def test_extracts_yaml_block(self) -> None:
-        composer = self._make_bare_composer()
-        text = "Some preamble.\n```yaml\nname: foo\n```\nSome postamble."
-        result = composer._extract_yaml(text)
-        assert result == "name: foo", f"Expected 'name: foo', got {result!r}"
-
-    def test_extracts_plain_code_block(self) -> None:
-        composer = self._make_bare_composer()
-        text = "```\nname: bar\n```"
-        result = composer._extract_yaml(text)
-        assert result == "name: bar", f"Expected 'name: bar', got {result!r}"
-
-    def test_falls_back_to_raw_text(self) -> None:
-        composer = self._make_bare_composer()
-        text = "name: baz\ndescription: test"
-        result = composer._extract_yaml(text)
-        assert result == text, f"Expected {text!r}, got {result!r}"
-
-    def test_strips_whitespace_in_block(self) -> None:
-        composer = self._make_bare_composer()
-        text = "```yaml\n\n  name: foo\n\n```"
-        result = composer._extract_yaml(text)
-        assert result == "name: foo", f"Expected 'name: foo', got {result!r}"
-
-    def test_strips_whitespace_in_fallback(self) -> None:
-        composer = self._make_bare_composer()
-        text = "  name: baz  "
-        result = composer._extract_yaml(text)
-        assert result == "name: baz", f"Expected 'name: baz', got {result!r}"
-
-
-class TestBuildBricksContext:
-    def test_builds_context_with_registered_bricks(self, math_registry: BrickRegistry) -> None:
-        """_build_bricks_context returns a list with brick info."""
-        composer = BlueprintComposer.__new__(BlueprintComposer)
-        composer._registry = math_registry
-        composer._model = "test"
-        composer._max_tokens = 1024
-        composer._client = MagicMock()
-        from bricks.core.loader import BlueprintLoader
-
-        composer._loader = BlueprintLoader()
-
-        context = composer._build_bricks_context()
-
-        assert len(context) == 2, f"Expected length 2, got {len(context)}"
-        names = [c["name"] for c in context]
-        assert "add" in names, "Expected 'add' to be in collection"
-        assert "description" in context[0], "Expected 'description' key in context"
-        assert "tags" in context[0], "Expected 'tags' key in context"
-        assert "parameters" in context[0], "Expected 'parameters' key in context"
-        # Should not include extra keys like 'destructive' or 'idempotent'
-        assert "destructive" not in context[0], "Expected 'destructive' not to be in context"
-        assert "idempotent" not in context[0], "Expected 'idempotent' not to be in context"
-
-    def test_builds_empty_context_for_empty_registry(self) -> None:
-        """_build_bricks_context returns an empty list for an empty registry."""
-        reg = BrickRegistry()
-        composer = BlueprintComposer.__new__(BlueprintComposer)
-        composer._registry = reg
-        composer._model = "test"
-        composer._max_tokens = 1024
-        composer._client = MagicMock()
-        from bricks.core.loader import BlueprintLoader
-
-        composer._loader = BlueprintLoader()
-
-        context = composer._build_bricks_context()
-        assert context == [], f"Expected [], got {context!r}"
+# ── ComposerError ────────────────────────────────────────────────────────────
 
 
 class TestComposerError:
+    """Tests for ComposerError exception."""
+
     def test_error_message(self) -> None:
+        """ComposerError preserves message and cause."""
         err = ComposerError("Something went wrong", cause=ValueError("bad"))
-        assert "Something went wrong" in str(err), f"Expected 'Something went wrong' in {str(err)!r}"
-        assert isinstance(err.cause, ValueError), f"Expected ValueError, got {type(err.cause).__name__}"
+        assert "Something went wrong" in str(err)
+        assert isinstance(err.cause, ValueError)
 
     def test_error_without_cause(self) -> None:
+        """ComposerError works without a cause."""
         err = ComposerError("No cause")
-        assert err.cause is None, f"Expected None, got {err.cause!r}"
+        assert err.cause is None
 
     def test_is_brick_error(self) -> None:
+        """ComposerError inherits from BrickError."""
         from bricks.core.exceptions import BrickError
 
         err = ComposerError("test")
-        assert isinstance(err, BrickError), f"Expected BrickError, got {type(err).__name__}"
+        assert isinstance(err, BrickError)
 
-    def test_cause_preserved(self) -> None:
-        original = RuntimeError("original error")
-        err = ComposerError("wrapper", cause=original)
-        assert err.cause is original, "Expected cause to be the original exception"
+
+# ── Init ─────────────────────────────────────────────────────────────────────
+
+
+class TestComposerInit:
+    """Tests for BlueprintComposer initialization."""
+
+    def test_raises_import_error_when_anthropic_missing(self) -> None:
+        """ImportError raised when anthropic is not installed."""
+        with (
+            patch.dict("sys.modules", {"anthropic": None}),
+            pytest.raises(ImportError, match="anthropic"),
+        ):
+            BlueprintComposer(api_key="test_key")

@@ -330,12 +330,18 @@ def compose(
 
     api_key = os.environ.get("ANTHROPIC_API_KEY") or typer.prompt("Anthropic API key", hide_input=True)
     registry, _ = _setup_registry()
-    composer = BlueprintComposer(registry=registry, api_key=api_key)
+    composer = BlueprintComposer(api_key=api_key)
 
     try:
-        result_blueprint = composer.compose(intent)
-        typer.echo(f"Composed blueprint: {result_blueprint.name!r}")
-        typer.echo(f"  Steps: {len(result_blueprint.steps)}")
-    except NotImplementedError as exc:
-        typer.echo("AI composition is not yet fully implemented.", err=True)
+        from bricks.ai.composer import ComposerError  # noqa: PLC0415
+
+        result = composer.compose(intent, registry)
+        typer.echo(f"Valid: {result.is_valid}")
+        typer.echo(f"API calls: {result.api_calls} | Tokens: {result.total_tokens}")
+        if result.is_valid:
+            typer.echo(f"\n{result.blueprint_yaml}")
+        else:
+            typer.echo(f"Validation errors: {result.validation_errors}", err=True)
+    except ComposerError as exc:
+        typer.echo(f"Composition failed: {exc}", err=True)
         raise typer.Exit(code=1) from exc

@@ -547,22 +547,21 @@ class TestComposeCommand:
         # that the command doesn't just crash with an unhandled exception.
         assert result.exit_code in (0, 1), f"Expected exit code 0 or 1, got {result.exit_code}"
 
-    def test_compose_not_implemented_exits_gracefully(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-        """compose that raises NotImplementedError should exit 1 with a message."""
-        import sys
+    def test_compose_error_exits_gracefully(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """compose that raises ComposerError should exit 1 with a message."""
         import unittest.mock as mock
+
+        from bricks.ai.composer import ComposerError
 
         monkeypatch.chdir(tmp_path)
         mock_composer_instance = mock.MagicMock()
-        mock_composer_instance.compose.side_effect = NotImplementedError("stub")
+        mock_composer_instance.compose.side_effect = ComposerError("API call failed: test")
         mock_composer_cls = mock.MagicMock(return_value=mock_composer_instance)
-        mock_module = mock.MagicMock()
-        mock_module.BlueprintComposer = mock_composer_cls
 
-        with mock.patch.dict(sys.modules, {"bricks.ai.composer": mock_module}):
+        with mock.patch("bricks.ai.composer.BlueprintComposer", mock_composer_cls):
             result = runner.invoke(app, ["compose", "do something"], input="fake_key\n")
         assert result.exit_code == 1, f"Expected exit code 1, got {result.exit_code}"
-        assert "not yet fully implemented" in result.output, "Expected 'not yet fully implemented' in output"
+        assert "Composition failed" in result.output, "Expected 'Composition failed' in output"
 
 
 class TestSetupRegistry:
