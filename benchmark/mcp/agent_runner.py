@@ -137,7 +137,8 @@ class AgentRunner:
         import anthropic  # type: ignore[import-not-found]
 
         client = anthropic.Anthropic(api_key=self._api_key)
-        catalog = TieredCatalog(registry)
+        all_brick_names = [name for name, _ in registry.list_all()]
+        catalog = TieredCatalog(registry, common_set=all_brick_names)
         loader = BlueprintLoader()
         engine = BlueprintEngine(registry=registry)
         validator = BlueprintValidator(registry=registry)
@@ -251,8 +252,11 @@ def _execute_tool(
     if name == "execute_blueprint":
         bp_yaml: str = inputs["blueprint_yaml"]
         bp_inputs: dict[str, Any] = inputs.get("inputs") or {}
-        bp = loader.load_string(bp_yaml)
-        validator.validate(bp)
-        result = engine.run(bp, inputs=bp_inputs).outputs
-        return {"success": True, "outputs": result}
+        try:
+            bp = loader.load_string(bp_yaml)
+            validator.validate(bp)
+            result = engine.run(bp, inputs=bp_inputs).outputs
+            return {"success": True, "outputs": result}
+        except Exception as exc:
+            return {"success": False, "error": str(exc)}
     return {"error": f"Unknown tool: {name}"}
