@@ -7,23 +7,23 @@ from bricks.core import brick
 
 @brick(tags=["math"], category="math", destructive=False)
 def multiply(a: float, b: float) -> dict[str, float]:
-    """Multiply two numbers and return the result."""
+    """Multiply a * b. Returns {result: a*b}."""
     return {"result": a * b}
 
 
 @brick(tags=["math"], category="math", destructive=False)
 def round_value(value: float, decimals: int = 2) -> dict[str, float]:
-    """Round a float to the specified number of decimal places."""
+    """Round value to N decimal places (default decimals=2). Returns {result: rounded_value}."""
     return {"result": round(value, decimals)}
 
 
 @brick(tags=["math"], category="math", destructive=False)
 def add(a: float, b: float) -> dict[str, float]:
-    """Add two numbers and return the result."""
+    """Add a + b. Returns {result: a+b}."""
     return {"result": a + b}
 
 
 @brick(tags=["math"], category="math", destructive=False)
 def subtract(a: float, b: float) -> dict[str, float]:
-    """Subtract b from a and return the result."""
+    """Subtract b from a. Returns {result: a-b}."""
     return {"result": a - b}

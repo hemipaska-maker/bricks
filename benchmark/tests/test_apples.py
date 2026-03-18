@@ -655,3 +655,43 @@ outputs_map:
         # Should have a hint with available save_as names
         assert "hint" in result
         assert "calc_result" in result["hint"]
+
+
+# ── LLM-optimized brick descriptions ────────────────────────────────────────
+
+
+def _build_all_showcase_registry() -> Any:
+    """Build a registry with ALL showcase bricks (math + string + data)."""
+    from benchmark.showcase.bricks import build_showcase_registry
+    from benchmark.showcase.bricks.data_bricks import http_get, json_extract
+    from benchmark.showcase.bricks.math_bricks import add, multiply, round_value, subtract
+    from benchmark.showcase.bricks.string_bricks import format_result
+
+    return build_showcase_registry(multiply, round_value, add, subtract, format_result, http_get, json_extract)
+
+
+class TestBrickDescriptionStyle:
+    """Tests that showcase brick descriptions follow the LLM-optimized style guide."""
+
+    def test_descriptions_include_output_keys(self) -> None:
+        """Every brick description must mention its output field names in {curly braces}."""
+        from bricks.core.schema import _output_keys
+
+        registry = _build_all_showcase_registry()
+        for name, meta in registry.list_all():
+            callable_, _ = registry.get(name)
+            output_keys = _output_keys(callable_)
+            # Function bricks returning dict[str, X] have empty output_keys,
+            # so check the description contains at least one {field: ...} pattern
+            desc = meta.description
+            assert "{" in desc, f"Brick '{name}' description must mention output fields in {{curly braces}}"
+            for key in output_keys:
+                assert key in desc, f"Brick '{name}' description must mention output key '{key}'"
+
+    def test_descriptions_under_120_chars(self) -> None:
+        """Descriptions should be concise — under 120 characters."""
+        registry = _build_all_showcase_registry()
+        for name, meta in registry.list_all():
+            assert len(meta.description) <= 120, (
+                f"Brick '{name}' description is {len(meta.description)} chars (max 120)"
+            )

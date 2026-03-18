@@ -7,6 +7,27 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.4.6] — 2026-03-18
+
+### Summary
+LLM-Optimized Brick Descriptions (Mission 014). Updated all showcase brick descriptions to include exact output field names in `{curly braces}`, formulas, and default values. Created `BRICK_STYLE_GUIDE.md` with 7 rules for writing machine-optimized descriptions. Added programmatic validation tests.
+
+### Added
+- `bricks/BRICK_STYLE_GUIDE.md` — 7-rule reference for writing LLM-optimized brick descriptions
+- Test: `test_descriptions_include_output_keys` — validates all showcase bricks mention output fields in `{}`
+- Test: `test_descriptions_under_120_chars` — validates description conciseness
+
+### Changed
+- `multiply` description: `"Multiply a * b. Returns {result: a*b}."`
+- `add` description: `"Add a + b. Returns {result: a+b}."`
+- `subtract` description: `"Subtract b from a. Returns {result: a-b}."`
+- `round_value` description: `"Round value to N decimal places (default decimals=2). Returns {result: rounded_value}."`
+- `format_result` description: `"Format as 'label: value' display string. Returns {display: str} — NOTE: output key is 'display', not 'result'."`
+- `http_get` description + `category="data"` + `tags=["network", "http"]`
+- `json_extract` description + `category="data"` + `tags=["data", "json"]`
+
+---
+
 ## [0.4.5] — 2026-03-18
 
 ### Summary

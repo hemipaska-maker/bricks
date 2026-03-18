@@ -20,18 +20,15 @@ _MOCK_RESPONSE = {
 }
 
 
-@brick(tags=["network"], destructive=False)
+@brick(tags=["network", "http"], category="data", destructive=False)
 def http_get(url: str, headers: dict[str, str] | None = None) -> dict[str, Any]:
-    """Fetch data from a URL (mock: returns hardcoded user data for benchmarking)."""
+    """Fetch data from URL. Returns {status_code: int, body: dict}. Mock: returns hardcoded user data."""
     return copy.deepcopy(_MOCK_RESPONSE)
 
 
-@brick(tags=["data"], destructive=False)
+@brick(tags=["data", "json"], category="data", destructive=False)
 def json_extract(data: Any, path: str) -> dict[str, Any]:
-    """Extract a value from a dict/list using a dot-separated path.
-
-    Example: path="users.0.name" on {"users": [{"name": "Alice"}]} returns "Alice".
-    """
+    """Extract value at dot-separated path (e.g., 'users.0.name'). Returns {value: extracted_data}."""
     current: Any = data
     for part in path.split("."):
         try:
