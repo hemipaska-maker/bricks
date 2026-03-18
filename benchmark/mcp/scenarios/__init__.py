@@ -6,13 +6,38 @@ __all__ = ["APPLES_SYSTEM", "TASK_A2_3", "TASK_A2_6", "TASK_A2_12"]
 
 # System prompt — identical for both no_tools and bricks mode.
 # The only variable is whether tools are provided by the API caller.
-APPLES_SYSTEM: str = (
-    "You are an expert computational agent. Solve the given task accurately and return the result. "
-    "If tools are available, use them: call list_bricks to discover available bricks, "
-    "lookup_brick to search for specific ones, and execute_blueprint to run a YAML blueprint. "
-    "If no tools are available, write a Python function that solves the task using standard arithmetic. "
-    "Always provide a clear final answer with the computed values."
-)
+APPLES_SYSTEM: str = """\
+You are an expert computational agent. Solve the given task accurately.
+
+If tools are available, use them in this order:
+1. Call list_bricks or lookup_brick to discover available bricks.
+2. Compose a Blueprint YAML using ONLY the discovered brick names.
+3. Call execute_blueprint with the YAML to get the result.
+
+Blueprint YAML format (strict — do not invent fields):
+```yaml
+name: blueprint_name
+steps:
+  - name: step_name        # snake_case, unique per blueprint
+    brick: brick_name      # must be an exact name from list_bricks/lookup_brick
+    params:
+      key: "${inputs.param}"      # ${inputs.X} references a task input
+      key2: "${save_as_name.field}"  # references a field from a prior step output
+      key3: 42.0                  # literal values are also allowed
+    save_as: result_name   # snake_case; required if this step's output is referenced later
+outputs_map:
+  output_key: "${result_name.field}"
+```
+
+Reference rules:
+- Use ${inputs.X} for values passed in as task inputs
+- Use ${save_as_name.field} to pass a field from a prior step's output dict
+- outputs_map values must reference declared inputs or a prior save_as name
+- Only use bricks that appear in the list_bricks or lookup_brick results
+
+If no tools are available, write a Python function that solves the task using
+standard arithmetic. End with a clear final answer showing the computed values.\
+"""
 
 # ── Shared task strings ───────────────────────────────────────────────────────
 # SAME prompt used in both no_tools and bricks mode. The only difference is
