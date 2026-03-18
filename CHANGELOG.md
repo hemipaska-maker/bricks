@@ -7,6 +7,28 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.4.2] — 2026-03-18
+
+### Summary
+Apples-to-Apples Benchmark (Mission 010). True comparison: same agent, same task, same model, same system prompt — the only variable is whether Bricks MCP tools are available. Uses Anthropic's native `tool_use` API to simulate MCP tools locally (no server required).
+
+### Added
+- `benchmark/mcp/` package: `AgentRunner`, `AgentResult`, `ToolCallRecord`
+- `AgentRunner.run_without_tools()` — single-turn, no tools, agent writes Python
+- `AgentRunner.run_with_bricks()` — multi-turn loop with `list_bricks`, `lookup_brick`, `execute_blueprint`; tool responses served by real Bricks engine
+- `_execute_tool()` — routes tool calls to `TieredCatalog` / `BlueprintEngine` / `BlueprintLoader` / `BlueprintValidator`
+- `benchmark/mcp/scenarios/`: `a2_complexity`, `c2_reuse`, `d2_determinism` scenario modules
+- `benchmark/mcp/report.py`: `write_apples_json()`, `write_apples_markdown()`
+- `--apples` flag: run apples-to-apples benchmark only (requires `--live`)
+- `--all` flag: run both legacy and apples-to-apples benchmarks
+- Results written to `apples_to_apples/` subfolder inside run directory
+- 13 new tests in `benchmark/tests/test_apples.py`
+
+### Changed
+- `benchmark/showcase/README.md`: "Known Limitation" section replaced with "Apples-to-Apples Benchmark" section and "Legacy Benchmark" note
+
+---
+
 ## [0.3.2] — 2026-03-18
 
 ### Summary

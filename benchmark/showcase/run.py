@@ -3,6 +3,8 @@
 Usage:
     python -m benchmark.showcase.run                # all scenarios, estimated tokens
     python -m benchmark.showcase.run --live         # real API calls (needs API key)
+    python -m benchmark.showcase.run --live --apples   # apples-to-apples only (live)
+    python -m benchmark.showcase.run --live --all      # both legacy and apples-to-apples (live)
     python -m benchmark.showcase.run --scenario A   # complexity curve only
     python -m benchmark.showcase.run --scenario C   # reuse scenario only
     python -m benchmark.showcase.run --scenario D   # determinism scenario only
@@ -592,6 +594,68 @@ def run_scenario_d_live(
     return cg_result, bricks_result
 
 
+# ── apples-to-apples runners ─────────────────────────────────────────────────
+
+
+def run_apples_live(run_dir: Path, logger: logging.Logger) -> None:
+    """Run apples-to-apples benchmark (A2, C2, D2) and write results.
+
+    Args:
+        run_dir: Timestamped run directory.
+        logger: Logger for recording progress.
+    """
+    from benchmark.mcp.agent_runner import AgentRunner
+    from benchmark.mcp.report import write_apples_json, write_apples_markdown
+    from benchmark.mcp.scenarios.a2_complexity import run_a2_3, run_a2_6, run_a2_12
+    from benchmark.mcp.scenarios.c2_reuse import run_c2
+    from benchmark.mcp.scenarios.d2_determinism import run_d2
+    from benchmark.showcase.live import _require_api_key
+
+    api_key = _require_api_key()
+    runner = AgentRunner(api_key=api_key)
+    apples_dir = run_dir / "apples_to_apples"
+    apples_dir.mkdir(parents=True, exist_ok=True)
+
+    logger.info("=== Apples-to-Apples Benchmark ===")
+    print()
+    print("  Running apples-to-apples benchmark (same task, tools on/off)...")
+    print()
+
+    # ── A2: Complexity Curve ──────────────────────────────────────────────────
+    print("  A2: Complexity Curve (A2-3, A2-6, A2-12)...", end=" ", flush=True)
+    a2_curve = []
+    for label, steps, fn, reg_fn in [
+        ("A2-3", 3, run_a2_3, _build_math_registry_a3),
+        ("A2-6", 6, run_a2_6, _build_math_registry_a6),
+        ("A2-12", 12, run_a2_12, _build_math_registry_a12),
+    ]:
+        logger.info("  Sub-scenario %s (%d steps)...", label, steps)
+        a2_curve.append(fn(runner, reg_fn()))
+    print("done")
+
+    # ── C2: Reuse Economics ───────────────────────────────────────────────────
+    print("  C2: Reuse Economics (10 runs)...", end=" ", flush=True)
+    logger.info("  C2 reuse economics...")
+    c2_reuse = run_c2(runner, _build_math_registry_a6())
+    print("done")
+
+    # ── D2: Determinism ───────────────────────────────────────────────────────
+    print("  D2: Determinism (5 runs)...", end=" ", flush=True)
+    logger.info("  D2 determinism...")
+    d2_determinism = run_d2(runner, _build_math_registry_a6())
+    print("done")
+
+    # ── Write outputs ─────────────────────────────────────────────────────────
+    json_path = write_apples_json(apples_dir, "live", a2_curve, c2_reuse, d2_determinism)
+    md_path = write_apples_markdown(apples_dir, a2_curve, c2_reuse)
+    logger.info("Apples-to-apples results written to %s", apples_dir)
+
+    print()
+    print(f"  apples results.json -> {json_path}")
+    print(f"  apples summary.md   -> {md_path}")
+    print()
+
+
 # ── main ─────────────────────────────────────────────────────────────────────
 
 
@@ -618,18 +682,39 @@ def main() -> None:
         default=False,
         help="Make real Anthropic API calls instead of using estimates. Requires ANTHROPIC_API_KEY.",
     )
+    parser.add_argument(
+        "--apples",
+        action="store_true",
+        default=False,
+        help="Run apples-to-apples benchmark (same task, tools on/off). Requires --live.",
+    )
+    parser.add_argument(
+        "--all",
+        action="store_true",
+        default=False,
+        dest="run_all",
+        help="Run both legacy and apples-to-apples benchmarks. Requires --live.",
+    )
     args = parser.parse_args()
 
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    # --apples and --all require --live
+    if (args.apples or args.run_all) and not args.live:
+        print("Error: --apples and --all require --live (real API calls needed).")
+        sys.exit(1)
+
     # Create unique timestamped run directory
     run_dir = _make_run_dir(output_dir)
 
     mode = "live" if args.live else "estimated"
-    run_a = args.scenario in ("A", "all")
-    run_c = args.scenario in ("C", "all")
-    run_d = args.scenario in ("D", "all")
+
+    # When --apples only, skip the legacy scenarios
+    run_legacy = not args.apples or args.run_all
+    run_a = run_legacy and args.scenario in ("A", "all")
+    run_c = run_legacy and args.scenario in ("C", "all")
+    run_d = run_legacy and args.scenario in ("D", "all")
 
     scenarios_run = []
     if run_a:
@@ -759,6 +844,16 @@ def main() -> None:
 
         except Exception as exc:
             print(f"FAILED: {exc}")
+            sys.exit(1)
+
+    # ── Apples-to-Apples ─────────────────────────────────────────────────────
+    if args.apples or args.run_all:
+        if logger is None:
+            raise RuntimeError("Logger must be initialized for live mode")
+        try:
+            run_apples_live(run_dir, logger)
+        except Exception as exc:
+            print(f"  Apples-to-apples FAILED: {exc}")
             sys.exit(1)
 
     # ── Write outputs ─────────────────────────────────────────────────────────

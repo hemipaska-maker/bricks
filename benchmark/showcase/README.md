@@ -58,13 +58,19 @@ For each scenario:
 pip install -e ".[ai,benchmark]"
 export ANTHROPIC_API_KEY=your-key-here
 
-# All scenarios (estimated mode — no API calls)
+# All legacy scenarios (estimated mode — no API calls)
 python -m benchmark.showcase.run
 
-# All scenarios (live mode — real API calls)
+# All legacy scenarios (live mode — real API calls)
 python -m benchmark.showcase.run --live
 
-# Single scenario
+# Apples-to-apples only (live mode required)
+python -m benchmark.showcase.run --live --apples
+
+# Both legacy and apples-to-apples
+python -m benchmark.showcase.run --live --all
+
+# Single legacy scenario
 python -m benchmark.showcase.run --scenario A
 python -m benchmark.showcase.run --scenario C
 python -m benchmark.showcase.run --scenario D
@@ -107,6 +113,60 @@ results/
     "git_dirty": false
 }
 ```
+
+## Apples-to-Apples Benchmark (v0.4.2+)
+
+The legacy benchmark above uses two separate prompts — one asks the AI to write Python, the other to compose a Blueprint from schemas. That is **not** an apples-to-apples comparison.
+
+Starting with v0.4.2 a true comparison is available: **same agent, same task, same model, same system prompt — the only variable is whether Bricks MCP tools are available.**
+
+### How it works
+
+No actual MCP server is required. Tool responses are served locally using the real Bricks engine:
+
+```
+No-tools mode:  Task → Claude (no tools) → writes Python code
+Bricks mode:    Task → Claude + {list_bricks, lookup_brick, execute_blueprint}
+                     → discovers bricks → composes Blueprint YAML → executes
+```
+
+Both modes receive the identical `APPLES_SYSTEM` prompt and the identical task string. Token counts include **all turns** (tool calls, tool results, continuations).
+
+### Apples-to-Apples Scenarios
+
+| Scenario | Description |
+|---|---|
+| **A2: Complexity Curve** | Same 3 tasks (3/6/12 steps) — no_tools writes code, bricks composes+executes Blueprint |
+| **C2: Reuse Economics** | A2-6 task × 10 runs — no_tools regenerates code each time, bricks reuses Blueprint (0 tokens runs 2–10) |
+| **D2: Determinism** | A2-6 task × 5 identical runs — compare code variability vs Blueprint consistency |
+
+### Run the apples-to-apples benchmark
+
+```bash
+# Apples-to-apples only (live mode required)
+python -m benchmark.showcase.run --live --apples
+
+# Both legacy and apples-to-apples
+python -m benchmark.showcase.run --live --all
+```
+
+Results land in `apples_to_apples/` inside the run folder:
+
+```
+run_YYYYMMDD_HHMMSS_vX.Y.Z/
+├── apples_to_apples/
+│   ├── results.json        # machine-readable comparison
+│   ├── summary.md          # human-readable report
+│   ├── A2_complexity.json  # per-scenario detail
+│   ├── C2_reuse.json
+│   └── D2_determinism.json
+├── results.json            # legacy benchmark (unchanged)
+└── ...
+```
+
+## Legacy Benchmark (pre-MCP)
+
+> The scenarios above (A, C, D) use two separate prompts and measure **token payload sizes** for each approach. This is still useful for understanding raw token costs, but it is not a unified agent-level comparison. Use `--apples` for the true apples-to-apples measurement.
 
 ## How It Works
 
