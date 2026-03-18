@@ -8,7 +8,7 @@ from bricks.core.brick import brick
 from bricks.core.exceptions import BrickNotFoundError
 from bricks.core.models import BlueprintDefinition, StepDefinition
 from bricks.core.registry import BrickRegistry
-from bricks.core.schema import blueprint_schema, brick_schema, registry_schema
+from bricks.core.schema import blueprint_schema, brick_schema, compact_brick_signatures, registry_schema
 
 
 def _make_reg() -> BrickRegistry:
@@ -152,3 +152,73 @@ class TestBlueprintSchema:
         assert schema["steps"] == [], f"Expected [], got {schema['steps']!r}"
         assert schema["inputs"] == {}, f"Expected {{}}, got {schema['inputs']!r}"
         assert schema["outputs_map"] == {}, f"Expected {{}}, got {schema['outputs_map']!r}"
+
+
+class TestCompactBrickSignatures:
+    """Tests for compact_brick_signatures()."""
+
+    def test_one_liner_format(self) -> None:
+        """Each brick gets a single line with name(params) → output."""
+        reg = BrickRegistry()
+
+        @brick(tags=["math"], description="Multiply two numbers")
+        def multiply(a: float, b: float) -> dict[str, float]:
+            return {"result": a * b}
+
+        reg.register("multiply", multiply, multiply.__brick_meta__)
+        result = compact_brick_signatures(reg)
+        assert "multiply(a: float, b: float)" in result
+        assert "→" in result
+
+    def test_default_values_shown(self) -> None:
+        """Bricks with default params show =default."""
+        reg = BrickRegistry()
+
+        @brick(description="Round a value")
+        def round_value(value: float, decimals: int = 2) -> dict[str, float]:
+            return {"result": round(value, decimals)}
+
+        reg.register("round_value", round_value, round_value.__brick_meta__)
+        result = compact_brick_signatures(reg)
+        assert "decimals: int=2" in result
+
+    def test_sorted_alphabetically(self) -> None:
+        """Signatures are sorted alphabetically by brick name."""
+        reg = BrickRegistry()
+
+        @brick(description="Zebra")
+        def zebra(x: float) -> dict[str, float]:
+            return {"result": x}
+
+        @brick(description="Alpha")
+        def alpha(x: float) -> dict[str, float]:
+            return {"result": x}
+
+        reg.register("zebra", zebra, zebra.__brick_meta__)
+        reg.register("alpha", alpha, alpha.__brick_meta__)
+        result = compact_brick_signatures(reg)
+        lines = result.strip().split("\n")
+        assert lines[0].startswith("alpha(")
+        assert lines[1].startswith("zebra(")
+
+    def test_empty_registry(self) -> None:
+        """Empty registry returns empty string."""
+        reg = BrickRegistry()
+        assert compact_brick_signatures(reg) == ""
+
+    def test_showcase_bricks_format(self) -> None:
+        """Showcase bricks produce correct compact signatures."""
+        from benchmark.showcase.bricks import build_showcase_registry
+        from benchmark.showcase.bricks.math_bricks import add, multiply, round_value, subtract
+        from benchmark.showcase.bricks.string_bricks import format_result
+
+        reg = build_showcase_registry(multiply, round_value, add, subtract, format_result)
+        result = compact_brick_signatures(reg)
+        lines = result.strip().split("\n")
+        assert len(lines) == 5
+        # Should be sorted: add, format_result, multiply, round_value, subtract
+        assert lines[0].startswith("add(")
+        assert lines[1].startswith("format_result(")
+        assert lines[2].startswith("multiply(")
+        assert lines[3].startswith("round_value(")
+        assert lines[4].startswith("subtract(")

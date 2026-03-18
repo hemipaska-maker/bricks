@@ -105,6 +105,98 @@ def catalog_schema(catalog: TieredCatalog) -> dict[str, Any]:
     }
 
 
+def compact_brick_signatures(registry: BrickRegistry) -> str:
+    """Generate compact, LLM-friendly brick signatures for system prompt injection.
+
+    Returns a string like::
+
+        add(a: float, b: float) → {result: float}
+        multiply(a: float, b: float) → {result: float}
+        round_value(value: float, decimals: int=2) → {result: float}
+
+    This is ~50 tokens for 5 bricks vs ~500+ tokens for full JSON schemas.
+
+    Args:
+        registry: The registry to enumerate.
+
+    Returns:
+        Multi-line string with one signature per brick, sorted alphabetically.
+    """
+    lines: list[str] = []
+    for name, _meta in sorted(registry.list_all(), key=lambda x: x[0]):
+        callable_, _meta_obj = registry.get(name)
+        param_str = _signature_params(callable_)
+        output_str = _signature_output(callable_)
+        lines.append(f"{name}({param_str}) → {output_str}")
+    return "\n".join(lines)
+
+
+def _signature_params(callable_: Any) -> str:
+    """Format parameter signature for a callable.
+
+    Args:
+        callable_: A Python callable.
+
+    Returns:
+        Formatted parameter string like ``a: float, b: float, decimals: int=2``.
+    """
+    parts: list[str] = []
+    try:
+        sig = inspect.signature(callable_)
+        for pname, param in sig.parameters.items():
+            if pname in ("self", "inputs", "metadata"):
+                continue
+            ann = param.annotation
+            type_name = ann.__name__ if hasattr(ann, "__name__") else str(ann)
+            if ann is inspect.Parameter.empty:
+                type_name = "Any"
+            if param.default is not inspect.Parameter.empty:
+                parts.append(f"{pname}: {type_name}={param.default!r}")
+            else:
+                parts.append(f"{pname}: {type_name}")
+    except (ValueError, TypeError):
+        pass
+    return ", ".join(parts)
+
+
+def _signature_output(callable_: Any) -> str:
+    """Format output signature for a callable.
+
+    Args:
+        callable_: A Python callable.
+
+    Returns:
+        Formatted output string like ``{result: float}`` or ``dict``.
+    """
+    # Class-based brick: check for Output inner class with model_fields
+    cls = callable_ if isinstance(callable_, type) else type(callable_)
+    output_cls = getattr(cls, "Output", None)
+    if output_cls is not None and hasattr(output_cls, "model_fields"):
+        fields = []
+        for field_name, field_info in output_cls.model_fields.items():
+            ftype = field_info.annotation
+            type_name = ftype.__name__ if hasattr(ftype, "__name__") else str(ftype)
+            fields.append(f"{field_name}: {type_name}")
+        return "{" + ", ".join(fields) + "}"
+
+    # Function-based brick: inspect return annotation
+    try:
+        hints = inspect.get_annotations(callable_, eval_str=True)
+        ret = hints.get("return")
+        if ret is not None:
+            origin = getattr(ret, "__origin__", None)
+            if origin is dict:
+                args = getattr(ret, "__args__", None)
+                if args and len(args) == 2:
+                    vtype = args[1]
+                    type_name = vtype.__name__ if hasattr(vtype, "__name__") else str(vtype)
+                    return "{...: " + type_name + "}"
+    except Exception:  # noqa: S110
+        pass
+
+    return "dict"
+
+
 def _output_keys(callable_: Any) -> list[str]:
     """Extract output key names from a callable's return type annotation.
 

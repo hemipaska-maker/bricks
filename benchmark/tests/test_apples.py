@@ -198,9 +198,8 @@ class TestRunWithBricks:
         assert len(result.tool_calls) == 1
         assert result.tool_calls[0].name == "list_bricks"
 
-    def test_uses_apples_system_prompt_with_tools(self) -> None:
+    def test_uses_dynamic_system_prompt_with_brick_signatures(self) -> None:
         from benchmark.mcp.agent_runner import AgentRunner
-        from benchmark.mcp.scenarios import APPLES_SYSTEM
 
         final_resp = _make_text_response("Done.")
         registry = _build_registry_a6()
@@ -211,7 +210,10 @@ class TestRunWithBricks:
             runner.run_with_bricks("A task.", registry)
 
         call_kwargs = mock_create.call_args
-        assert call_kwargs.kwargs["system"] == APPLES_SYSTEM
+        system_prompt = call_kwargs.kwargs["system"]
+        # Dynamic prompt should contain brick signatures
+        assert "multiply(" in system_prompt
+        assert "Do NOT call list_bricks" in system_prompt
 
     def test_token_accumulation_across_turns(self) -> None:
         from benchmark.mcp.agent_runner import AgentRunner
@@ -470,3 +472,186 @@ class TestEnrichedBenchmarkBricks:
             assert "category" in brick_schema, f"Missing 'category' in {brick_schema['name']}"
             assert "input_keys" in brick_schema, f"Missing 'input_keys' in {brick_schema['name']}"
             assert "output_keys" in brick_schema, f"Missing 'output_keys' in {brick_schema['name']}"
+
+
+# ── build_apples_system ─────────────────────────────────────────────────────
+
+
+class TestBuildApplesSystem:
+    """Tests for build_apples_system() helper."""
+
+    def test_with_registry_includes_signatures(self) -> None:
+        from benchmark.mcp.scenarios import build_apples_system
+
+        registry = _build_registry_a6()
+        result = build_apples_system(registry)
+        assert "multiply(" in result
+        assert "add(" in result
+        assert "Do NOT call list_bricks" in result
+
+    def test_without_registry_is_base_prompt(self) -> None:
+        from benchmark.mcp.scenarios import APPLES_SYSTEM, build_apples_system
+
+        result = build_apples_system(None)
+        assert result == APPLES_SYSTEM
+        assert "Do NOT call list_bricks" not in result
+
+
+# ── Actionable error messages ────────────────────────────────────────────────
+
+
+class TestActionableErrors:
+    """Tests for actionable error messages in _execute_tool."""
+
+    def _setup(self) -> tuple:
+        from bricks.core.catalog import TieredCatalog
+        from bricks.core.engine import BlueprintEngine
+        from bricks.core.loader import BlueprintLoader
+        from bricks.core.validation import BlueprintValidator
+
+        registry = _build_registry_a6()
+        all_names = [name for name, _ in registry.list_all()]
+        catalog = TieredCatalog(registry, common_set=all_names)
+        engine = BlueprintEngine(registry=registry)
+        loader = BlueprintLoader()
+        validator = BlueprintValidator(registry=registry)
+        return catalog, engine, loader, validator
+
+    def test_unknown_brick_includes_available_list(self) -> None:
+        from benchmark.mcp.agent_runner import _execute_tool
+
+        catalog, engine, loader, validator = self._setup()
+        blueprint_yaml = """\
+name: test
+steps:
+  - name: step1
+    brick: mult
+    params:
+      a: 1.0
+      b: 2.0
+    save_as: result
+outputs_map:
+  result: "${result.result}"
+"""
+        result = _execute_tool(
+            "execute_blueprint",
+            {"blueprint_yaml": blueprint_yaml},
+            catalog,
+            engine,
+            loader,
+            validator,
+        )
+        assert result["success"] is False
+        assert "hint" in result
+        assert "Available bricks:" in result["hint"] or "multiply" in result["hint"]
+
+    def test_unknown_brick_suggests_closest_match(self) -> None:
+        from benchmark.mcp.agent_runner import _execute_tool
+
+        catalog, engine, loader, validator = self._setup()
+        blueprint_yaml = """\
+name: test
+steps:
+  - name: step1
+    brick: mult
+    params:
+      a: 1.0
+      b: 2.0
+    save_as: result
+outputs_map:
+  result: "${result.result}"
+"""
+        result = _execute_tool(
+            "execute_blueprint",
+            {"blueprint_yaml": blueprint_yaml},
+            catalog,
+            engine,
+            loader,
+            validator,
+        )
+        assert result["success"] is False
+        assert "multiply" in result["hint"]
+
+    def test_validation_error_surfaces_all_errors(self) -> None:
+        from benchmark.mcp.agent_runner import _execute_tool
+
+        catalog, engine, loader, validator = self._setup()
+        # Blueprint with two unknown bricks — should surface all_errors
+        blueprint_yaml = """\
+name: test
+steps:
+  - name: step1
+    brick: nonexistent_a
+    params:
+      a: 1.0
+    save_as: r1
+  - name: step2
+    brick: nonexistent_b
+    params:
+      b: 2.0
+    save_as: r2
+outputs_map:
+  result: "${r1.result}"
+"""
+        result = _execute_tool(
+            "execute_blueprint",
+            {"blueprint_yaml": blueprint_yaml},
+            catalog,
+            engine,
+            loader,
+            validator,
+        )
+        assert result["success"] is False
+        assert "all_errors" in result
+        assert len(result["all_errors"]) >= 2
+
+    def test_yaml_parse_error_has_hint(self) -> None:
+        from benchmark.mcp.agent_runner import _execute_tool
+
+        catalog, engine, loader, validator = self._setup()
+        result = _execute_tool(
+            "execute_blueprint",
+            {"blueprint_yaml": "invalid: yaml: ["},
+            catalog,
+            engine,
+            loader,
+            validator,
+        )
+        assert result["success"] is False
+        assert "error" in result
+
+    def test_bad_reference_includes_save_as_names(self) -> None:
+        from benchmark.mcp.agent_runner import _execute_tool
+
+        catalog, engine, loader, validator = self._setup()
+        # Blueprint where step2 references a non-existent save_as name
+        blueprint_yaml = """\
+name: test
+steps:
+  - name: calc
+    brick: add
+    params:
+      a: 1.0
+      b: 2.0
+    save_as: calc_result
+  - name: fmt
+    brick: format_result
+    params:
+      label: "test"
+      value: "${nonexistent.result}"
+    save_as: display
+outputs_map:
+  display: "${display.display}"
+"""
+        result = _execute_tool(
+            "execute_blueprint",
+            {"blueprint_yaml": blueprint_yaml},
+            catalog,
+            engine,
+            loader,
+            validator,
+        )
+        assert result["success"] is False
+        # Should have a hint with available save_as names
+        assert "hint" in result
+        assert "calc_result" in result["hint"]

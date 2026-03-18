@@ -9,10 +9,17 @@ from collections.abc import Callable
 from typing import Any
 
 from benchmark.mcp.agent_result import AgentResult, ToolCallRecord
-from benchmark.mcp.scenarios import APPLES_SYSTEM
+from benchmark.mcp.scenarios import APPLES_SYSTEM, build_apples_system
 from bricks.core import BrickRegistry
 from bricks.core.catalog import TieredCatalog
 from bricks.core.engine import BlueprintEngine
+from bricks.core.exceptions import (
+    BlueprintValidationError,
+    BrickExecutionError,
+    BrickNotFoundError,
+    VariableResolutionError,
+    YamlLoadError,
+)
 from bricks.core.loader import BlueprintLoader
 from bricks.core.validation import BlueprintValidator
 
@@ -158,6 +165,7 @@ class AgentRunner:
         loader = BlueprintLoader()
         engine = BlueprintEngine(registry=registry)
         validator = BlueprintValidator(registry=registry)
+        system_prompt = build_apples_system(registry)
 
         messages: list[dict[str, Any]] = [{"role": "user", "content": task}]
         total_input = 0
@@ -175,7 +183,7 @@ class AgentRunner:
             response = client.messages.create(
                 model=model,
                 max_tokens=2048,
-                system=APPLES_SYSTEM,
+                system=system_prompt,
                 tools=BRICKS_TOOLS,  # type: ignore[arg-type]
                 messages=messages,  # type: ignore[arg-type]
             )
@@ -299,6 +307,128 @@ def _execute_tool(
             validator.validate(bp)
             result = engine.run(bp, inputs=bp_inputs).outputs
             return {"success": True, "outputs": result}
+        except BrickNotFoundError as exc:
+            available = [n for n, _ in catalog._registry.list_all()]
+            match = _fuzzy_match(exc.name, available)
+            hint = f"Did you mean '{match}'? " if match else ""
+            hint += f"Available bricks: {', '.join(sorted(available))}"
+            return {"success": False, "error": str(exc), "hint": hint}
+        except BlueprintValidationError as exc:
+            available = [n for n, _ in catalog._registry.list_all()]
+            save_as_names = _extract_save_as_names(bp_yaml)
+            hint = _validation_hint(exc.errors, available, save_as_names)
+            return {
+                "success": False,
+                "error": str(exc),
+                "all_errors": exc.errors,
+                "hint": hint,
+            }
+        except VariableResolutionError as exc:
+            save_as_names = _extract_save_as_names(bp_yaml)
+            hint = f"Reference '{exc.reference}' failed. Available save_as names: {save_as_names}"
+            return {"success": False, "error": str(exc), "hint": hint}
+        except BrickExecutionError as exc:
+            hint = f"Brick '{exc.brick_name}' failed at step '{exc.step_name}': {exc.cause}"
+            param_hint = _brick_param_hint(catalog._registry, exc.brick_name)
+            if param_hint:
+                hint += f". Expected params: {param_hint}"
+            return {"success": False, "error": str(exc), "hint": hint}
+        except YamlLoadError as exc:
+            return {
+                "success": False,
+                "error": str(exc),
+                "hint": "YAML parse error. Check indentation and syntax.",
+            }
         except Exception as exc:
             return {"success": False, "error": str(exc)}
     return {"error": f"Unknown tool: {name}"}
+
+
+def _validation_hint(errors: list[str], available_bricks: list[str], save_as_names: list[str]) -> str:
+    """Build an actionable hint from validation errors.
+
+    Args:
+        errors: List of validation error strings.
+        available_bricks: List of valid brick names.
+        save_as_names: List of save_as names found in the blueprint.
+
+    Returns:
+        Actionable hint string.
+    """
+    import re
+
+    hints: list[str] = []
+    for err in errors:
+        # Check for brick-not-found pattern
+        brick_match = re.search(r"brick '(\w+)' not found", err)
+        if brick_match:
+            bad_name = brick_match.group(1)
+            suggestion = _fuzzy_match(bad_name, available_bricks)
+            hint = f"Did you mean '{suggestion}'? " if suggestion else ""
+            hint += f"Available bricks: {', '.join(sorted(available_bricks))}"
+            hints.append(hint)
+            continue
+        # Check for undefined variable pattern
+        var_match = re.search(r"undefined variable '(\S+)'", err)
+        if var_match:
+            hints.append(f"Available save_as names: {save_as_names}")
+            continue
+    if not hints:
+        return "Fix all errors listed in all_errors and retry."
+    return " | ".join(hints)
+
+
+def _fuzzy_match(name: str, available: list[str]) -> str | None:
+    """Find the closest match for a brick name using substring/prefix matching.
+
+    Args:
+        name: The unrecognized brick name.
+        available: List of valid brick names.
+
+    Returns:
+        The closest match, or None if no reasonable match found.
+    """
+    name_lower = name.lower()
+    # Exact prefix match
+    for candidate in available:
+        if candidate.lower().startswith(name_lower) or name_lower.startswith(candidate.lower()):
+            return candidate
+    # Substring match
+    for candidate in available:
+        if name_lower in candidate.lower() or candidate.lower() in name_lower:
+            return candidate
+    return None
+
+
+def _extract_save_as_names(bp_yaml: str) -> list[str]:
+    """Extract save_as names from a blueprint YAML string.
+
+    Args:
+        bp_yaml: Raw YAML string of the blueprint.
+
+    Returns:
+        List of save_as values found in the YAML.
+    """
+    import re
+
+    return re.findall(r"save_as:\s*(\S+)", bp_yaml)
+
+
+def _brick_param_hint(registry: BrickRegistry, brick_name: str) -> str:
+    """Format expected parameter info for a brick.
+
+    Args:
+        registry: The brick registry.
+        brick_name: Name of the brick.
+
+    Returns:
+        Formatted parameter string, or empty string if brick not found.
+    """
+    try:
+        from bricks.core.schema import _signature_params
+
+        callable_, _ = registry.get(brick_name)
+        return _signature_params(callable_)
+    except Exception:  # noqa: S110
+        pass
+    return ""

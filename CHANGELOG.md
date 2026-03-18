@@ -7,6 +7,36 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.4.5] — 2026-03-18
+
+### Summary
+Zero-Discovery Blueprint: Inject Brick Pool + Actionable Errors (Mission 013). Eliminates the `list_bricks` discovery turn by injecting compact brick signatures into the system prompt. Adds actionable error messages with fuzzy-matched suggestions and available brick/variable lists so the agent corrects mistakes in one retry.
+
+### Added
+- `compact_brick_signatures(registry)` in `bricks/core/schema.py` — generates one-liner brick signatures for system prompt injection (~50 tokens for 5 bricks vs ~500+ for JSON)
+- `_signature_params()` and `_signature_output()` helpers for formatting brick signatures
+- `build_apples_system(registry)` in `benchmark/mcp/scenarios/__init__.py` — builds dynamic system prompt with optional brick pool injection
+- `_validation_hint()` helper — parses validation errors to suggest fixes (fuzzy brick name matching, available save_as names)
+- `_fuzzy_match()` helper — substring/prefix matching for brick name suggestions
+- `_extract_save_as_names()` helper — extracts save_as names from blueprint YAML
+- `_brick_param_hint()` helper — formats expected params for error hints
+- Actionable error handling for `BlueprintValidationError`, `BrickNotFoundError`, `VariableResolutionError`, `BrickExecutionError`, `YamlLoadError` in `_execute_tool`
+- 12 new tests: compact signatures (5), actionable errors (5), build_apples_system (2)
+
+### Changed
+- `APPLES_SYSTEM` prompt rewritten: removes `list_bricks` from workflow, adds brick pool injection section
+- `run_with_bricks()` now uses dynamic system prompt with injected brick signatures
+- `bricks/skills/AGENT_PROMPT.md` updated for no-discovery workflow (bricks provided in context)
+
+### Baseline (v0.4.4 — before these changes)
+| Scenario | No Tools | Bricks | Ratio | Bricks turns |
+|----------|----------|--------|-------|--------------|
+| A2-12    | 1,746    | 13,896 | 8.3x  | 5            |
+
+Re-run with `python -m benchmark.showcase.run --live --scenario A2-12` to measure improvement.
+
+---
+
 ## [0.4.4] — 2026-03-18
 
 ### Summary

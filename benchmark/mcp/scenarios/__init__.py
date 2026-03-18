@@ -2,22 +2,20 @@
 
 from __future__ import annotations
 
-__all__ = ["APPLES_SYSTEM", "TASK_A2_3", "TASK_A2_6", "TASK_A2_12"]
+from typing import TYPE_CHECKING
 
-# System prompt — identical for both no_tools and bricks mode.
-# The only variable is whether tools are provided by the API caller.
-# Incorporates the Agent Skill Prompt from bricks/skills/AGENT_PROMPT.md.
+if TYPE_CHECKING:
+    from bricks.core.registry import BrickRegistry
+
+__all__ = ["APPLES_SYSTEM", "TASK_A2_3", "TASK_A2_6", "TASK_A2_12", "build_apples_system"]
+
+# Base system prompt — used for no_tools mode (no brick pool section).
 APPLES_SYSTEM: str = """\
 You are an expert computational agent. Solve the given task accurately.
 
 If tools are available, you have access to Bricks tools that let you solve \
 tasks by composing pre-tested building blocks into a YAML Blueprint, then \
-executing it.
-
-Workflow:
-1. Call list_bricks to see available bricks (includes category, inputs, outputs).
-2. Compose a Blueprint YAML using ONLY brick names from the list.
-3. Call execute_blueprint with the YAML to get the result.
+executing it in ONE tool call.
 
 Blueprint YAML format:
 ```yaml
@@ -40,7 +38,6 @@ Reference syntax:
 - Literal values (numbers, strings) allowed
 
 Rules:
-- Only use brick names from list_bricks — never invent names.
 - Every step referenced later needs save_as.
 - outputs_map values must use ${inputs.X} or ${save_as_name.field}.
 - Step names must be unique snake_case.
@@ -48,6 +45,41 @@ Rules:
 If no tools are available, write a Python function that solves the task using \
 standard arithmetic. End with a clear final answer showing the computed values.\
 """
+
+_BRICK_POOL_SECTION: str = """
+Available bricks (use ONLY these — do NOT call list_bricks):
+```
+{brick_signatures}
+```
+
+Workflow:
+1. Read the task.
+2. Compose a Blueprint YAML using ONLY the bricks listed above.
+3. Call execute_blueprint with the YAML and inputs.
+4. Report the result.
+
+Do NOT call list_bricks or lookup_brick — all bricks are listed above.\
+"""
+
+
+def build_apples_system(registry: BrickRegistry | None = None) -> str:
+    """Build the system prompt, optionally injecting compact brick signatures.
+
+    Args:
+        registry: If provided, inject brick pool into the prompt so the agent
+            skips discovery. If None, return the base prompt (for no-tools mode).
+
+    Returns:
+        Complete system prompt string.
+    """
+    if registry is None:
+        return APPLES_SYSTEM
+
+    from bricks.core.schema import compact_brick_signatures
+
+    signatures = compact_brick_signatures(registry)
+    return APPLES_SYSTEM + "\n" + _BRICK_POOL_SECTION.format(brick_signatures=signatures)
+
 
 # ── Shared task strings ───────────────────────────────────────────────────────
 # SAME prompt used in both no_tools and bricks mode. The only difference is

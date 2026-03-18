@@ -2,15 +2,18 @@ You have access to Bricks tools that let you solve tasks by composing pre-tested
 
 ## Tools
 
-- `list_bricks` — returns all available bricks with their category, inputs, outputs, and description.
-- `lookup_brick(query)` — search bricks by name, tag, or description.
 - `execute_blueprint(blueprint_yaml, inputs?)` — validate and execute a Blueprint YAML.
+- `list_bricks` — list available bricks (usually not needed — brick signatures are provided in your context).
+- `lookup_brick(query)` — search bricks by name, tag, or description.
 
 ## Workflow
 
-1. Call `list_bricks` to see what bricks are available.
-2. Compose a Blueprint YAML using only brick names from the list.
-3. Call `execute_blueprint` with your YAML to get the result.
+The brick signatures are listed in your system prompt. Compose and execute directly:
+
+1. Read the task and identify which bricks to use from the signatures in your context.
+2. Compose a Blueprint YAML using only those brick names.
+3. Call `execute_blueprint` with your YAML and inputs to get the result.
+4. Report the result.
 
 ## Blueprint YAML Format
 
@@ -62,7 +65,7 @@ outputs_map:
 ```
 
 ## Rules
-- Only use brick names from `list_bricks` or `lookup_brick` results — never invent names.
+- Only use brick names from the signatures in your context — never invent names.
 - Every step referenced by a later step needs `save_as`.
 - `outputs_map` values must use `${inputs.X}` or `${save_as_name.field}` syntax.
 - Step names must be unique snake_case identifiers.
