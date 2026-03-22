@@ -1,30 +1,30 @@
-"""Scenario C2: apples-to-apples reuse economics (10 runs of A2-6 task)."""
+"""Scenario C: apples-to-apples reuse economics (10 runs of the same task)."""
 
 from __future__ import annotations
 
 from typing import Any
 
+from benchmark.constants import REUSE_RUNS
 from benchmark.mcp.agent_result import AgentResult
 from benchmark.mcp.agent_runner import AgentRunner, OnTurnCallback
-from benchmark.mcp.scenarios import TASK_A2_6
 from bricks.core import BrickRegistry
 
-REUSE_RUNS = 10
 
-
-def run_c2(
+def run_c(
     runner: AgentRunner,
+    task_text: str,
     registry: BrickRegistry,
     on_turn: OnTurnCallback = None,
 ) -> dict[str, Any]:
-    """Run A2-6 task 10 times in both modes and return comparison dict.
+    """Run a task multiple times in both modes and return comparison dict.
 
-    No_tools: 10 separate conversations — code is regenerated every time.
-    Bricks: run 1 calls the API to compose a Blueprint; runs 2-10 simulate
+    No_tools: all runs make separate API calls — code is regenerated every time.
+    Bricks: run 1 calls the API to compose a Blueprint; runs 2-N simulate
     the session cache (Blueprint is reused, 0 tokens each).
 
     Args:
         runner: Configured AgentRunner instance.
+        task_text: Task description.
         registry: BrickRegistry for the bricks mode.
         on_turn: Optional per-turn callback for logging.
 
@@ -36,19 +36,17 @@ def run_c2(
     first_blueprint: str | None = None
 
     for i in range(REUSE_RUNS):
-        no_tools = runner.run_without_tools(TASK_A2_6, on_turn=on_turn)
+        no_tools = runner.run_without_tools(task_text, on_turn=on_turn)
         no_tools_results.append(no_tools)
 
         if i == 0:
-            bricks = runner.run_with_bricks(TASK_A2_6, registry, on_turn=on_turn)
+            bricks = runner.run_with_bricks(task_text, registry, on_turn=on_turn)
             first_blueprint = bricks.blueprint_yaml
             bricks_results.append(bricks)
         else:
-            # Simulate session cache: Blueprint is stored after run 1.
-            # Subsequent runs re-execute locally — no API call, 0 tokens.
             bricks_results.append(
                 AgentResult(
-                    task=TASK_A2_6,
+                    task=task_text,
                     mode="bricks",
                     turns=0,
                     total_input_tokens=0,
@@ -66,7 +64,6 @@ def run_c2(
 
     return {
         "runs": REUSE_RUNS,
-        "step_count": 6,
         "no_tools": {
             "total_tokens": nt_input + nt_output,
             "input_tokens": nt_input,

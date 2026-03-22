@@ -39,13 +39,17 @@ from bricks.core.schema import (
     brick_schema,
     catalog_schema,
     output_key_table,
+    output_keys,
+    parse_description_keys,
     registry_schema,
+    signature_params,
 )
 from bricks.core.selector import AllBricksSelector, BrickSelector
 from bricks.core.utils import blueprint_to_yaml
 from bricks.core.validation import BlueprintValidator
 
-# Deprecated aliases — will be removed in v1.0.0
+# Deprecated aliases — use bricks.compat for warnings, these are kept
+# for backward compatibility and will be removed in v1.0.0
 SequenceDefinition = BlueprintDefinition
 SequenceEngine = BlueprintEngine
 SequenceLoader = BlueprintLoader
@@ -82,13 +86,6 @@ __all__ = [
     "ExecutionResult",
     "ReferenceResolver",
     "RegistryConfig",
-    # Deprecated aliases — will be removed in v1.0.0
-    "SequenceDefinition",
-    "SequenceEngine",
-    "SequenceLoader",
-    "SequenceValidationError",
-    "SequenceValidator",
-    "SequencesConfig",
     "StepDefinition",
     "StepResult",
     "TieredCatalog",
@@ -101,7 +98,8 @@ __all__ = [
     "brick_schema",
     "catalog_schema",
     "output_key_table",
+    "output_keys",
+    "parse_description_keys",
     "registry_schema",
-    "sequence_schema",
-    "sequence_to_yaml",
+    "signature_params",
 ]

@@ -8,27 +8,19 @@ import time
 from collections.abc import Callable
 from typing import Any
 
+from benchmark.constants import DEFAULT_MODEL, MAX_TOKENS, MAX_TURNS
 from benchmark.mcp.agent_result import AgentResult, ToolCallRecord
 from benchmark.mcp.scenarios import APPLES_SYSTEM, build_apples_system
+from benchmark.mcp.tool_executor import execute_tool
 from bricks.core import BrickRegistry
 from bricks.core.catalog import TieredCatalog
 from bricks.core.engine import BlueprintEngine
-from bricks.core.exceptions import (
-    BlueprintValidationError,
-    BrickExecutionError,
-    BrickNotFoundError,
-    VariableResolutionError,
-    YamlLoadError,
-)
 from bricks.core.loader import BlueprintLoader
 from bricks.core.validation import BlueprintValidator
 
 # Type alias for the per-turn callback.
 # (turn, mode, input_tokens, output_tokens, elapsed, tool_calls)
 OnTurnCallback = Callable[..., None] | None
-
-DEFAULT_MODEL = "claude-haiku-4-5-20251001"
-MAX_TURNS = 20
 
 # Tool definitions matching the MCP server schema.
 # Used in run_with_bricks(); absent in run_without_tools().
@@ -104,7 +96,7 @@ class AgentRunner:
 
         response = client.messages.create(
             model=model,
-            max_tokens=2048,
+            max_tokens=MAX_TOKENS,
             system=APPLES_SYSTEM,
             messages=[{"role": "user", "content": task}],
         )
@@ -182,7 +174,7 @@ class AgentRunner:
             turn_t0 = time.monotonic()
             response = client.messages.create(
                 model=model,
-                max_tokens=2048,
+                max_tokens=MAX_TOKENS,
                 system=system_prompt,
                 tools=BRICKS_TOOLS,  # type: ignore[arg-type]
                 messages=messages,  # type: ignore[arg-type]
@@ -211,7 +203,7 @@ class AgentRunner:
                     continue
 
                 tool_input: dict[str, Any] = block.input  # type: ignore[assignment]
-                tool_output = _execute_tool(
+                tool_output = execute_tool(
                     block.name,
                     tool_input,
                     catalog,
@@ -272,163 +264,3 @@ class AgentRunner:
             execution_result=last_execution_result,
             duration_seconds=elapsed,
         )
-
-
-def _execute_tool(
-    name: str,
-    inputs: dict[str, Any],
-    catalog: TieredCatalog,
-    engine: BlueprintEngine,
-    loader: BlueprintLoader,
-    validator: BlueprintValidator,
-) -> Any:
-    """Execute a simulated MCP tool call using the real Bricks engine.
-
-    Args:
-        name: Tool name (``list_bricks``, ``lookup_brick``, ``execute_blueprint``).
-        inputs: Tool input parameters dict.
-        catalog: TieredCatalog for brick discovery.
-        engine: BlueprintEngine for execution.
-        loader: BlueprintLoader for parsing YAML strings.
-        validator: BlueprintValidator for pre-execution validation.
-
-    Returns:
-        JSON-serialisable tool result.
-    """
-    if name == "list_bricks":
-        return catalog.list_bricks()
-    if name == "lookup_brick":
-        return catalog.lookup_brick(inputs["query"])
-    if name == "execute_blueprint":
-        bp_yaml: str = inputs["blueprint_yaml"]
-        bp_inputs: dict[str, Any] = inputs.get("inputs") or {}
-        try:
-            bp = loader.load_string(bp_yaml)
-            validator.validate(bp)
-            result = engine.run(bp, inputs=bp_inputs).outputs
-            return {"success": True, "outputs": result}
-        except BrickNotFoundError as exc:
-            available = [n for n, _ in catalog._registry.list_all()]
-            match = _fuzzy_match(exc.name, available)
-            hint = f"Did you mean '{match}'? " if match else ""
-            hint += f"Available bricks: {', '.join(sorted(available))}"
-            return {"success": False, "error": str(exc), "hint": hint}
-        except BlueprintValidationError as exc:
-            available = [n for n, _ in catalog._registry.list_all()]
-            save_as_names = _extract_save_as_names(bp_yaml)
-            hint = _validation_hint(exc.errors, available, save_as_names)
-            return {
-                "success": False,
-                "error": str(exc),
-                "all_errors": exc.errors,
-                "hint": hint,
-            }
-        except VariableResolutionError as exc:
-            save_as_names = _extract_save_as_names(bp_yaml)
-            hint = f"Reference '{exc.reference}' failed. Available save_as names: {save_as_names}"
-            return {"success": False, "error": str(exc), "hint": hint}
-        except BrickExecutionError as exc:
-            hint = f"Brick '{exc.brick_name}' failed at step '{exc.step_name}': {exc.cause}"
-            param_hint = _brick_param_hint(catalog._registry, exc.brick_name)
-            if param_hint:
-                hint += f". Expected params: {param_hint}"
-            return {"success": False, "error": str(exc), "hint": hint}
-        except YamlLoadError as exc:
-            return {
-                "success": False,
-                "error": str(exc),
-                "hint": "YAML parse error. Check indentation and syntax.",
-            }
-        except Exception as exc:
-            return {"success": False, "error": str(exc)}
-    return {"error": f"Unknown tool: {name}"}
-
-
-def _validation_hint(errors: list[str], available_bricks: list[str], save_as_names: list[str]) -> str:
-    """Build an actionable hint from validation errors.
-
-    Args:
-        errors: List of validation error strings.
-        available_bricks: List of valid brick names.
-        save_as_names: List of save_as names found in the blueprint.
-
-    Returns:
-        Actionable hint string.
-    """
-    import re
-
-    hints: list[str] = []
-    for err in errors:
-        # Check for brick-not-found pattern
-        brick_match = re.search(r"brick '(\w+)' not found", err)
-        if brick_match:
-            bad_name = brick_match.group(1)
-            suggestion = _fuzzy_match(bad_name, available_bricks)
-            hint = f"Did you mean '{suggestion}'? " if suggestion else ""
-            hint += f"Available bricks: {', '.join(sorted(available_bricks))}"
-            hints.append(hint)
-            continue
-        # Check for undefined variable pattern
-        var_match = re.search(r"undefined variable '(\S+)'", err)
-        if var_match:
-            hints.append(f"Available save_as names: {save_as_names}")
-            continue
-    if not hints:
-        return "Fix all errors listed in all_errors and retry."
-    return " | ".join(hints)
-
-
-def _fuzzy_match(name: str, available: list[str]) -> str | None:
-    """Find the closest match for a brick name using substring/prefix matching.
-
-    Args:
-        name: The unrecognized brick name.
-        available: List of valid brick names.
-
-    Returns:
-        The closest match, or None if no reasonable match found.
-    """
-    name_lower = name.lower()
-    # Exact prefix match
-    for candidate in available:
-        if candidate.lower().startswith(name_lower) or name_lower.startswith(candidate.lower()):
-            return candidate
-    # Substring match
-    for candidate in available:
-        if name_lower in candidate.lower() or candidate.lower() in name_lower:
-            return candidate
-    return None
-
-
-def _extract_save_as_names(bp_yaml: str) -> list[str]:
-    """Extract save_as names from a blueprint YAML string.
-
-    Args:
-        bp_yaml: Raw YAML string of the blueprint.
-
-    Returns:
-        List of save_as values found in the YAML.
-    """
-    import re
-
-    return re.findall(r"save_as:\s*(\S+)", bp_yaml)
-
-
-def _brick_param_hint(registry: BrickRegistry, brick_name: str) -> str:
-    """Format expected parameter info for a brick.
-
-    Args:
-        registry: The brick registry.
-        brick_name: Name of the brick.
-
-    Returns:
-        Formatted parameter string, or empty string if brick not found.
-    """
-    try:
-        from bricks.core.schema import _signature_params
-
-        callable_, _ = registry.get(brick_name)
-        return _signature_params(callable_)
-    except Exception:  # noqa: S110
-        pass
-    return ""

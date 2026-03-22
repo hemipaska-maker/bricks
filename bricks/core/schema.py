@@ -29,14 +29,14 @@ def brick_schema(name: str, registry: BrickRegistry) -> dict[str, Any]:
     callable_, meta = registry.get(name)
     params = _callable_params(callable_)
     input_keys = list(params.keys())
-    output_keys = _output_keys(callable_)
+    out_keys = output_keys(callable_)
     schema: dict[str, Any] = {
         "name": meta.name,
         "description": meta.description,
         "tags": meta.tags,
         "category": meta.category,
         "input_keys": input_keys,
-        "output_keys": output_keys,
+        "output_keys": out_keys,
         "destructive": meta.destructive,
         "idempotent": meta.idempotent,
         "parameters": params,
@@ -126,7 +126,7 @@ def compact_brick_signatures(registry: BrickRegistry) -> str:
     lines: list[str] = []
     for name, _meta in sorted(registry.list_all(), key=lambda x: x[0]):
         callable_, _meta_obj = registry.get(name)
-        param_str = _signature_params(callable_)
+        param_str = signature_params(callable_)
         output_str = _signature_output(callable_)
         lines.append(f"{name}({param_str}) → {output_str}")
     return "\n".join(lines)
@@ -139,7 +139,7 @@ def output_key_table(registry: BrickRegistry) -> str:
     exactly which keys to use in ``${step.key}`` references.
 
     Falls back to parsing keys from ``meta.description`` when
-    ``_output_keys()`` returns empty (function-based bricks with
+    ``output_keys()`` returns empty (function-based bricks with
     ``dict[str, X]`` return type).
 
     Args:
@@ -155,9 +155,9 @@ def output_key_table(registry: BrickRegistry) -> str:
     entries: list[tuple[str, str]] = []
     for name, meta in sorted(registry.list_all(), key=lambda x: x[0]):
         callable_, _ = registry.get(name)
-        keys = _output_keys(callable_)
+        keys = output_keys(callable_)
         if not keys:
-            keys = _parse_description_keys(meta.description)
+            keys = parse_description_keys(meta.description)
         entries.append((name, ", ".join(keys) if keys else "dict"))
 
     if not entries:
@@ -170,7 +170,7 @@ def output_key_table(registry: BrickRegistry) -> str:
     return "\n".join(lines)
 
 
-def _parse_description_keys(description: str) -> list[str]:
+def parse_description_keys(description: str) -> list[str]:
     """Extract output key names from a brick description's {key: type} pattern.
 
     Args:
@@ -182,7 +182,7 @@ def _parse_description_keys(description: str) -> list[str]:
     return re.findall(r"\{(\w+):", description)
 
 
-def _signature_params(callable_: Any) -> str:
+def signature_params(callable_: Any) -> str:
     """Format parameter signature for a callable.
 
     Args:
@@ -202,7 +202,11 @@ def _signature_params(callable_: Any) -> str:
             if ann is inspect.Parameter.empty:
                 type_name = "Any"
             if param.default is not inspect.Parameter.empty:
-                parts.append(f"{pname}: {type_name}={param.default!r}")
+                try:
+                    default_repr = repr(param.default)
+                except Exception:
+                    default_repr = str(param.default)
+                parts.append(f"{pname}: {type_name}={default_repr}")
             else:
                 parts.append(f"{pname}: {type_name}")
     except (ValueError, TypeError):
@@ -248,7 +252,7 @@ def _signature_output(callable_: Any) -> str:
     return "dict"
 
 
-def _output_keys(callable_: Any) -> list[str]:
+def output_keys(callable_: Any) -> list[str]:
     """Extract output key names from a callable's return type annotation.
 
     Inspects the return type annotation for ``dict[str, ...]`` patterns

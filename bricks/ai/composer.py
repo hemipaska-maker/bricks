@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field
 from bricks.core.exceptions import BlueprintValidationError, BrickError
 from bricks.core.loader import BlueprintLoader
 from bricks.core.registry import BrickRegistry
-from bricks.core.schema import _output_keys, _parse_description_keys, compact_brick_signatures, output_key_table
+from bricks.core.schema import compact_brick_signatures, output_key_table, output_keys, parse_description_keys
 from bricks.core.selector import AllBricksSelector, BrickSelector
 from bricks.core.utils import strip_code_fence
 from bricks.core.validation import BlueprintValidator
@@ -136,8 +136,8 @@ def _build_example(registry: BrickRegistry) -> str:
     callable1, _ = registry.get(name1)
     callable2, _ = registry.get(name2)
 
-    keys1 = _output_keys(callable1) or _parse_description_keys(meta1.description)
-    keys2 = _output_keys(callable2) or _parse_description_keys(meta2.description)
+    keys1 = output_keys(callable1) or parse_description_keys(meta1.description)
+    keys2 = output_keys(callable2) or parse_description_keys(meta2.description)
     out_key1 = keys1[0] if keys1 else "result"
     out_key2 = keys2[0] if keys2 else "result"
 

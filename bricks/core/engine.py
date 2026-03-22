@@ -13,6 +13,7 @@ from bricks.core.models import (
     BlueprintDefinition,
     BrickMeta,
     ExecutionResult,
+    StepDefinition,
     StepResult,
     Verbosity,
 )
@@ -136,66 +137,16 @@ class BlueprintEngine:
 
         for step in blueprint.steps:
             resolved_params = self._resolver.resolve(step.params, context)
+            result, step_result = self._execute_step(
+                step,
+                resolved_params,
+                completed,
+                depth,
+                verbosity,
+            )
 
-            if step.brick is not None:
-                # ── Function/class-based brick ─────────────────────────────
-                callable_, meta = self._registry.get(step.brick)
-
-                t0 = time.perf_counter()
-                try:
-                    result = callable_(**resolved_params)
-                except Exception as exc:
-                    _call_teardown(callable_, resolved_params, meta, exc)
-                    for prev_callable, prev_params, prev_meta in reversed(completed):
-                        _call_teardown(prev_callable, prev_params, prev_meta, exc)
-                    raise BrickExecutionError(
-                        brick_name=step.brick,
-                        step_name=step.name,
-                        cause=exc,
-                    ) from exc
-
-                duration_ms = (time.perf_counter() - t0) * 1000
-                completed.append((callable_, resolved_params, meta))
-
-                if verbosity in (Verbosity.STANDARD, Verbosity.FULL):
-                    step_results.append(
-                        StepResult(
-                            step_name=step.name,
-                            brick_name=step.brick,
-                            inputs=resolved_params if verbosity == Verbosity.FULL else {},
-                            outputs=result if isinstance(result, dict) else {},
-                            duration_ms=duration_ms if verbosity == Verbosity.FULL else 0.0,
-                            save_as=step.save_as,
-                        )
-                    )
-
-            else:
-                # ── Sub-blueprint ──────────────────────────────────────────
-                # step.blueprint is not None here (guaranteed by model validator)
-                child_path = Path(step.blueprint or "")
-                try:
-                    child_bp = self._loader.load_file(child_path)
-                    child_result = self._execute(child_bp, resolved_params, depth + 1, verbosity)
-                    result = child_result.outputs
-                except BrickExecutionError:
-                    raise
-                except Exception as exc:
-                    raise BrickExecutionError(
-                        brick_name=step.blueprint or "<sub-blueprint>",
-                        step_name=step.name,
-                        cause=exc,
-                    ) from exc
-
-                if verbosity in (Verbosity.STANDARD, Verbosity.FULL):
-                    step_results.append(
-                        StepResult(
-                            step_name=step.name,
-                            brick_name=step.blueprint or "<sub-blueprint>",
-                            inputs=resolved_params if verbosity == Verbosity.FULL else {},
-                            outputs=result if isinstance(result, dict) else {},
-                            save_as=step.save_as,
-                        )
-                    )
+            if step_result is not None:
+                step_results.append(step_result)
 
             if step.save_as is not None:
                 context.save_result(step.save_as, result)
@@ -211,3 +162,124 @@ class BlueprintEngine:
             blueprint_name=blueprint.name,
             verbosity=verbosity,
         )
+
+    def _execute_step(
+        self,
+        step: StepDefinition,
+        resolved_params: dict[str, Any],
+        completed: list[tuple[Any, dict[str, Any], BrickMeta]],
+        depth: int,
+        verbosity: Verbosity,
+    ) -> tuple[Any, StepResult | None]:
+        """Execute a single step (brick or sub-blueprint).
+
+        Args:
+            step: The step definition to execute.
+            resolved_params: Pre-resolved parameters for this step.
+            completed: Mutable list of completed steps for teardown tracking.
+            depth: Current recursion depth.
+            verbosity: Execution trace detail level.
+
+        Returns:
+            Tuple of (step result value, optional StepResult for tracing).
+
+        Raises:
+            BrickExecutionError: If the step fails.
+        """
+        if step.brick is not None:
+            return self._execute_brick_step(step, resolved_params, completed, verbosity)
+        return self._execute_sub_blueprint_step(step, resolved_params, depth, verbosity)
+
+    def _execute_brick_step(
+        self,
+        step: StepDefinition,
+        resolved_params: dict[str, Any],
+        completed: list[tuple[Any, dict[str, Any], BrickMeta]],
+        verbosity: Verbosity,
+    ) -> tuple[Any, StepResult | None]:
+        """Execute a function/class-based brick step.
+
+        Args:
+            step: The step definition.
+            resolved_params: Pre-resolved parameters.
+            completed: Mutable list for teardown tracking.
+            verbosity: Trace detail level.
+
+        Returns:
+            Tuple of (result value, optional StepResult).
+        """
+        brick_name: str = step.brick  # type: ignore[assignment]  # guaranteed non-None by caller
+        callable_, meta = self._registry.get(brick_name)
+
+        t0 = time.perf_counter()
+        try:
+            result = callable_(**resolved_params)
+        except Exception as exc:
+            _call_teardown(callable_, resolved_params, meta, exc)
+            for prev_callable, prev_params, prev_meta in reversed(completed):
+                _call_teardown(prev_callable, prev_params, prev_meta, exc)
+            raise BrickExecutionError(
+                brick_name=brick_name,
+                step_name=step.name,
+                cause=exc,
+            ) from exc
+
+        duration_ms = (time.perf_counter() - t0) * 1000
+        completed.append((callable_, resolved_params, meta))
+
+        step_result: StepResult | None = None
+        if verbosity in (Verbosity.STANDARD, Verbosity.FULL):
+            step_result = StepResult(
+                step_name=step.name,
+                brick_name=brick_name,
+                inputs=resolved_params if verbosity == Verbosity.FULL else {},
+                outputs=result if isinstance(result, dict) else {},
+                duration_ms=duration_ms if verbosity == Verbosity.FULL else 0.0,
+                save_as=step.save_as,
+            )
+
+        return result, step_result
+
+    def _execute_sub_blueprint_step(
+        self,
+        step: StepDefinition,
+        resolved_params: dict[str, Any],
+        depth: int,
+        verbosity: Verbosity,
+    ) -> tuple[Any, StepResult | None]:
+        """Execute a sub-blueprint step.
+
+        Args:
+            step: The step definition.
+            resolved_params: Pre-resolved parameters.
+            depth: Current recursion depth.
+            verbosity: Trace detail level.
+
+        Returns:
+            Tuple of (result value, optional StepResult).
+        """
+        child_path = Path(step.blueprint or "")
+        try:
+            child_bp = self._loader.load_file(child_path)
+            child_result = self._execute(child_bp, resolved_params, depth + 1, verbosity)
+            result = child_result.outputs
+        except BrickExecutionError:
+            raise
+        except Exception as exc:
+            raise BrickExecutionError(
+                brick_name=step.blueprint or "<sub-blueprint>",
+                step_name=step.name,
+                cause=exc,
+            ) from exc
+
+        step_result: StepResult | None = None
+        if verbosity in (Verbosity.STANDARD, Verbosity.FULL):
+            step_result = StepResult(
+                step_name=step.name,
+                brick_name=step.blueprint or "<sub-blueprint>",
+                inputs=resolved_params if verbosity == Verbosity.FULL else {},
+                outputs=result if isinstance(result, dict) else {},
+                save_as=step.save_as,
+            )
+
+        return result, step_result

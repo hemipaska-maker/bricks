@@ -1,29 +1,29 @@
-"""Scenario D2: apples-to-apples determinism (5 runs with identical inputs)."""
+"""Scenario D: apples-to-apples determinism (5 runs with identical inputs)."""
 
 from __future__ import annotations
 
 from typing import Any
 
+from benchmark.constants import DETERMINISM_RUNS
 from benchmark.mcp.agent_result import AgentResult
 from benchmark.mcp.agent_runner import AgentRunner, OnTurnCallback
-from benchmark.mcp.scenarios import TASK_A2_6
 from bricks.core import BrickRegistry
 
-DETERMINISM_RUNS = 5
 
-
-def run_d2(
+def run_d(
     runner: AgentRunner,
+    task_text: str,
     registry: BrickRegistry,
     on_turn: OnTurnCallback = None,
 ) -> dict[str, Any]:
-    """Run A2-6 task 5 times with identical inputs in both modes.
+    """Run a task multiple times with identical inputs in both modes.
 
-    No_tools: compare generated code across 5 runs — shows variability.
-    Bricks: compare Blueprint YAML across 5 runs — should be identical.
+    No_tools: compare generated code across runs — shows variability.
+    Bricks: compare Blueprint YAML across runs — should be identical.
 
     Args:
         runner: Configured AgentRunner instance.
+        task_text: Task description.
         registry: BrickRegistry for the bricks mode.
         on_turn: Optional per-turn callback for logging.
 
@@ -34,8 +34,8 @@ def run_d2(
     bricks_results: list[AgentResult] = []
 
     for _ in range(DETERMINISM_RUNS):
-        no_tools_results.append(runner.run_without_tools(TASK_A2_6, on_turn=on_turn))
-        bricks_results.append(runner.run_with_bricks(TASK_A2_6, registry, on_turn=on_turn))
+        no_tools_results.append(runner.run_without_tools(task_text, on_turn=on_turn))
+        bricks_results.append(runner.run_with_bricks(task_text, registry, on_turn=on_turn))
 
     codes = [r.code_generated or "" for r in no_tools_results]
     unique_codes = len(set(codes))
@@ -45,7 +45,6 @@ def run_d2(
 
     return {
         "runs": DETERMINISM_RUNS,
-        "step_count": 6,
         "no_tools": {
             "unique_outputs": unique_codes,
             "all_identical": unique_codes == 1,

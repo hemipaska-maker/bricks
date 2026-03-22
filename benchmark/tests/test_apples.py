@@ -9,7 +9,16 @@ from unittest.mock import MagicMock, patch
 
 
 def _make_text_response(text: str, in_tok: int = 10, out_tok: int = 5) -> MagicMock:
-    """Build a mock Anthropic response that returns end_turn with a text block."""
+    """Build a mock Anthropic response with end_turn stop reason and a text block.
+
+    Args:
+        text: The text content of the response.
+        in_tok: Input token count.
+        out_tok: Output token count.
+
+    Returns:
+        Mocked response object.
+    """
     block = MagicMock()
     block.type = "text"
     block.text = text
@@ -29,7 +38,18 @@ def _make_tool_response(
     in_tok: int = 20,
     out_tok: int = 10,
 ) -> MagicMock:
-    """Build a mock Anthropic response that issues a tool_use call."""
+    """Build a mock Anthropic response with tool_use stop reason.
+
+    Args:
+        tool_name: Name of the tool being called.
+        tool_id: Unique ID for the tool call.
+        tool_input: Input parameters for the tool.
+        in_tok: Input token count.
+        out_tok: Output token count.
+
+    Returns:
+        Mocked response object.
+    """
     tool_block = MagicMock()
     tool_block.type = "tool_use"
     tool_block.id = tool_id
@@ -45,7 +65,11 @@ def _make_tool_response(
 
 
 def _build_registry_a6() -> Any:
-    """Build a BrickRegistry with A-6 bricks (math + string)."""
+    """Build a BrickRegistry with math + string bricks for testing.
+
+    Returns:
+        A BrickRegistry with multiply, round_value, add, and format_result.
+    """
     from benchmark.showcase.bricks import build_showcase_registry
     from benchmark.showcase.bricks.math_bricks import add, multiply, round_value
     from benchmark.showcase.bricks.string_bricks import format_result
@@ -254,7 +278,7 @@ class TestExecuteTool:
     """Tests for _execute_tool with real Bricks engine components."""
 
     def test_list_bricks_returns_list(self) -> None:
-        from benchmark.mcp.agent_runner import _execute_tool
+        from benchmark.mcp.tool_executor import execute_tool as _execute_tool
         from bricks.core.catalog import TieredCatalog
         from bricks.core.engine import BlueprintEngine
         from bricks.core.loader import BlueprintLoader
@@ -270,7 +294,7 @@ class TestExecuteTool:
         assert isinstance(result, list)
 
     def test_execute_blueprint_success(self) -> None:
-        from benchmark.mcp.agent_runner import _execute_tool
+        from benchmark.mcp.tool_executor import execute_tool as _execute_tool
         from bricks.core.catalog import TieredCatalog
         from bricks.core.engine import BlueprintEngine
         from bricks.core.loader import BlueprintLoader
@@ -306,7 +330,7 @@ outputs_map:
         assert result["outputs"]["result"] == 7.0
 
     def test_lookup_brick_returns_matches(self) -> None:
-        from benchmark.mcp.agent_runner import _execute_tool
+        from benchmark.mcp.tool_executor import execute_tool as _execute_tool
         from bricks.core.catalog import TieredCatalog
         from bricks.core.engine import BlueprintEngine
         from bricks.core.loader import BlueprintLoader
@@ -324,7 +348,7 @@ outputs_map:
         assert "multiply" in names
 
     def test_execute_blueprint_error_returns_dict(self) -> None:
-        from benchmark.mcp.agent_runner import _execute_tool
+        from benchmark.mcp.tool_executor import execute_tool as _execute_tool
         from bricks.core.catalog import TieredCatalog
         from bricks.core.engine import BlueprintEngine
         from bricks.core.loader import BlueprintLoader
@@ -355,12 +379,14 @@ class TestCLIModeFlag:
     """Tests for the --mode flag."""
 
     def test_valid_modes(self) -> None:
+        """Both tool_use and compose are valid modes."""
         from benchmark.showcase.run import VALID_MODES
 
         assert "tool_use" in VALID_MODES
         assert "compose" in VALID_MODES
 
     def test_compose_mode_exists(self) -> None:
+        """run_benchmark_compose function is importable and callable."""
         from benchmark.showcase.run import run_benchmark_compose
 
         assert callable(run_benchmark_compose)
@@ -370,40 +396,46 @@ class TestCLIScenarioExpansion:
     """Tests for the --scenario flag parsing logic."""
 
     def test_expand_all(self) -> None:
+        """'all' expands to A presets + C + D."""
         from benchmark.showcase.run import expand_scenarios
 
         result = expand_scenarios(["all"])
-        assert result == ["A2-3", "A2-6", "A2-12", "C2", "D2"]
+        assert result == ["A-5", "A-25", "A-50", "C", "D"]
 
-    def test_expand_a2(self) -> None:
+    def test_expand_a(self) -> None:
+        """'A' expands to all A presets."""
         from benchmark.showcase.run import expand_scenarios
 
-        result = expand_scenarios(["A2"])
-        assert result == ["A2-3", "A2-6", "A2-12"]
+        result = expand_scenarios(["A"])
+        assert result == ["A-5", "A-25", "A-50"]
+
+    def test_expand_a_with_steps(self) -> None:
+        """'A' with --steps uses the specified step count."""
+        from benchmark.showcase.run import expand_scenarios
+
+        result = expand_scenarios(["A"], steps=12)
+        assert result == ["A-12"]
 
     def test_expand_single(self) -> None:
+        """Single explicit scenario passes through."""
         from benchmark.showcase.run import expand_scenarios
 
-        result = expand_scenarios(["A2-3"])
-        assert result == ["A2-3"]
+        result = expand_scenarios(["C"])
+        assert result == ["C"]
 
     def test_expand_multiple(self) -> None:
+        """Multiple scenarios expand correctly."""
         from benchmark.showcase.run import expand_scenarios
 
-        result = expand_scenarios(["A2-3", "C2"])
-        assert result == ["A2-3", "C2"]
-
-    def test_expand_dedup(self) -> None:
-        from benchmark.showcase.run import expand_scenarios
-
-        result = expand_scenarios(["A2-3", "A2"])
-        assert result == ["A2-3", "A2-6", "A2-12"]
+        result = expand_scenarios(["A", "C"], steps=5)
+        assert result == ["A-5", "C"]
 
     def test_expand_preserves_order(self) -> None:
+        """Order follows canonical A, C, D ordering."""
         from benchmark.showcase.run import expand_scenarios
 
-        result = expand_scenarios(["D2", "A2-3"])
-        assert result == ["A2-3", "D2"]
+        result = expand_scenarios(["D", "A"], steps=5)
+        assert result == ["A-5", "D"]
 
 
 # ── Cost estimation ──────────────────────────────────────────────────────────
@@ -413,17 +445,17 @@ class TestCostEstimation:
     """Tests for the cost estimation helper."""
 
     def test_zero_tokens(self) -> None:
-        from benchmark.showcase.run import _estimate_cost
+        """Zero tokens produces zero cost."""
+        from benchmark.showcase.formatters import estimate_cost
 
-        assert _estimate_cost(0, 0) == 0.0
+        assert estimate_cost(0, 0) == 0.0
 
     def test_known_cost(self) -> None:
-        from benchmark.showcase.run import _estimate_cost
+        """1M input + 1M output at Haiku pricing = $4.80."""
+        from benchmark.showcase.formatters import estimate_cost
 
-        # 1M input + 1M output
-        cost = _estimate_cost(1_000_000, 1_000_000)
+        cost = estimate_cost(1_000_000, 1_000_000)
         assert cost > 0
-        # Haiku pricing: $0.80/M input + $4.00/M output = $4.80
         assert abs(cost - 4.80) < 0.01
 
 
@@ -533,7 +565,7 @@ class TestActionableErrors:
         return catalog, engine, loader, validator
 
     def test_unknown_brick_includes_available_list(self) -> None:
-        from benchmark.mcp.agent_runner import _execute_tool
+        from benchmark.mcp.tool_executor import execute_tool as _execute_tool
 
         catalog, engine, loader, validator = self._setup()
         blueprint_yaml = """\
@@ -561,7 +593,7 @@ outputs_map:
         assert "Available bricks:" in result["hint"] or "multiply" in result["hint"]
 
     def test_unknown_brick_suggests_closest_match(self) -> None:
-        from benchmark.mcp.agent_runner import _execute_tool
+        from benchmark.mcp.tool_executor import execute_tool as _execute_tool
 
         catalog, engine, loader, validator = self._setup()
         blueprint_yaml = """\
@@ -588,7 +620,7 @@ outputs_map:
         assert "multiply" in result["hint"]
 
     def test_validation_error_surfaces_all_errors(self) -> None:
-        from benchmark.mcp.agent_runner import _execute_tool
+        from benchmark.mcp.tool_executor import execute_tool as _execute_tool
 
         catalog, engine, loader, validator = self._setup()
         # Blueprint with two unknown bricks — should surface all_errors
@@ -621,7 +653,7 @@ outputs_map:
         assert len(result["all_errors"]) >= 2
 
     def test_yaml_parse_error_has_hint(self) -> None:
-        from benchmark.mcp.agent_runner import _execute_tool
+        from benchmark.mcp.tool_executor import execute_tool as _execute_tool
 
         catalog, engine, loader, validator = self._setup()
         result = _execute_tool(
@@ -636,7 +668,7 @@ outputs_map:
         assert "error" in result
 
     def test_bad_reference_includes_save_as_names(self) -> None:
-        from benchmark.mcp.agent_runner import _execute_tool
+        from benchmark.mcp.tool_executor import execute_tool as _execute_tool
 
         catalog, engine, loader, validator = self._setup()
         # Blueprint where step2 references a non-existent save_as name
@@ -676,7 +708,11 @@ outputs_map:
 
 
 def _build_all_showcase_registry() -> Any:
-    """Build a registry with ALL showcase bricks (math + string + data)."""
+    """Build a registry with ALL showcase bricks (math + string + data).
+
+    Returns:
+        A BrickRegistry with all 7 showcase bricks.
+    """
     from benchmark.showcase.bricks import build_showcase_registry
     from benchmark.showcase.bricks.data_bricks import http_get, json_extract
     from benchmark.showcase.bricks.math_bricks import add, multiply, round_value, subtract
@@ -690,17 +726,17 @@ class TestBrickDescriptionStyle:
 
     def test_descriptions_include_output_keys(self) -> None:
         """Every brick description must mention its output field names in {curly braces}."""
-        from bricks.core.schema import _output_keys
+        from bricks.core.schema import output_keys
 
         registry = _build_all_showcase_registry()
         for name, meta in registry.list_all():
             callable_, _ = registry.get(name)
-            output_keys = _output_keys(callable_)
+            out_keys = output_keys(callable_)
             # Function bricks returning dict[str, X] have empty output_keys,
             # so check the description contains at least one {field: ...} pattern
             desc = meta.description
             assert "{" in desc, f"Brick '{name}' description must mention output fields in {{curly braces}}"
-            for key in output_keys:
+            for key in out_keys:
                 assert key in desc, f"Brick '{name}' description must mention output key '{key}'"
 
     def test_descriptions_under_120_chars(self) -> None:

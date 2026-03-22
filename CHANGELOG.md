@@ -7,6 +7,42 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.4.9] — 2026-03-23
+
+### Summary
+Production-grade polish + parametric benchmark (Mission 018). Major refactor: parametric `TaskGenerator` replaces hardcoded tasks, `tool_executor.py` extracted from `agent_runner.py`, `showcase/run.py` split into 4 files, shared `constants.py` with enums, private schema functions made public, deprecated aliases moved to `compat.py`, engine `_execute_step` extracted, `__all__` added.
+
+### Added
+- `benchmark/constants.py` — `Scenario`, `RunMode`, `RunStatus` enums + shared constants
+- `benchmark/mcp/scenarios/task_generator.py` — `TaskGenerator` + `GeneratedTask` for parametric N-step tasks
+- `benchmark/mcp/tool_executor.py` — extracted tool execution logic from `agent_runner.py`
+- `benchmark/showcase/formatters.py` — table printing, cost estimation, compose call logging
+- `benchmark/showcase/metadata.py` — git info, SDK version, metadata file writing
+- `benchmark/showcase/registry_factory.py` — `build_registry(required_bricks)` parametric builder
+- `bricks/compat.py` — deprecated Sequence* aliases with `DeprecationWarning`
+- `--steps N` CLI arg for specifying step count (`--scenario A --steps 12`)
+- New tests: `test_task_generator.py`, `test_tool_executor.py`, `test_formatters.py`, `test_enums.py` (47 new tests)
+
+### Changed
+- **Scenario naming**: `A2-3/6/12` → `A-N` (parametric), `C2` → `C`, `D2` → `D`
+- **CLI presets**: `--scenario A` runs presets 5, 25, 50 (was 3, 6, 12)
+- `showcase/run.py` — split from 622 lines into 4 files, each under 200 lines
+- `agent_runner.py` — imports constants from `benchmark/constants.py`, tool execution from `tool_executor.py`
+- `schema.py` — `_output_keys` → `output_keys`, `_parse_description_keys` → `parse_description_keys`, `_signature_params` → `signature_params` (now public)
+- `schema.py` — safe repr for param defaults (try/except with str() fallback)
+- `engine.py` — extracted `_execute_step()`, `_execute_brick_step()`, `_execute_sub_blueprint_step()` from monolithic `_execute()`
+- `bricks/core/__init__.py` — exports new public schema functions, `__all__` cleaned up
+- `bricks/__init__.py` — added `__all__`
+- `composer.py` — updated to use public `output_keys`, `parse_description_keys` imports
+- Scenario runners (`a2_complexity.py`, `c2_reuse.py`, `d2_determinism.py`) — parametric API, import constants
+
+### Removed
+- Hardcoded `TASK_A2_3`, `TASK_A2_6`, `TASK_A2_12` constants (replaced by `TaskGenerator`)
+- `_build_math_registry_a3/a6/a12` functions (replaced by `build_registry`)
+- Magic string constants (`DEFAULT_MODEL`, `_MODEL`, pricing) from scattered files
+
+---
+
 ## [0.4.8] — 2026-03-19
 
 ### Summary
