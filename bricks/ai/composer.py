@@ -39,6 +39,8 @@ class CallDetail(BaseModel):
     """Detail for a single API call within a compose attempt."""
 
     call_number: int
+    system_prompt: str = ""
+    user_prompt: str = ""
     input_tokens: int = 0
     output_tokens: int = 0
     total_tokens: int = 0
@@ -62,6 +64,7 @@ class ComposeResult(BaseModel):
     total_tokens: int = 0
     model: str = ""
     duration_seconds: float = 0.0
+    system_prompt: str = ""
 
 
 # System prompt — under 300 tokens without signatures/output_keys/example.
@@ -335,6 +338,7 @@ class BlueprintComposer:
             total_tokens=total_input + total_output,
             model=self._model,
             duration_seconds=elapsed,
+            system_prompt=system,
         )
 
     def _compose_call(
@@ -362,6 +366,8 @@ class BlueprintComposer:
 
         return CallDetail(
             call_number=call_number,
+            system_prompt=system,
+            user_prompt=user_message,
             input_tokens=in_tok,
             output_tokens=out_tok,
             total_tokens=in_tok + out_tok,

@@ -126,6 +126,7 @@ class AgentRunner:
             final_answer=text,
             code_generated=code,
             duration_seconds=elapsed,
+            system_prompt=APPLES_SYSTEM,
         )
 
     def run_with_bricks(
@@ -263,4 +264,5 @@ class AgentRunner:
             blueprint_yaml=last_blueprint_yaml,
             execution_result=last_execution_result,
             duration_seconds=elapsed,
+            system_prompt=system_prompt,
         )

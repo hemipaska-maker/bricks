@@ -45,3 +45,4 @@ class AgentResult(BaseModel):
     blueprint_yaml: str | None = None
     execution_result: dict[str, Any] | None = None
     duration_seconds: float = 0.0
+    system_prompt: str = ""

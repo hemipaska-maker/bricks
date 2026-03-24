@@ -7,6 +7,28 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.4.10] — 2026-03-25
+
+### Summary
+Structured benchmark data collection (Mission 019). Every benchmark run now writes a per-scenario JSON file with full prompt/response data, per-call token counts, correctness checks against expected outputs, and no-tools baseline ratios.
+
+### Added
+- `benchmark/showcase/result_writer.py` — `ScenarioResult`, `CallRecord`, `ExecutionRecord`, `TotalRecord`, `BaselineRecord` Pydantic models + `write_scenario_result()` + `check_correctness()`
+- `CallDetail` gains `system_prompt` and `user_prompt` fields (composer sets both per call)
+- `ComposeResult` gains `system_prompt` field (set by `compose()`)
+- `AgentResult` gains `system_prompt` field (set by `run_without_tools()` and `run_with_bricks()`)
+- Per-scenario structured JSON written to run directory (e.g. `A-25_compose.json`)
+- Correctness checker compares actual vs expected outputs with float tolerance
+- New tests: `test_result_writer.py` (17 tests — model serialization, correctness, write/read roundtrip)
+
+### Changed
+- `run_benchmark_compose()` builds `ScenarioResult` and writes JSON per scenario
+- `run_benchmark()` (tool_use mode) builds `ScenarioResult` and writes JSON per scenario
+- `compose()` populates `system_prompt` on result and per-call prompts on `CallDetail`
+- `run_without_tools()` and `run_with_bricks()` populate `system_prompt` on `AgentResult`
+
+---
+
 ## [0.4.9] — 2026-03-23
 
 ### Summary

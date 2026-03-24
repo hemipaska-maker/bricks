@@ -20,8 +20,9 @@ import time
 from pathlib import Path
 from typing import Any
 
-from benchmark.constants import Scenario
+from benchmark.constants import DEFAULT_MODEL, Scenario
 from benchmark.showcase.formatters import (
+    estimate_cost,
     log_compose_calls,
     print_a2_table,
     print_cost_summary,
@@ -143,6 +144,14 @@ def run_benchmark(
     from benchmark.mcp.scenarios.c2_reuse import run_c
     from benchmark.mcp.scenarios.d2_determinism import run_d
     from benchmark.showcase.registry_factory import build_registry
+    from benchmark.showcase.result_writer import (
+        BaselineRecord,
+        ExecutionRecord,
+        ScenarioResult,
+        TotalRecord,
+        check_correctness,
+        write_scenario_result,
+    )
 
     api_key = _require_api_key()
     runner = AgentRunner(api_key=api_key)
@@ -154,13 +163,13 @@ def run_benchmark(
     t0 = time.monotonic()
 
     # ── A: Complexity Curve ──────────────────────────────────────────────
+    from benchmark.mcp.scenarios.task_generator import TaskGenerator
+
     a_scenarios = [s for s in scenarios if s.startswith("A-")]
     a_results: list[dict[str, Any]] = []
 
     for label in a_scenarios:
         step_count = int(label.split("-")[1])
-        from benchmark.mcp.scenarios.task_generator import TaskGenerator
-
         gen = TaskGenerator()
         task = gen.generate(step_count)
         registry = build_registry(task.required_bricks)
@@ -185,6 +194,39 @@ def run_benchmark(
         total_input += nt.get("input_tokens", 0) + br.get("input_tokens", 0)
         total_output += nt.get("output_tokens", 0) + br.get("output_tokens", 0)
         a_results.append(result)
+
+        # Write structured result JSON
+        actual_outputs = br.get("execution_result") or {}
+        correct = check_correctness(actual_outputs, task.expected_outputs) if actual_outputs else False
+        cost = estimate_cost(br.get("input_tokens", 0), br.get("output_tokens", 0))
+        ratio_val = nt["total_tokens"] / br["total_tokens"] if br["total_tokens"] > 0 else 0.0
+        scenario_result = ScenarioResult(
+            scenario=label,
+            mode="tool_use",
+            steps=step_count,
+            model=DEFAULT_MODEL,
+            task_text=task.task_text,
+            execution=ExecutionRecord(
+                success=bool(actual_outputs),
+                actual_outputs=actual_outputs,
+                expected_outputs=task.expected_outputs,
+                correct=correct,
+            ),
+            totals=TotalRecord(
+                api_calls=br.get("turns", 0),
+                input_tokens=br.get("input_tokens", 0),
+                output_tokens=br.get("output_tokens", 0),
+                total_tokens=br.get("total_tokens", 0),
+                cost_usd=cost,
+            ),
+            baseline=BaselineRecord(
+                no_tools_tokens=nt["total_tokens"],
+                no_tools_input=nt.get("input_tokens", 0),
+                no_tools_output=nt.get("output_tokens", 0),
+                ratio=ratio_val,
+            ),
+        )
+        write_scenario_result(run_dir, scenario_result)
 
     if a_results:
         print_a2_table(a_results)
@@ -261,6 +303,15 @@ def run_benchmark_compose(
     from benchmark.mcp.agent_runner import AgentRunner
     from benchmark.mcp.scenarios.task_generator import TaskGenerator
     from benchmark.showcase.registry_factory import build_registry
+    from benchmark.showcase.result_writer import (
+        BaselineRecord,
+        CallRecord,
+        ExecutionRecord,
+        ScenarioResult,
+        TotalRecord,
+        check_correctness,
+        write_scenario_result,
+    )
     from bricks.ai.composer import BlueprintComposer
     from bricks.core.engine import BlueprintEngine
     from bricks.core.loader import BlueprintLoader
@@ -290,26 +341,81 @@ def run_benchmark_compose(
 
         log_compose_calls(label, result, logger)
 
+        # Build call records from compose result
+        call_records = [
+            CallRecord(
+                call_number=c.call_number,
+                system_prompt=c.system_prompt,
+                user_prompt=c.user_prompt,
+                response_text=c.yaml_text,
+                yaml_generated=c.yaml_text,
+                validation_errors=c.validation_errors,
+                is_valid=c.is_valid,
+                input_tokens=c.input_tokens,
+                output_tokens=c.output_tokens,
+                total_tokens=c.total_tokens,
+                duration_seconds=c.duration_seconds,
+            )
+            for c in result.calls
+        ]
+
+        # Execute blueprint and check correctness
+        execution = ExecutionRecord(expected_outputs=task.expected_outputs)
         if result.is_valid:
             try:
                 bp_def = loader.load_string(result.blueprint_yaml)
                 engine = BlueprintEngine(registry=registry)
                 exec_result = engine.run(bp_def, inputs={})
-                print(f"  [{label}]   Execution: OK — outputs: {exec_result.outputs}")
-                logger.info("%s execution outputs: %s", label, exec_result.outputs)
+                actual = exec_result.outputs
+                execution.success = True
+                execution.actual_outputs = actual
+                execution.correct = check_correctness(actual, task.expected_outputs)
+                print(f"  [{label}]   Execution: OK — outputs: {actual}")
+                logger.info("%s execution outputs: %s", label, actual)
             except Exception as exc:
+                execution.error = str(exc)
                 print(f"  [{label}]   Execution: FAILED — {exc}")
                 logger.warning("%s execution failed: %s", label, exc)
 
+        # No-tools baseline
         nt_result = runner.run_without_tools(task.task_text)
         total_input += nt_result.total_input_tokens
         total_output += nt_result.total_output_tokens
         nt_tokens = nt_result.total_tokens
         print(f"  [{label}] No-tools: {nt_tokens:,} tokens")
 
-        ratio = f"{result.total_tokens / nt_tokens:.1f}x" if nt_tokens > 0 else "N/A"
+        ratio_val = result.total_tokens / nt_tokens if nt_tokens > 0 else 0.0
+        ratio = f"{ratio_val:.1f}x" if nt_tokens > 0 else "N/A"
         print(f"  [{label}] done  compose={result.total_tokens:,}  no_tools={nt_tokens:,}  ({ratio})")
         print()
+
+        # Build and write structured result
+        cost = estimate_cost(result.total_input_tokens, result.total_output_tokens)
+        scenario_result = ScenarioResult(
+            scenario=label,
+            mode="compose",
+            steps=step_count,
+            model=result.model,
+            task_text=task.task_text,
+            calls=call_records,
+            execution=execution,
+            totals=TotalRecord(
+                api_calls=result.api_calls,
+                input_tokens=result.total_input_tokens,
+                output_tokens=result.total_output_tokens,
+                total_tokens=result.total_tokens,
+                cost_usd=cost,
+                duration_seconds=result.duration_seconds,
+            ),
+            baseline=BaselineRecord(
+                no_tools_tokens=nt_tokens,
+                no_tools_input=nt_result.total_input_tokens,
+                no_tools_output=nt_result.total_output_tokens,
+                ratio=ratio_val,
+            ),
+        )
+        json_path = write_scenario_result(run_dir, scenario_result)
+        print(f"  [{label}] Structured result -> {json_path}")
 
     elapsed = time.monotonic() - t0
     print_cost_summary(total_input, total_output, elapsed)
