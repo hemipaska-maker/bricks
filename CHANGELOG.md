@@ -7,6 +7,13 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.4.12] — 2026-03-25
+
+### Fixed
+- Correctness check false negative: `expected_outputs` was the full intermediate-step dict from `TaskGenerator`; now filtered to only keys present in `actual_outputs` before comparison and storage
+
+---
+
 ## [0.4.11] — 2026-03-25
 
 ### Summary

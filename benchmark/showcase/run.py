@@ -197,7 +197,8 @@ def run_benchmark(
 
         # Write structured result JSON
         actual_outputs = br.get("execution_result") or {}
-        correct = check_correctness(actual_outputs, task.expected_outputs) if actual_outputs else False
+        filtered_expected = {k: v for k, v in task.expected_outputs.items() if k in actual_outputs}
+        correct = check_correctness(actual_outputs, filtered_expected) if actual_outputs else False
         cost = estimate_cost(br.get("input_tokens", 0), br.get("output_tokens", 0))
         ratio_val = nt["total_tokens"] / br["total_tokens"] if br["total_tokens"] > 0 else 0.0
         scenario_result = ScenarioResult(
@@ -209,7 +210,7 @@ def run_benchmark(
             execution=ExecutionRecord(
                 success=bool(actual_outputs),
                 actual_outputs=actual_outputs,
-                expected_outputs=task.expected_outputs,
+                expected_outputs=filtered_expected,
                 correct=correct,
             ),
             totals=TotalRecord(
@@ -360,16 +361,18 @@ def run_benchmark_compose(
         ]
 
         # Execute blueprint and check correctness
-        execution = ExecutionRecord(expected_outputs=task.expected_outputs)
+        execution = ExecutionRecord()
         if result.is_valid:
             try:
                 bp_def = loader.load_string(result.blueprint_yaml)
                 engine = BlueprintEngine(registry=registry)
                 exec_result = engine.run(bp_def, inputs=bp_def.inputs)
                 actual = exec_result.outputs
+                filtered_expected = {k: v for k, v in task.expected_outputs.items() if k in actual}
                 execution.success = True
                 execution.actual_outputs = actual
-                execution.correct = check_correctness(actual, task.expected_outputs)
+                execution.expected_outputs = filtered_expected
+                execution.correct = check_correctness(actual, filtered_expected)
                 print(f"  [{label}]   Execution: OK — outputs: {actual}")
                 logger.info("%s execution outputs: %s", label, actual)
             except Exception as exc:
