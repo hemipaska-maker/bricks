@@ -6,7 +6,13 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from bricks.ai.composer import BlueprintComposer, ComposerError, ComposeResult
+from bricks.ai.composer import (
+    _RETRY_PROMPT,
+    BlueprintComposer,
+    ComposerError,
+    ComposeResult,
+    _build_example,
+)
 from bricks.core.registry import BrickRegistry
 
 # ── helpers ──────────────────────────────────────────────────────────────────
@@ -216,3 +222,89 @@ class TestComposerInit:
             pytest.raises(ImportError, match="anthropic"),
         ):
             BlueprintComposer(api_key="test_key")
+
+
+# ── Retry Prompt ──────────────────────────────────────────────────────────
+
+
+class TestRetryPrompt:
+    """Tests for the retry prompt template."""
+
+    def test_retry_prompt_includes_task_placeholder(self) -> None:
+        """_RETRY_PROMPT contains {task} placeholder."""
+        assert "{task}" in _RETRY_PROMPT
+
+    def test_retry_prompt_renders_with_task(self) -> None:
+        """_RETRY_PROMPT formats correctly with task, yaml, and errors."""
+        rendered = _RETRY_PROMPT.format(
+            task="Calculate 3 + 4",
+            yaml="name: test",
+            errors="- some error",
+        )
+        assert "Original task:" in rendered
+        assert "Calculate 3 + 4" in rendered
+        assert "name: test" in rendered
+        assert "- some error" in rendered
+
+
+# ── Build Example ─────────────────────────────────────────────────────────
+
+
+class TestBuildExample:
+    """Tests for _build_example() worked example generation."""
+
+    def test_example_includes_inputs_section(self, math_registry: BrickRegistry) -> None:
+        """_build_example() output includes an inputs: section."""
+        example = _build_example(math_registry)
+        assert "inputs:" in example
+
+    def test_example_includes_inputs_references(self, math_registry: BrickRegistry) -> None:
+        """_build_example() output uses ${inputs.X} references in params."""
+        example = _build_example(math_registry)
+        assert "${inputs." in example
+
+    def test_example_empty_for_single_brick(self) -> None:
+        """_build_example() returns empty string for registry with < 2 bricks."""
+        from bricks.core.models import BrickMeta
+
+        reg = BrickRegistry()
+        reg.register("only", lambda: None, BrickMeta(name="only"))
+        assert _build_example(reg) == ""
+
+
+# ── Compose Populates Prompts ──────────────────────────────────────────────
+
+
+class TestComposePopulatesPrompts:
+    """Tests that compose() populates system_prompt and per-call prompts."""
+
+    def test_compose_sets_system_prompt(self, math_registry: BrickRegistry) -> None:
+        """compose() sets system_prompt on ComposeResult."""
+        composer = _make_composer(math_registry)
+        composer._client.messages.create.return_value = _make_mock_response(_VALID_YAML)
+        result = composer.compose("Add 3 + 4", math_registry)
+        assert result.system_prompt != ""
+        assert "Blueprint composer" in result.system_prompt
+
+    def test_compose_sets_call_detail_prompts(self, math_registry: BrickRegistry) -> None:
+        """compose() sets system_prompt and user_prompt on each CallDetail."""
+        composer = _make_composer(math_registry)
+        composer._client.messages.create.return_value = _make_mock_response(_VALID_YAML)
+        result = composer.compose("Add 3 + 4", math_registry)
+        assert len(result.calls) == 1
+        call = result.calls[0]
+        assert call.system_prompt != ""
+        assert call.user_prompt == "Add 3 + 4"
+
+    def test_retry_call_has_task_in_user_prompt(self, math_registry: BrickRegistry) -> None:
+        """On retry, the second call's user_prompt includes the original task."""
+        composer = _make_composer(math_registry)
+        composer._client.messages.create.side_effect = [
+            _make_mock_response(_INVALID_YAML),
+            _make_mock_response(_VALID_YAML),
+        ]
+        result = composer.compose("Add numbers", math_registry)
+        assert result.api_calls == 2
+        retry_call = result.calls[1]
+        assert "Original task:" in retry_call.user_prompt
+        assert "Add numbers" in retry_call.user_prompt

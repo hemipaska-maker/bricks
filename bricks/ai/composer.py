@@ -79,11 +79,13 @@ Available bricks:
 
 Blueprint format:
 name: blueprint_name
+inputs:
+  param_name: value
 steps:
   - name: step_name
     brick: brick_name
     params:
-      key: "${{inputs.param}}"
+      key: "${{inputs.param_name}}"
       key2: "${{prior_step.field}}"
       key3: 42.0
     save_as: result_name
@@ -91,12 +93,13 @@ outputs_map:
   output_key: "${{result_name.field}}"
 
 Reference syntax:
-- ${{inputs.X}} for task inputs
+- ${{inputs.X}} for task inputs declared in the inputs section
 - ${{save_as_name.field}} for prior step outputs
 - Literal values (numbers, strings) allowed
 
 Rules:
 - Only use brick names from the list above.
+- Declare all task parameters in the inputs section. Use ${{inputs.X}} to reference them in steps.
 - Every step referenced later needs save_as.
 - Step names must be unique snake_case.
 - outputs_map values must use ${{inputs.X}} or ${{save_as.field}} syntax.
@@ -106,6 +109,9 @@ Rules:
 """
 
 _RETRY_PROMPT = """\
+Original task:
+{task}
+
 The following Blueprint YAML has validation errors:
 
 {yaml}
@@ -144,18 +150,20 @@ def _build_example(registry: BrickRegistry) -> str:
     out_key1 = keys1[0] if keys1 else "result"
     out_key2 = keys2[0] if keys2 else "result"
 
-    # Build param strings for each brick
-    params1 = _build_literal_params(callable1)
+    # Build input declarations and param references for step 1
+    input_decls, input_refs = _build_input_params(callable1)
     params2 = _build_ref_params(callable2, "step1", out_key1)
 
     lines = [
         "Example (2-step chain):",
         "name: example",
+        "inputs:",
+        *[f"  {line}" for line in input_decls],
         "steps:",
         "  - name: step1",
         f"    brick: {name1}",
         "    params:",
-        *[f"      {line}" for line in params1],
+        *[f"      {line}" for line in input_refs],
         "    save_as: step1",
         "  - name: step2",
         f"    brick: {name2}",
@@ -168,29 +176,32 @@ def _build_example(registry: BrickRegistry) -> str:
     return "\n".join(lines)
 
 
-def _build_literal_params(callable_: Any) -> list[str]:
-    """Build literal param lines for a worked example.
+def _build_input_params(callable_: Any) -> tuple[list[str], list[str]]:
+    """Build input declarations and ``${inputs.X}`` references for a worked example.
 
     Args:
         callable_: A brick callable.
 
     Returns:
-        List of ``key: value`` strings.
+        Tuple of (input_declarations, param_references). Declarations go in the
+        ``inputs:`` section, references go in step ``params:``.
     """
     try:
         sig = _inspect.signature(callable_)
-        lines: list[str] = []
+        decls: list[str] = []
+        refs: list[str] = []
         for pname, param in sig.parameters.items():
             if pname in ("self", "inputs", "metadata"):
                 continue
             ann = param.annotation
             if ann is float or ann is int:
-                lines.append(f"{pname}: 1.0")
+                decls.append(f"{pname}: 1.0")
             else:
-                lines.append(f'{pname}: "example"')
-        return lines
+                decls.append(f'{pname}: "example"')
+            refs.append(f'{pname}: "${{inputs.{pname}}}"')
+        return decls, refs
     except (ValueError, TypeError):
-        return ["x: 1.0"]
+        return ["x: 1.0"], ['x: "${inputs.x}"']
 
 
 def _build_ref_params(callable_: Any, ref_step: str, ref_key: str) -> list[str]:
@@ -315,6 +326,7 @@ class BlueprintComposer:
         # Retry on failure (fresh call, no history)
         if not detail.is_valid and len(calls) < _MAX_API_CALLS:
             retry_prompt = _RETRY_PROMPT.format(
+                task=task,
                 yaml=detail.yaml_text,
                 errors="\n".join(f"- {e}" for e in detail.validation_errors),
             )

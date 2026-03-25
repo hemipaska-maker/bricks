@@ -7,6 +7,23 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.4.11] — 2026-03-25
+
+### Summary
+Blueprint inputs declaration + retry with task context (Mission 020). Fixes two bugs from v0.4.10 benchmark: `${inputs.X}` rejected due to missing `inputs:` section, and retry hallucinating values because it lacked the original task text.
+
+### Fixed
+- System prompt now shows `inputs:` section in format block — LLM declares task parameters
+- `_RETRY_PROMPT` includes original task text so LLM has real values on retry
+- `_build_example()` generates worked example with `inputs:` section and `${inputs.X}` references
+- `run_benchmark_compose()` passes `bp_def.inputs` to `engine.run()` instead of empty dict
+
+### Changed
+- `BlueprintDefinition.inputs` type changed from `dict[str, str]` to `dict[str, Any]` — YAML values (float, int, str) parsed natively
+- New rule in system prompt: "Declare all task parameters in the inputs section"
+
+---
+
 ## [0.4.10] — 2026-03-25
 
 ### Summary

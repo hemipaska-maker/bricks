@@ -365,7 +365,7 @@ def run_benchmark_compose(
             try:
                 bp_def = loader.load_string(result.blueprint_yaml)
                 engine = BlueprintEngine(registry=registry)
-                exec_result = engine.run(bp_def, inputs={})
+                exec_result = engine.run(bp_def, inputs=bp_def.inputs)
                 actual = exec_result.outputs
                 execution.success = True
                 execution.actual_outputs = actual

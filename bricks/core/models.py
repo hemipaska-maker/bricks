@@ -50,7 +50,7 @@ class BlueprintDefinition(BaseModel):
 
     name: str
     description: str = ""
-    inputs: dict[str, str] = Field(default_factory=dict)
+    inputs: dict[str, Any] = Field(default_factory=dict)
     steps: list[StepDefinition] = Field(default_factory=list)
     outputs_map: dict[str, str] = Field(default_factory=dict)
 
