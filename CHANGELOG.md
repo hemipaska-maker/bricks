@@ -7,6 +7,18 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.4.16] — 2026-03-27
+
+### Added
+- `bricks/boot/` package — `SystemBootstrapper` reads `agent.yaml` (zero LLM calls) or `skill.md` (one LLM call) and returns a `SystemConfig`
+- `SystemConfig` Pydantic model — `name`, `description`, `brick_categories`, `tags`, `model`, `api_key`, `store`, `max_selector_results`
+- `bricks/orchestrator/` package — `RuntimeOrchestrator` wires selector → composer → engine; single `execute(task, inputs) → dict` call
+- `bricks/mcp/` package — framework-agnostic `execute_task()` tool + `EXECUTE_TASK_SCHEMA` JSON schema for MCP registration
+- `OrchestratorError` exception — raised when composition or execution fails in the orchestrator
+- 23 new tests across `tests/boot/` and `tests/orchestrator/`
+
+---
+
 ## [0.4.15] — 2026-03-26
 
 ### Added

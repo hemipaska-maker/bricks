@@ -66,6 +66,10 @@ class YamlLoadError(BrickError):
         super().__init__(f"Failed to load YAML from {path!r}: {cause}")
 
 
+class OrchestratorError(BrickError):
+    """Raised when RuntimeOrchestrator.execute() cannot complete a task."""
+
+
 class ConfigError(BrickError):
     """Raised when bricks.config.yaml cannot be loaded or is invalid."""
 

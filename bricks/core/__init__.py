@@ -23,6 +23,7 @@ from bricks.core.exceptions import (
     ConfigError,
     DuplicateBlueprintError,
     DuplicateBrickError,
+    OrchestratorError,
     VariableResolutionError,
     YamlLoadError,
 )
@@ -90,6 +91,7 @@ __all__ = [
     "DuplicateBrickError",
     "ExecutionContext",
     "ExecutionResult",
+    "OrchestratorError",
     "ReferenceResolver",
     "RegistryConfig",
     "SelectorConfig",

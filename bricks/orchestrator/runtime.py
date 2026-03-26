@@ -1,0 +1,135 @@
+"""RuntimeOrchestrator: single-call task executor.
+
+Wires together: BrickSelector → BlueprintComposer → BlueprintEngine.
+The store lookup is handled transparently by the composer (cache hit → 0 tokens).
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+from bricks.ai.composer import BlueprintComposer
+from bricks.boot.config import SystemConfig
+from bricks.core.engine import BlueprintEngine
+from bricks.core.exceptions import OrchestratorError
+from bricks.core.loader import BlueprintLoader
+from bricks.core.registry import BrickRegistry
+from bricks.core.selector import AllBricksSelector, BrickSelector
+from bricks.selector.keyword_tier import KeywordTier
+from bricks.selector.selector import TieredBrickSelector
+from bricks.store.blueprint_store import BlueprintStore, FileBlueprintStore, MemoryBlueprintStore
+
+
+def _build_selector(config: SystemConfig) -> BrickSelector:
+    """Build a BrickSelector from config.
+
+    Args:
+        config: Resolved system configuration.
+
+    Returns:
+        ``TieredBrickSelector`` (Tier 1 keyword) if categories are configured,
+        else ``AllBricksSelector``.
+    """
+    if config.brick_categories or config.tags:
+        return TieredBrickSelector(
+            tiers=[KeywordTier()],
+            max_results=config.max_selector_results,
+        )
+    return AllBricksSelector()
+
+
+def _build_store(config: SystemConfig) -> BlueprintStore | None:
+    """Build a BlueprintStore from config.
+
+    Args:
+        config: Resolved system configuration.
+
+    Returns:
+        A configured store, or ``None`` if ``config.store.enabled`` is False.
+    """
+    if not config.store.enabled:
+        return None
+    if config.store.backend == "file":
+        return FileBlueprintStore(config.store.path)
+    return MemoryBlueprintStore()
+
+
+class RuntimeOrchestrator:
+    """Single-call task executor: compose → validate → execute.
+
+    The store lookup and auto-save are handled transparently inside
+    ``BlueprintComposer.compose()``. On a store cache hit, no LLM tokens
+    are consumed and the pipeline runs directly.
+
+    Args:
+        config: Resolved system configuration from ``SystemBootstrapper``.
+        registry: The brick registry to compose and execute against.
+    """
+
+    def __init__(
+        self,
+        config: SystemConfig,
+        registry: BrickRegistry,
+    ) -> None:
+        """Initialise the orchestrator and wire all components.
+
+        Args:
+            config: Resolved system configuration.
+            registry: Brick registry for selection, composition, and execution.
+        """
+        self._registry = registry
+        selector = _build_selector(config)
+        store = _build_store(config)
+        self._composer = BlueprintComposer(
+            api_key=config.api_key,
+            model=config.model,
+            selector=selector,
+            store=store,
+        )
+        self._engine = BlueprintEngine(registry)
+        self._loader = BlueprintLoader()
+
+    def execute(self, task_text: str, inputs: dict[str, Any] | None = None) -> dict[str, Any]:
+        """Execute a task end-to-end and return the outputs.
+
+        Flow:
+        1. ``compose()`` — checks store, calls LLM if miss, validates YAML
+        2. ``load_string()`` — parse YAML → ``BlueprintDefinition``
+        3. ``engine.run()`` — deterministic step-by-step execution
+        4. Return outputs plus telemetry fields
+
+        Args:
+            task_text: Natural language task description.
+            inputs: Input values for ``${inputs.X}`` references in the blueprint.
+                    Defaults to an empty dict.
+
+        Returns:
+            A dict with keys:
+
+            - ``outputs``: the blueprint's final ``outputs_map`` values
+            - ``cache_hit``: ``True`` when the blueprint came from the store
+            - ``api_calls``: number of LLM calls made (0 on cache hit)
+            - ``tokens_used``: total tokens consumed
+
+        Raises:
+            OrchestratorError: If composition fails (YAML invalid after retries)
+                or if blueprint execution raises an error.
+        """
+        compose_result = self._composer.compose(task_text, self._registry)
+        if not compose_result.is_valid:
+            errors = "; ".join(compose_result.validation_errors)
+            raise OrchestratorError(f"Composition failed for task {task_text!r}: {errors}")
+        try:
+            blueprint = self._loader.load_string(compose_result.blueprint_yaml)
+        except Exception as exc:
+            raise OrchestratorError(f"Blueprint load error for task {task_text!r}: {exc}") from exc
+        try:
+            execution = self._engine.run(blueprint, inputs or {})
+        except Exception as exc:
+            raise OrchestratorError(f"Blueprint execution failed for task {task_text!r}: {exc}") from exc
+        return {
+            "outputs": execution.outputs,
+            "cache_hit": compose_result.cache_hit,
+            "api_calls": compose_result.api_calls,
+            "tokens_used": compose_result.total_tokens,
+        }
