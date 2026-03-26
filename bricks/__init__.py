@@ -1,5 +1,7 @@
 """Bricks - Deterministic execution engine for typed Python building blocks."""
 
-__version__ = "0.4.17"
+from bricks.api import Bricks
 
-__all__ = ["__version__"]
+__version__ = "0.4.18"
+
+__all__ = ["Bricks", "__version__"]

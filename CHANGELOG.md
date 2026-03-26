@@ -7,6 +7,20 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.4.18] — 2026-03-27
+
+### Added
+- `bricks/api.py` — `Bricks` public Python class with `from_config()`, `from_skill()`, and `execute()` methods
+- `Bricks` exported from `bricks` top-level package: `from bricks import Bricks`
+- `from_config(path)` — boots from `agent.yaml` with zero LLM calls; defaults registry to full stdlib
+- `from_skill(path)` — boots from `skill.md` with one LLM call; same registry default
+- `execute(task, inputs)` — delegates to `RuntimeOrchestrator.execute()`; custom `BrickRegistry` supported
+- `examples/python_api.py` — minimal boot + execute demo
+- `examples/langchain_integration.py` — wrapping `Bricks` as a LangChain `Tool`
+- 6 new tests in `tests/test_api.py`
+
+---
+
 ## [0.4.17] — 2026-03-27
 
 ### Added
