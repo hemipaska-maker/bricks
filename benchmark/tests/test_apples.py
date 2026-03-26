@@ -396,11 +396,11 @@ class TestCLIScenarioExpansion:
     """Tests for the --scenario flag parsing logic."""
 
     def test_expand_all(self) -> None:
-        """'all' expands to A presets + C + D."""
+        """'all' expands to A presets + C + D + CRM scenarios."""
         from benchmark.showcase.run import expand_scenarios
 
         result = expand_scenarios(["all"])
-        assert result == ["A-5", "A-25", "A-50", "C", "D"]
+        assert result == ["A-5", "A-25", "A-50", "C", "D", "CRM-pipeline", "CRM-hallucination", "CRM-reuse"]
 
     def test_expand_a(self) -> None:
         """'A' expands to all A presets."""

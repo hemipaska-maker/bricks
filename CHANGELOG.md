@@ -7,6 +7,26 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.4.17] — 2026-03-27
+
+### Added
+- `bricks/stdlib/` package — 95 production-grade bricks across 7 categories, all using Python stdlib only (no external deps)
+  - `data_transformation` (25 bricks): JSON/CSV/XML parsing, dict operations, filtering, sorting, grouping, aggregates
+  - `string_processing` (20 bricks): templates, regex, cleaning, case conversion, PII redaction, Levenshtein distance
+  - `math_numeric` (10 bricks): divide, modulo, abs, min, max, power, percentage, clamp, ceil, floor
+  - `date_time` (10 bricks): parse/format/diff/add dates, timezone conversion, business-day check, date ranges
+  - `validation` (10 bricks): email, URL, phone, range, pattern, keys, numeric-string, ISO date, comparison
+  - `list_operations` (10 bricks): unique, flatten, chunk, zip, intersect, difference, reverse, head, map, sum
+  - `encoding_security` (10 bricks): base64, URL encode/decode, SHA-256/MD5 hashing, HTML escape, UUID, random strings
+- `build_stdlib_registry() -> BrickRegistry` — one-call registry builder used by CRM benchmark
+- 106 new tests across `tests/stdlib/` (one per brick)
+- `benchmark/showcase/crm_generator.py` — deterministic 50-record CRM dataset with expected outputs
+- `benchmark/showcase/crm_scenario.py` — CRM-pipeline, CRM-hallucination, CRM-reuse scenario runners
+- CRM benchmark scenarios available via `--scenario CRM-pipeline/CRM-hallucination/CRM-reuse`
+- `tzdata` dependency added for Windows timezone support
+
+---
+
 ## [0.4.16] — 2026-03-27
 
 ### Added

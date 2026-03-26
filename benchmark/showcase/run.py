@@ -8,6 +8,9 @@ Usage:
     python -m benchmark.showcase.run --live --scenario D                 # determinism
     python -m benchmark.showcase.run --live --scenario A --scenario C    # multiple
     python -m benchmark.showcase.run --live --mode compose --scenario A --steps 5
+    python -m benchmark.showcase.run --live --mode compose --scenario CRM-pipeline
+    python -m benchmark.showcase.run --live --mode compose --scenario CRM-hallucination
+    python -m benchmark.showcase.run --live --mode compose --scenario CRM-reuse
 """
 
 from __future__ import annotations
@@ -37,7 +40,8 @@ _DEFAULT_OUTPUT = Path(__file__).parent / "results"
 A_PRESETS: list[int] = [5, 25, 50]
 
 # Valid --scenario values
-VALID_SCENARIOS = {"all", Scenario.A.value, Scenario.C.value, Scenario.D.value}
+CRM_SCENARIOS = {"CRM-pipeline", "CRM-hallucination", "CRM-reuse"}
+VALID_SCENARIOS = {"all", Scenario.A.value, Scenario.C.value, Scenario.D.value} | CRM_SCENARIOS
 
 # Valid --mode values
 VALID_MODES = {"tool_use", "compose"}
@@ -98,7 +102,7 @@ def expand_scenarios(
     """
     a_labels = [f"A-{steps}"] if steps is not None else [f"A-{n}" for n in A_PRESETS]
 
-    order: list[str] = [*a_labels, Scenario.C.value, Scenario.D.value]
+    order: list[str] = [*a_labels, Scenario.C.value, Scenario.D.value, "CRM-pipeline", "CRM-hallucination", "CRM-reuse"]
     selected: set[str] = set()
 
     for s in raw:
@@ -109,7 +113,10 @@ def expand_scenarios(
         else:
             selected.add(s)
 
-    return [s for s in order if s in selected]
+    # Preserve order for known scenarios; append unknown CRM-style labels at end
+    known = [s for s in order if s in selected]
+    extra = [s for s in selected if s not in order]
+    return known + extra
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────
@@ -430,6 +437,25 @@ def run_benchmark_compose(
         json_path = write_scenario_result(run_dir, scenario_result)
         print(f"  [{label}] Structured result -> {json_path}")
 
+    # ── CRM scenarios ────────────────────────────────────────────────────
+    crm_scenarios = [s for s in scenarios if s in CRM_SCENARIOS]
+    if crm_scenarios:
+        from benchmark.showcase.crm_scenario import (
+            run_crm_hallucination,
+            run_crm_pipeline,
+            run_crm_reuse,
+        )
+
+        for crm_label in crm_scenarios:
+            logger.info("=== %s (compose) ===", crm_label)
+            if crm_label == "CRM-pipeline":
+                run_crm_pipeline(composer, runner, run_dir)
+            elif crm_label == "CRM-hallucination":
+                run_crm_hallucination(composer, runner, run_dir)
+            elif crm_label == "CRM-reuse":
+                run_crm_reuse(composer, run_dir)
+            print()
+
     elapsed = time.monotonic() - t0
     print_cost_summary(total_input, total_output, elapsed)
 
@@ -480,7 +506,10 @@ def main() -> None:
         action="append",
         dest="scenarios",
         default=None,
-        help=("Which scenario(s) to run. Accepts: all (default), A, C, D. Can be specified multiple times."),
+        help=(
+            "Which scenario(s) to run. Accepts: all (default), A, C, D, "
+            "CRM-pipeline, CRM-hallucination, CRM-reuse. Can be specified multiple times."
+        ),
     )
     parser.add_argument(
         "--steps",
