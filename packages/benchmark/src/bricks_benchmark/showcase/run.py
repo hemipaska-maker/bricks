@@ -317,6 +317,7 @@ def run_benchmark_compose(
     from bricks.ai.composer import BlueprintComposer
     from bricks.core.engine import BlueprintEngine
     from bricks.core.loader import BlueprintLoader
+    from bricks.llm.litellm_provider import LiteLLMProvider
 
     from bricks_benchmark.mcp.agent_runner import AgentRunner
     from bricks_benchmark.mcp.scenarios.task_generator import TaskGenerator
@@ -333,7 +334,8 @@ def run_benchmark_compose(
     )
 
     api_key = _require_api_key()
-    composer = BlueprintComposer(api_key=api_key)
+    provider = LiteLLMProvider(model=DEFAULT_MODEL, api_key=api_key)
+    composer = BlueprintComposer(provider=provider)
     runner = AgentRunner(api_key=api_key)
     loader = BlueprintLoader()
     gen = TaskGenerator()
