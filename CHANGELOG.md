@@ -7,6 +7,18 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.4.20] — 2026-03-27
+
+### Added
+- `bricks/mcp/server.py` — async `run_mcp_server(engine)` function: starts a stdio MCP server exposing the `execute_task` tool
+- `bricks serve` CLI command — launches the MCP server with optional `--config` (agent.yaml) or `--model` flags
+- `mcp = ["mcp>=1.0"]` optional dependency group in `pyproject.toml`; also added `all` extra combining `ai` + `mcp`
+- `examples/mcp_config.json` — Claude Desktop configuration snippet for the `bricks` MCP server
+- `examples/mcp_usage.md` — setup and usage guide for the MCP server
+- `tests/mcp/test_server.py` — 3 unit tests for `execute_task` tool and `EXECUTE_TASK_SCHEMA`
+
+---
+
 ## [0.4.19] — 2026-03-27
 
 ### Added

@@ -346,3 +346,31 @@ def compose(
     except ComposerError as exc:
         typer.echo(f"Composition failed: {exc}", err=True)
         raise typer.Exit(code=1) from exc
+
+
+@app.command()
+def serve(
+    config: str | None = typer.Option(None, "--config", "-c", help="Path to agent.yaml config file."),
+    model: str = typer.Option("claude-haiku-4-5", "--model", "-m", help="LiteLLM model string."),
+) -> None:
+    """Start the Bricks MCP server on stdio transport."""
+    import asyncio  # noqa: PLC0415
+
+    try:
+        from bricks import Bricks  # noqa: PLC0415
+        from bricks.mcp.server import run_mcp_server  # noqa: PLC0415
+    except ImportError as exc:
+        typer.echo("Error: MCP features require the 'mcp' package.", err=True)
+        typer.echo("Install with: pip install bricks[mcp]", err=True)
+        raise typer.Exit(code=1) from exc
+
+    typer.echo("Starting Bricks MCP server (stdio)...", err=True)
+    if config:
+        engine = Bricks.from_config(config)
+        typer.echo(f"Loaded config: {config}", err=True)
+    else:
+        engine = Bricks.default(model=model)
+        typer.echo(f"Using model: {model}", err=True)
+    typer.echo("Server ready. Waiting for MCP client...", err=True)
+
+    asyncio.run(run_mcp_server(engine))

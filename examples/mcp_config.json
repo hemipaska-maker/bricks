@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "bricks": {
+      "command": "bricks",
+      "args": ["serve"],
+      "env": {
+        "ANTHROPIC_API_KEY": "your-key-here"
+      }
+    }
+  }
+}
