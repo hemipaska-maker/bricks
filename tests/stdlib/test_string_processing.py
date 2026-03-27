@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import pytest
-
-from bricks.stdlib.string_processing import (
+from bricks_stdlib.string_processing import (
     clean_whitespace,
     concatenate_strings,
     convert_case,

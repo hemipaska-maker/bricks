@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from bricks.core.exceptions import (
     BlueprintValidationError,
     BrickError,

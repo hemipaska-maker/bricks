@@ -5,7 +5,6 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from bricks.ai.composer import ComposeResult
 from bricks.boot.config import SystemConfig
 from bricks.core.config import StoreConfig

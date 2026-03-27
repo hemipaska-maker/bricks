@@ -5,7 +5,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
 from bricks.core.config import BlueprintsConfig, BricksConfig, ConfigLoader
 from bricks.core.exceptions import ConfigError
 

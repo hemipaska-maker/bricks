@@ -7,7 +7,6 @@ from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from bricks.api import Bricks
 from bricks.core.exceptions import OrchestratorError
 
@@ -48,7 +47,7 @@ def test_from_config_boots_without_llm_call(tmp_path: Path) -> None:
     with (
         patch("bricks.api.SystemBootstrapper") as mock_boot_cls,
         patch("bricks.api.RuntimeOrchestrator") as mock_orch_cls,
-        patch("bricks.api.build_stdlib_registry"),
+        patch("bricks.api._build_default_registry"),
     ):
         mock_boot_cls.return_value.bootstrap.return_value = mock_config
         mock_orch_cls.return_value = _make_mock_orchestrator()
@@ -69,7 +68,7 @@ def test_from_skill_boots_with_one_llm_call(tmp_path: Path) -> None:
     with (
         patch("bricks.api.SystemBootstrapper") as mock_boot_cls,
         patch("bricks.api.RuntimeOrchestrator") as mock_orch_cls,
-        patch("bricks.api.build_stdlib_registry"),
+        patch("bricks.api._build_default_registry"),
     ):
         mock_boot_cls.return_value.bootstrap.return_value = mock_config
         mock_orch_cls.return_value = _make_mock_orchestrator()
@@ -91,7 +90,7 @@ def test_execute_returns_orchestrator_result(tmp_path: Path) -> None:
     with (
         patch("bricks.api.SystemBootstrapper") as mock_boot_cls,
         patch("bricks.api.RuntimeOrchestrator") as mock_orch_cls,
-        patch("bricks.api.build_stdlib_registry"),
+        patch("bricks.api._build_default_registry"),
     ):
         mock_boot_cls.return_value.bootstrap.return_value = mock_config
         mock_orch = MagicMock()
@@ -106,7 +105,7 @@ def test_execute_returns_orchestrator_result(tmp_path: Path) -> None:
 
 
 def test_from_config_uses_stdlib_registry_by_default(tmp_path: Path) -> None:
-    """from_config() without a custom registry calls build_stdlib_registry()."""
+    """from_config() without a custom registry calls _build_default_registry()."""
     yaml_file = tmp_path / "agent.yaml"
     yaml_file.write_text("name: test\n", encoding="utf-8")
 
@@ -115,7 +114,7 @@ def test_from_config_uses_stdlib_registry_by_default(tmp_path: Path) -> None:
     with (
         patch("bricks.api.SystemBootstrapper") as mock_boot_cls,
         patch("bricks.api.RuntimeOrchestrator") as mock_orch_cls,
-        patch("bricks.api.build_stdlib_registry") as mock_stdlib,
+        patch("bricks.api._build_default_registry") as mock_stdlib,
     ):
         mock_boot_cls.return_value.bootstrap.return_value = mock_config
         mock_orch_cls.return_value = MagicMock()
@@ -141,7 +140,7 @@ def test_from_config_accepts_custom_registry(tmp_path: Path) -> None:
     with (
         patch("bricks.api.SystemBootstrapper") as mock_boot_cls,
         patch("bricks.api.RuntimeOrchestrator") as mock_orch_cls,
-        patch("bricks.api.build_stdlib_registry") as mock_stdlib,
+        patch("bricks.api._build_default_registry") as mock_stdlib,
     ):
         mock_boot_cls.return_value.bootstrap.return_value = mock_config
         mock_orch_cls.return_value = MagicMock()
@@ -193,7 +192,7 @@ def test_execute_propagates_orchestrator_error(tmp_path: Path) -> None:
     with (
         patch("bricks.api.SystemBootstrapper") as mock_boot_cls,
         patch("bricks.api.RuntimeOrchestrator") as mock_orch_cls,
-        patch("bricks.api.build_stdlib_registry"),
+        patch("bricks.api._build_default_registry"),
     ):
         mock_boot_cls.return_value.bootstrap.return_value = mock_config
         mock_orch = MagicMock()

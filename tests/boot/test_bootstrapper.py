@@ -6,7 +6,6 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-
 from bricks.boot.bootstrapper import SystemBootstrapper
 from bricks.boot.config import SystemConfig
 from bricks.llm.base import LLMProvider

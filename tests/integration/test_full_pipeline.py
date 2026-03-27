@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import cast
 
 import pytest
-
 from bricks.core.brick import BrickFunction, brick
 from bricks.core.engine import BlueprintEngine
 from bricks.core.exceptions import BlueprintValidationError, BrickExecutionError

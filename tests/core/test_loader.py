@@ -5,7 +5,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
 from bricks.core.exceptions import YamlLoadError
 from bricks.core.loader import BlueprintLoader
 

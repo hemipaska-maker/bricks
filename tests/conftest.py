@@ -6,7 +6,6 @@ from collections.abc import Callable
 from typing import cast
 
 import pytest
-
 from bricks.core.brick import BrickFunction, brick
 from bricks.core.models import BrickMeta
 from bricks.core.registry import BrickRegistry

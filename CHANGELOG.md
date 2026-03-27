@@ -7,6 +7,21 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.4.23] — 2026-03-27
+
+### Changed
+- **Monorepo restructure**: split single flat package into three independently-publishable packages under `packages/`
+  - `packages/core/` — `pip install bricks` (core engine, CLI, AI, MCP, orchestrator)
+  - `packages/stdlib/` — `pip install bricks-stdlib` (95 stdlib bricks, auto-registers via `bricks.packs` entry point)
+  - `packages/benchmark/` — `pip install bricks-benchmark` (benchmark suite)
+- `bricks_stdlib.register(registry)` replaces `build_stdlib_registry()` — called automatically by entry point discovery
+- `bricks.packs.discover_and_load(registry)` — new module that scans `bricks.packs` entry points at boot
+- `Bricks.default()`, `from_config()`, `from_skill()` use `discover_and_load` instead of importing stdlib directly
+- Root `pyproject.toml` is now a dev workspace config (pytest `pythonpath`, mypy, ruff); no `[project]` section
+- Dev setup: `python -m pip install -e packages/core[dev,ai,mcp] && python -m pip install -e packages/stdlib`
+
+---
+
 ## [0.4.22] — 2026-03-27
 
 ### Added

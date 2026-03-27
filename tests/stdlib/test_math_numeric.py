@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import pytest
-
-from bricks.stdlib.math_numeric import (
+from bricks_stdlib.math_numeric import (
     absolute_value,
     ceil_value,
     clamp_value,

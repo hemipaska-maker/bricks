@@ -5,7 +5,6 @@ from __future__ import annotations
 from collections.abc import Callable
 
 import pytest
-
 from bricks.core.exceptions import BlueprintValidationError
 from bricks.core.models import BlueprintDefinition, StepDefinition
 from bricks.core.registry import BrickRegistry

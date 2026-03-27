@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from bricks.errors import BricksInputError
 from bricks.orchestrator.input_mapper import InputMapper
 

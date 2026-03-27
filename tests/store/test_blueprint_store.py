@@ -6,7 +6,6 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
-
 from bricks.core.exceptions import DuplicateBlueprintError
 from bricks.store.blueprint_store import FileBlueprintStore, MemoryBlueprintStore
 from bricks.store.models import StoredBlueprint, task_fingerprint

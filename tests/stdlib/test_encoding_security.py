@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import pytest
-
-from bricks.stdlib.encoding_security import (
+from bricks_stdlib.encoding_security import (
     base64_decode,
     base64_encode,
     compute_hash,

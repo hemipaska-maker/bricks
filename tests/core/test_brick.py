@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import Any, cast
 
 import pytest
-
 from bricks.core.brick import BaseBrick, BrickFunction, BrickModel, brick
 from bricks.core.models import BrickMeta
 

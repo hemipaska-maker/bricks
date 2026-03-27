@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import Any, ClassVar
 
 import pytest
-
 from bricks.core.brick import BaseBrick, BrickModel, brick
 from bricks.core.discovery import BrickDiscovery
 from bricks.core.models import BrickMeta

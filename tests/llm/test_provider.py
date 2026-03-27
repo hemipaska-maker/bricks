@@ -5,7 +5,6 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from bricks.errors import BricksComposeError, BricksConfigError
 from bricks.llm.base import LLMProvider
 from bricks.llm.litellm_provider import LiteLLMProvider

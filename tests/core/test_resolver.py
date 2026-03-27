@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
-
 from bricks.core.context import ExecutionContext
 from bricks.core.exceptions import VariableResolutionError
 from bricks.core.resolver import ReferenceResolver

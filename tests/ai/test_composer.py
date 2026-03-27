@@ -5,7 +5,6 @@ from __future__ import annotations
 from unittest.mock import MagicMock
 
 import pytest
-
 from bricks.ai.composer import (
     _RETRY_PROMPT,
     BlueprintComposer,

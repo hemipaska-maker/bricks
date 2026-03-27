@@ -4,9 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from typer.testing import CliRunner
-
 from bricks.cli.main import app
+from typer.testing import CliRunner
 
 runner = CliRunner()
 

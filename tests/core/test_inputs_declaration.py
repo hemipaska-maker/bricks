@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import cast
 
 import pytest
-
 from bricks.core.brick import BrickFunction, brick
 from bricks.core.engine import BlueprintEngine
 from bricks.core.models import BlueprintDefinition, StepDefinition

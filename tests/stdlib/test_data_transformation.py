@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import pytest
-
-from bricks.stdlib.data_transformation import (
+from bricks_stdlib.data_transformation import (
     calculate_aggregates,
     cast_data_types,
     convert_to_csv_str,

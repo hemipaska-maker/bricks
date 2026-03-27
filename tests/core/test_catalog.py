@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from bricks.core.brick import brick
 from bricks.core.catalog import TieredCatalog
 from bricks.core.config import CatalogConfig, ConfigLoader

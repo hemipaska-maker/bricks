@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from bricks.core.brick import brick
 from bricks.core.exceptions import BrickNotFoundError
 from bricks.core.models import BlueprintDefinition, StepDefinition
@@ -208,9 +207,9 @@ class TestCompactBrickSignatures:
 
     def test_showcase_bricks_format(self) -> None:
         """Showcase bricks produce correct compact signatures."""
-        from benchmark.showcase.bricks import build_showcase_registry
-        from benchmark.showcase.bricks.math_bricks import add, multiply, round_value, subtract
-        from benchmark.showcase.bricks.string_bricks import format_result
+        from bricks_benchmark.showcase.bricks import build_showcase_registry
+        from bricks_benchmark.showcase.bricks.math_bricks import add, multiply, round_value, subtract
+        from bricks_benchmark.showcase.bricks.string_bricks import format_result
 
         reg = build_showcase_registry(multiply, round_value, add, subtract, format_result)
         result = compact_brick_signatures(reg)
@@ -276,10 +275,10 @@ class TestOutputKeyTable:
 
     def test_showcase_bricks_table(self) -> None:
         """Showcase bricks produce a valid output key table."""
-        from benchmark.showcase.bricks import build_showcase_registry
-        from benchmark.showcase.bricks.math_bricks import add, multiply, round_value
-        from benchmark.showcase.bricks.string_bricks import format_result
         from bricks.core.schema import output_key_table
+        from bricks_benchmark.showcase.bricks import build_showcase_registry
+        from bricks_benchmark.showcase.bricks.math_bricks import add, multiply, round_value
+        from bricks_benchmark.showcase.bricks.string_bricks import format_result
 
         reg = build_showcase_registry(multiply, round_value, add, format_result)
         result = output_key_table(reg)

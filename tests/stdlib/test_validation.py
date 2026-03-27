@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import pytest
-
-from bricks.stdlib.validation import (
+from bricks_stdlib.validation import (
     compare_values,
     has_required_keys,
     is_email_valid,

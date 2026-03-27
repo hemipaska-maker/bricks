@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import pytest
-
-from bricks.stdlib.list_operations import (
+from bricks_stdlib.list_operations import (
     chunk_list,
     difference_lists,
     flatten_list,

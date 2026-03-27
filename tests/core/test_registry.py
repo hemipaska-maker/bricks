@@ -1,7 +1,6 @@
 """Tests for bricks.core.registry."""
 
 import pytest
-
 from bricks.core.exceptions import BrickNotFoundError, DuplicateBrickError
 from bricks.core.models import BrickMeta
 from bricks.core.registry import BrickRegistry

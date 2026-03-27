@@ -1,7 +1,6 @@
 """Tests for bricks.core.context."""
 
 import pytest
-
 from bricks.core.context import ExecutionContext
 
 

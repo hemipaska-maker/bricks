@@ -5,7 +5,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
 from bricks.core.brick import brick
 from bricks.core.engine import BlueprintEngine
 from bricks.core.exceptions import BlueprintValidationError, BrickExecutionError

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from bricks.stdlib.date_time import (
+from bricks_stdlib.date_time import (
     add_days,
     add_hours,
     convert_timezone,

@@ -1,71 +1,18 @@
-[project]
-name = "bricks"
-version = "0.4.22"
-description = "Deterministic execution engine: typed Python building blocks composed into auditable YAML blueprints."
-readme = "README.md"
-requires-python = ">=3.10"
-license = "MIT"
-authors = [
-    { name = "Hemi", email = "hemi@example.com" },
-]
-keywords = ["sequencing", "automation", "bricks", "yaml", "workflow", "validation"]
-classifiers = [
-    "Development Status :: 3 - Alpha",
-    "Intended Audience :: Developers",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Typing :: Typed",
-]
-
-dependencies = [
-    "pydantic>=2.0",
-    "typer>=0.9",
-    "ruamel.yaml>=0.18",
-    "tzdata>=2024.1; sys_platform == 'win32'",
-]
-
-[project.optional-dependencies]
-dev = [
-    "pytest>=9.0",
-    "mypy>=1.8",
-    "ruff>=0.3",
-]
-ai = [
-    "anthropic>=0.45",
-    "litellm>=1.0",
-]
-benchmark = [
-    "tiktoken>=0.5",
-    "matplotlib>=3.7",
-]
-mcp = [
-    "mcp>=1.0",
-]
-all = [
-    "anthropic>=0.45",
-    "litellm>=1.0",
-    "mcp>=1.0",
-]
-
-[project.scripts]
-bricks = "bricks.cli.main:app"
-
-[project.urls]
-Homepage = "https://gitlab.com/hemi/bricks"
-Repository = "https://gitlab.com/hemi/bricks"
-Issues = "https://gitlab.com/hemi/bricks/-/issues"
-
-[build-system]
-requires = ["setuptools>=68.0"]
-build-backend = "setuptools.build_meta"
-
-[tool.setuptools.packages.find]
-include = ["bricks*"]
+# Root dev configuration — not a publishable package.
+# Each publishable package lives under packages/*/pyproject.toml.
+#
+# Dev setup:
+#   pip install -e packages/core[dev,ai,mcp]
+#   pip install -e packages/stdlib
+#   pip install -e packages/benchmark
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "benchmark/tests"]
+testpaths = ["tests", "packages/benchmark/src/bricks_benchmark/tests"]
+pythonpath = [
+    "packages/core/src",
+    "packages/stdlib/src",
+    "packages/benchmark/src",
+]
 
 [tool.mypy]
 strict = true
@@ -95,5 +42,5 @@ select = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["S101", "PLC0415"]
-"benchmark/**/*.py" = ["S101", "PLC0415", "S607"]
+"packages/benchmark/**/*.py" = ["S101", "PLC0415", "S607"]
 "examples/**/*.py" = ["PLC0415"]

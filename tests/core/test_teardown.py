@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import Any, ClassVar, cast
 
 import pytest
-
 from bricks.core.brick import BaseBrick, BrickFunction, BrickModel, brick
 from bricks.core.engine import BlueprintEngine
 from bricks.core.exceptions import BrickExecutionError
