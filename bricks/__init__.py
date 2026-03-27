@@ -2,6 +2,6 @@
 
 from bricks.api import Bricks
 
-__version__ = "0.4.20"
+__version__ = "0.4.21"
 
 __all__ = ["Bricks", "__version__"]
