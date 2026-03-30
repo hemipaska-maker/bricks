@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import time
+
 from bricks.errors import BricksComposeError, BricksConfigError
-from bricks.llm.base import LLMProvider
+from bricks.llm.base import CompletionResult, LLMProvider
 
 
 class LiteLLMProvider(LLMProvider):
@@ -33,15 +35,15 @@ class LiteLLMProvider(LLMProvider):
         self._model = model
         self._api_key: str | None = api_key or None  # None → LiteLLM reads from env
 
-    def complete(self, prompt: str, system: str) -> str:
-        """Call the LLM and return response text.
+    def complete(self, prompt: str, system: str = "") -> CompletionResult:
+        """Call the LLM and return a CompletionResult with real token counts.
 
         Args:
             prompt: User message.
             system: System prompt.
 
         Returns:
-            The model's text response.
+            CompletionResult with response text, real token counts, and timing.
 
         Raises:
             ImportError: If ``litellm`` is not installed (``pip install bricks[ai]``).
@@ -53,6 +55,7 @@ class LiteLLMProvider(LLMProvider):
         except ImportError as exc:
             raise ImportError("The 'litellm' package is required. Install with: pip install bricks[ai]") from exc
 
+        t0 = time.monotonic()
         try:
             response = litellm.completion(
                 model=self._model,
@@ -63,7 +66,18 @@ class LiteLLMProvider(LLMProvider):
                 api_key=self._api_key,
             )
             content = response.choices[0].message.content
-            return str(content) if content is not None else ""
+            text = str(content) if content is not None else ""
+            usage = getattr(response, "usage", None)
+            in_tok = int(getattr(usage, "prompt_tokens", 0) or 0)
+            out_tok = int(getattr(usage, "completion_tokens", 0) or 0)
+            return CompletionResult(
+                text=text,
+                input_tokens=in_tok,
+                output_tokens=out_tok,
+                model=self._model,
+                duration_seconds=time.monotonic() - t0,
+                estimated=False,
+            )
         except ImportError:
             raise
         except Exception as exc:

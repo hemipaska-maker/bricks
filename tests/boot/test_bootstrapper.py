@@ -8,7 +8,7 @@ from unittest.mock import MagicMock
 import pytest
 from bricks.boot.bootstrapper import SystemBootstrapper
 from bricks.boot.config import SystemConfig
-from bricks.llm.base import LLMProvider
+from bricks.llm.base import CompletionResult, LLMProvider
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -108,7 +108,7 @@ class TestBootstrapperMarkdown:
     def _mock_provider(self, json_text: str) -> MagicMock:
         """Return a mock LLMProvider that returns json_text."""
         mock_prov = MagicMock(spec=LLMProvider)
-        mock_prov.complete.return_value = json_text
+        mock_prov.complete.return_value = CompletionResult(text=json_text)
         return mock_prov
 
     def test_md_extracts_categories_and_tags(self, tmp_path: Path) -> None:

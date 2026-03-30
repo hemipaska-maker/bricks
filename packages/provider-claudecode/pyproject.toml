@@ -5,6 +5,9 @@ description = "Bricks LLMProvider that routes through Claude Code CLI (claude -p
 requires-python = ">=3.10"
 dependencies = ["bricks"]
 
+[project.optional-dependencies]
+tokens = ["tiktoken>=0.5"]
+
 [project.entry-points."bricks.providers"]
 claudecode = "bricks_provider_claudecode:ClaudeCodeProvider"
 

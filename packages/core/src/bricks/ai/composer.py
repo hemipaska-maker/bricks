@@ -538,13 +538,13 @@ class BlueprintComposer:
         from bricks.errors import BricksComposeError, BricksConfigError  # noqa: PLC0415
 
         try:
-            text = self._provider.complete(prompt=user_message, system=system)
+            completion = self._provider.complete(prompt=user_message, system=system)
         except (BricksConfigError, BricksComposeError):
             raise
         except Exception as exc:
             logger.error("API call failed: %s", exc, exc_info=True)
             raise ComposerError(f"API call failed: {exc}", cause=exc) from exc
-        return strip_code_fence(text), 0, 0
+        return strip_code_fence(completion.text), completion.input_tokens, completion.output_tokens
 
     def _validate_yaml(self, yaml_text: str, validator: BlueprintValidator) -> tuple[bool, list[str]]:
         """Parse and validate a YAML string.

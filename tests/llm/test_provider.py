@@ -22,24 +22,32 @@ class TestLLMProviderABC:
 class TestLiteLLMProvider:
     """Tests for LiteLLMProvider."""
 
-    def _mock_litellm_response(self, text: str) -> MagicMock:
-        """Build a mock litellm response."""
+    def _mock_litellm_response(self, text: str, in_tok: int = 10, out_tok: int = 5) -> MagicMock:
+        """Build a mock litellm response with usage metadata."""
         msg = MagicMock()
         msg.content = text
         choice = MagicMock()
         choice.message = msg
+        usage = MagicMock()
+        usage.prompt_tokens = in_tok
+        usage.completion_tokens = out_tok
         resp = MagicMock()
         resp.choices = [choice]
+        resp.usage = usage
         return resp
 
     def test_calls_litellm_completion(self) -> None:
-        """LiteLLMProvider.complete() calls litellm.completion."""
+        """LiteLLMProvider.complete() returns CompletionResult with correct text."""
         provider = LiteLLMProvider(model="claude-haiku-4-5", api_key="sk-test")
         mock_resp = self._mock_litellm_response("hello")
         with patch("litellm.completion", return_value=mock_resp) as mock_completion:
             result = provider.complete(prompt="hi", system="be helpful")
         mock_completion.assert_called_once()
-        assert result == "hello"
+        assert result.text == "hello"
+        assert result.input_tokens == 10
+        assert result.output_tokens == 5
+        assert result.estimated is False
+        assert result.model == "claude-haiku-4-5"
 
     def test_auth_error_raises_bricks_config_error(self) -> None:
         """Auth-related LiteLLM errors are converted to BricksConfigError."""

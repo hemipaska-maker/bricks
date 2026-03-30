@@ -8,7 +8,7 @@ import subprocess
 import time
 from pathlib import Path
 
-from bricks.llm.base import LLMProvider
+from bricks.llm.base import CompletionResult, LLMProvider
 
 logger = logging.getLogger(__name__)
 
@@ -51,17 +51,35 @@ class ClaudeCodeProvider(LLMProvider):
         """
         self.timeout = timeout
 
-    def complete(self, prompt: str, system: str = "") -> str:
-        """Send a prompt through ``claude -p`` and return the response.
+    def _estimate_tokens(self, text: str) -> int:
+        """Estimate token count using tiktoken, fallback to char/4.
+
+        Args:
+            text: The text to estimate tokens for.
+
+        Returns:
+            Estimated token count.
+        """
+        try:
+            import tiktoken  # noqa: PLC0415
+
+            enc = tiktoken.get_encoding("cl100k_base")
+            return len(enc.encode(text))
+        except ImportError:
+            return len(text) // 4
+
+    def complete(self, prompt: str, system: str = "") -> CompletionResult:
+        """Send a prompt through ``claude -p`` and return a CompletionResult.
 
         The full prompt is passed via stdin to avoid OS argument-length limits.
+        Token counts are estimated (tiktoken if available, else char/4).
 
         Args:
             prompt: The user message to send.
             system: Optional system prompt prepended before the user message.
 
         Returns:
-            The model's text response, stripped of leading/trailing whitespace.
+            CompletionResult with response text and estimated token counts.
 
         Raises:
             RuntimeError: If the ``claude`` process exits with a non-zero code.
@@ -102,4 +120,11 @@ class ClaudeCodeProvider(LLMProvider):
 
         logger.info("claude -p responded (%d chars, %.1fs)", len(result.stdout), elapsed)
         logger.debug("Raw response:\n%s", result.stdout)
-        return result.stdout.strip()
+        return CompletionResult(
+            text=result.stdout.strip(),
+            input_tokens=self._estimate_tokens(full_prompt),
+            output_tokens=self._estimate_tokens(result.stdout),
+            model="claude-code",
+            duration_seconds=elapsed,
+            estimated=True,
+        )

@@ -3,6 +3,28 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
+
+
+@dataclass
+class CompletionResult:
+    """Result from an LLM completion call.
+
+    Attributes:
+        text: The LLM response text.
+        input_tokens: Number of input tokens (exact or estimated).
+        output_tokens: Number of output tokens (exact or estimated).
+        model: Which model actually responded.
+        duration_seconds: Wall-clock time for this call.
+        estimated: True if tokens are tiktoken estimates; False if from API.
+    """
+
+    text: str
+    input_tokens: int = 0
+    output_tokens: int = 0
+    model: str = ""
+    duration_seconds: float = 0.0
+    estimated: bool = False
 
 
 class LLMProvider(ABC):
@@ -13,18 +35,19 @@ class LLMProvider(ABC):
     Example::
 
         class MyProvider(LLMProvider):
-            def complete(self, prompt: str, system: str) -> str:
-                return my_llm_client.call(system=system, user=prompt)
+            def complete(self, prompt: str, system: str = "") -> CompletionResult:
+                text = my_llm_client.call(system=system, user=prompt)
+                return CompletionResult(text=text)
     """
 
     @abstractmethod
-    def complete(self, prompt: str, system: str) -> str:
-        """Send a prompt to the LLM and return the response text.
+    def complete(self, prompt: str, system: str = "") -> CompletionResult:
+        """Send a prompt to the LLM and return a CompletionResult.
 
         Args:
             prompt: The user message to send.
             system: The system prompt that configures model behaviour.
 
         Returns:
-            The model's text response.
+            CompletionResult with response text and token metadata.
         """

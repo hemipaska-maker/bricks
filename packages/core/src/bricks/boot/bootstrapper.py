@@ -157,7 +157,7 @@ class SystemBootstrapper:
             from bricks.llm.litellm_provider import LiteLLMProvider  # noqa: PLC0415
 
             provider = self._provider or LiteLLMProvider(model=self._model, api_key=self._api_key)
-            text = provider.complete(prompt=description, system=_EXTRACT_SYSTEM).strip()
+            text = provider.complete(prompt=description, system=_EXTRACT_SYSTEM).text.strip()
             parsed = json.loads(text)
             categories = [str(c) for c in parsed.get("categories", [])]
             tags = [str(t) for t in parsed.get("tags", [])]

@@ -7,6 +7,19 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.4.27] — 2026-03-30
+
+### Added
+- **`CompletionResult` dataclass** in `bricks.llm.base`: `text`, `input_tokens`, `output_tokens`, `model`, `duration_seconds`, `estimated` fields
+- **`LLMProvider.complete()` returns `CompletionResult`** (was `str`) — real tokens from LiteLLM API, estimated tokens from ClaudeCodeProvider (tiktoken or char/4 fallback)
+- **Optional tiktoken dependency** for `bricks-provider-claudecode[tokens]`
+- **Non-zero token counts** now flow through `BlueprintComposer` into benchmark results
+
+### Changed
+- `LiteLLMProvider.complete()` extracts `response.usage.prompt_tokens` / `completion_tokens`, sets `estimated=False`
+- `ClaudeCodeProvider.complete()` estimates tokens via `_estimate_tokens()`, sets `estimated=True`, `model="claude-code"`
+- `_ProviderRunner.run_without_tools()` now reports actual estimated token counts instead of zeros
+
 ## [0.4.26] — 2026-03-30
 
 ### Added

@@ -13,6 +13,7 @@ from bricks.ai.composer import (
     _build_example,
 )
 from bricks.core.registry import BrickRegistry
+from bricks.llm.base import CompletionResult
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -48,7 +49,7 @@ def _make_composer(registry: BrickRegistry) -> BlueprintComposer:
 
     composer = BlueprintComposer.__new__(BlueprintComposer)
     mock_provider = MagicMock(spec=LLMProvider)
-    mock_provider.complete.return_value = _VALID_YAML
+    mock_provider.complete.return_value = CompletionResult(text=_VALID_YAML)
     composer._provider = mock_provider
     from bricks.core.loader import BlueprintLoader
     from bricks.core.selector import AllBricksSelector
@@ -103,7 +104,7 @@ class TestComposerCompose:
     def test_compose_valid_yaml_returns_compose_result(self, math_registry: BrickRegistry) -> None:
         """A valid YAML response returns ComposeResult with is_valid=True."""
         composer = _make_composer(math_registry)
-        composer._provider.complete.return_value = _VALID_YAML
+        composer._provider.complete.return_value = CompletionResult(text=_VALID_YAML)
 
         result = composer.compose("Add 3 + 4", math_registry)
 
@@ -118,7 +119,10 @@ class TestComposerCompose:
     def test_compose_retry_on_validation_failure(self, math_registry: BrickRegistry) -> None:
         """Invalid YAML triggers one retry; second call returns valid YAML."""
         composer = _make_composer(math_registry)
-        composer._provider.complete.side_effect = [_INVALID_YAML, _VALID_YAML]
+        composer._provider.complete.side_effect = [
+            CompletionResult(text=_INVALID_YAML),
+            CompletionResult(text=_VALID_YAML),
+        ]
 
         result = composer.compose("Add numbers", math_registry)
 
@@ -131,7 +135,10 @@ class TestComposerCompose:
     def test_compose_max_two_calls_on_double_failure(self, math_registry: BrickRegistry) -> None:
         """If both calls fail validation, return is_valid=False with errors."""
         composer = _make_composer(math_registry)
-        composer._provider.complete.side_effect = [_INVALID_YAML, _INVALID_YAML]
+        composer._provider.complete.side_effect = [
+            CompletionResult(text=_INVALID_YAML),
+            CompletionResult(text=_INVALID_YAML),
+        ]
 
         result = composer.compose("Do something", math_registry)
 
@@ -150,7 +157,7 @@ class TestComposerCompose:
     def test_compose_empty_response_results_in_invalid(self, math_registry: BrickRegistry) -> None:
         """An empty string response from the provider results in is_valid=False."""
         composer = _make_composer(math_registry)
-        composer._provider.complete.return_value = ""
+        composer._provider.complete.return_value = CompletionResult(text="")
 
         result = composer.compose("something", math_registry)
         assert result.is_valid is False
@@ -159,7 +166,7 @@ class TestComposerCompose:
         """Code fences around YAML are stripped before parsing."""
         composer = _make_composer(math_registry)
         fenced = f"```yaml\n{_VALID_YAML}\n```"
-        composer._provider.complete.return_value = fenced
+        composer._provider.complete.return_value = CompletionResult(text=fenced)
 
         result = composer.compose("Add numbers", math_registry)
         assert result.is_valid is True
@@ -262,7 +269,7 @@ class TestComposePopulatesPrompts:
     def test_compose_sets_system_prompt(self, math_registry: BrickRegistry) -> None:
         """compose() sets system_prompt on ComposeResult."""
         composer = _make_composer(math_registry)
-        composer._provider.complete.return_value = _VALID_YAML
+        composer._provider.complete.return_value = CompletionResult(text=_VALID_YAML)
         result = composer.compose("Add 3 + 4", math_registry)
         assert result.system_prompt != ""
         assert "Blueprint composer" in result.system_prompt
@@ -270,7 +277,7 @@ class TestComposePopulatesPrompts:
     def test_compose_sets_call_detail_prompts(self, math_registry: BrickRegistry) -> None:
         """compose() sets system_prompt and user_prompt on each CallDetail."""
         composer = _make_composer(math_registry)
-        composer._provider.complete.return_value = _VALID_YAML
+        composer._provider.complete.return_value = CompletionResult(text=_VALID_YAML)
         result = composer.compose("Add 3 + 4", math_registry)
         assert len(result.calls) == 1
         call = result.calls[0]
@@ -280,7 +287,10 @@ class TestComposePopulatesPrompts:
     def test_retry_call_has_task_in_user_prompt(self, math_registry: BrickRegistry) -> None:
         """On retry, the second call's user_prompt includes the original task."""
         composer = _make_composer(math_registry)
-        composer._provider.complete.side_effect = [_INVALID_YAML, _VALID_YAML]
+        composer._provider.complete.side_effect = [
+            CompletionResult(text=_INVALID_YAML),
+            CompletionResult(text=_VALID_YAML),
+        ]
         result = composer.compose("Add numbers", math_registry)
         assert result.api_calls == 2
         retry_call = result.calls[1]

@@ -201,15 +201,15 @@ class _ProviderRunner:
         from bricks_benchmark.mcp.agent_result import AgentResult
 
         t0 = time.monotonic()
-        answer = self._provider.complete(task, system=self._SYSTEM)
+        completion = self._provider.complete(task, system=self._SYSTEM)
         return AgentResult(
             task=task,
             mode="no_tools",
             turns=1,
-            total_input_tokens=0,
-            total_output_tokens=0,
-            total_tokens=0,
-            final_answer=answer,
+            total_input_tokens=completion.input_tokens,
+            total_output_tokens=completion.output_tokens,
+            total_tokens=completion.input_tokens + completion.output_tokens,
+            final_answer=completion.text,
             duration_seconds=time.monotonic() - t0,
         )
 
