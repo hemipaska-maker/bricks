@@ -7,6 +7,20 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.4.30] — 2026-03-30
+
+### Added
+- **`--model` CLI flag** on benchmark runner: `--model gpt-4o-mini`, `--model gemini/gemini-2.0-flash`, `--model ollama/llama3` — any LiteLLM model string, API key auto-detected from env
+- **`validate_model_env()`**: warns (not hard-fails) when expected API key is missing for the chosen model; Ollama silently skipped
+- **Split provider design**: `--claudecode` + `--model` coexist — BricksEngine uses ClaudeCodeProvider, RawLLMEngine uses `--model` for fair comparison
+- **Model in metadata**: `run_metadata.json` `ai_model` field now reflects the actual `--model` value instead of hardcoded constant
+- **`BENCHMARK_DESIGN.md` model variance note**: documents reference model, multi-provider examples
+
+### Changed
+- `write_metadata()` accepts `model: str` parameter (default: `DEFAULT_MODEL`)
+- `run_benchmark()` accepts `model: str` parameter; passes separate compose/baseline providers
+- Benchmark log header now shows compose and baseline provider labels explicitly
+
 ## [0.4.29] — 2026-03-30
 
 ### Added

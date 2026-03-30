@@ -123,6 +123,36 @@ Side-by-side table showing both engines' actual values vs expected:
   Model                   claude-sonnet-...      claude-sonnet-...
 ```
 
+## Model Variance Note
+
+Benchmark results depend on the model used for composition and baseline.
+The reference results use `claude-haiku-4-5`. Other models may compose
+different (but valid) blueprints, or produce different baseline accuracy.
+When comparing runs, always check the `ai_model` field in `run_metadata.json`.
+
+```bash
+# Anthropic (default)
+export ANTHROPIC_API_KEY=sk-ant-...
+python -m bricks_benchmark.showcase.run --live
+
+# OpenAI
+export OPENAI_API_KEY=sk-...
+python -m bricks_benchmark.showcase.run --live --model gpt-4o-mini
+
+# Google Gemini
+export GOOGLE_API_KEY=AIza...
+python -m bricks_benchmark.showcase.run --live --model gemini/gemini-2.0-flash
+
+# Local with Ollama (free, no API key)
+python -m bricks_benchmark.showcase.run --live --model ollama/llama3
+
+# Claude Code Max plan ($0, no API key) — ClaudeCode composes, default model baselines
+python -m bricks_benchmark.showcase.run --live --claudecode
+
+# Mix: ClaudeCode compose + GPT baseline
+python -m bricks_benchmark.showcase.run --live --claudecode --model gpt-4o-mini
+```
+
 ## File Structure
 
 ```

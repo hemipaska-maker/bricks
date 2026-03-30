@@ -75,12 +75,17 @@ def make_run_dir(output_dir: Path) -> Path:
     return run_dir
 
 
-def write_metadata(run_dir: Path, scenarios_run: list[str]) -> Path:
+def write_metadata(
+    run_dir: Path,
+    scenarios_run: list[str],
+    model: str = DEFAULT_MODEL,
+) -> Path:
     """Write run_metadata.json to run_dir and return the path.
 
     Args:
         run_dir: Directory to write metadata into.
         scenarios_run: List of scenario labels that were run.
+        model: LiteLLM model string used for the benchmark run.
 
     Returns:
         Path to the written metadata file.
@@ -90,7 +95,7 @@ def write_metadata(run_dir: Path, scenarios_run: list[str]) -> Path:
         "bricks_version": __version__,
         "python_version": sys.version.split()[0],
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "ai_model": DEFAULT_MODEL,
+        "ai_model": model,
         "ai_provider": "anthropic",
         "anthropic_sdk_version": anthropic_sdk_version(),
         "mode": "live",
