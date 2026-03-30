@@ -45,6 +45,11 @@ class TestValidateModelEnv:
         with patch.dict(os.environ, {}, clear=True):
             validate_model_env("ollama/llama3")  # must not raise or warn
 
+    def test_claudecode_skipped_silently(self) -> None:
+        """'claudecode' model does not warn regardless of env state."""
+        with patch.dict(os.environ, {}, clear=True):
+            validate_model_env("claudecode")  # must not raise or warn
+
     def test_warns_when_anthropic_key_missing(self, caplog: pytest.LogCaptureFixture) -> None:
         """Warns when ANTHROPIC_API_KEY is missing for a claude model."""
         with patch.dict(os.environ, {}, clear=True):

@@ -7,6 +7,14 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.4.31] — 2026-03-30
+
+### Changed
+- **`--model claudecode`**: removed `--claudecode` flag; use `--model claudecode` to route both BricksEngine and RawLLMEngine through ClaudeCodeProvider — cleaner single-flag API
+- `validate_model_env()` silently skips `'claudecode'` (no API key required)
+- `_build_providers()` replaced by single `_build_provider(model)` — both engines share one provider instance
+- Benchmark CLI help and epilog updated to reflect new design
+
 ## [0.4.30] — 2026-03-30
 
 ### Added

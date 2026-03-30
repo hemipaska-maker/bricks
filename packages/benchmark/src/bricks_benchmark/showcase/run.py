@@ -10,8 +10,7 @@ Usage:
     python -m bricks_benchmark.showcase.run --live --model gpt-4o-mini     # OpenAI
     python -m bricks_benchmark.showcase.run --live --model gemini/gemini-2.0-flash
     python -m bricks_benchmark.showcase.run --live --model ollama/llama3   # local, no API key
-    python -m bricks_benchmark.showcase.run --live --claudecode            # ClaudeCode compose + default baseline
-    python -m bricks_benchmark.showcase.run --live --claudecode --model gpt-4o-mini  # ClaudeCode + GPT baseline
+    python -m bricks_benchmark.showcase.run --live --model claudecode      # ClaudeCode (claude -p), both engines
 """
 
 from __future__ import annotations
@@ -38,6 +37,9 @@ _DEFAULT_OUTPUT = Path(__file__).parent / "results"
 # Valid --scenario values
 CRM_SCENARIOS = {"CRM-pipeline", "CRM-hallucination", "CRM-reuse"}
 VALID_SCENARIOS = {"all"} | CRM_SCENARIOS
+
+# Special model value that routes through ClaudeCodeProvider
+_CLAUDECODE_MODEL = "claudecode"
 
 
 # ── scenario expansion ──────────────────────────────────────────────────────
@@ -73,12 +75,12 @@ def validate_model_env(model: str) -> None:
     """Warn if the expected API key for a model is missing from the environment.
 
     This is a best-effort check — LiteLLM may resolve the key from other sources.
-    Ollama and local models need no key and are silently skipped.
+    Ollama, local models, and claudecode need no API key and are silently skipped.
 
     Args:
-        model: LiteLLM model string (e.g. 'gpt-4o-mini', 'gemini/gemini-2.0-flash').
+        model: Model string (e.g. 'gpt-4o-mini', 'gemini/gemini-2.0-flash', 'claudecode').
     """
-    if model.startswith("ollama/"):
+    if model in (_CLAUDECODE_MODEL,) or model.startswith("ollama/"):
         return
 
     provider_keys: dict[str, str] = {
@@ -100,47 +102,26 @@ def validate_model_env(model: str) -> None:
             return
 
 
-def _build_litellm_provider(model: str) -> Any:
-    """Return a LiteLLMProvider for the given model string.
+def _build_provider(model: str) -> Any:
+    """Return an LLMProvider for the given model string.
 
-    LiteLLM auto-detects the API key from environment variables.
+    ``'claudecode'`` routes through ClaudeCodeProvider (``claude -p`` subprocess).
+    Any other string is passed to LiteLLMProvider.
 
     Args:
-        model: LiteLLM model string.
+        model: Model string — ``'claudecode'`` or a LiteLLM model string.
 
     Returns:
-        A LiteLLMProvider instance.
+        An LLMProvider instance.
     """
+    if model == _CLAUDECODE_MODEL:
+        from bricks_provider_claudecode import ClaudeCodeProvider  # type: ignore[import-untyped]
+
+        return ClaudeCodeProvider(timeout=300)
+
     from bricks.llm.litellm_provider import LiteLLMProvider
 
     return LiteLLMProvider(model=model)
-
-
-def _build_providers(claudecode: bool, model: str) -> tuple[Any, Any]:
-    """Return (compose_provider, baseline_provider) for the two engines.
-
-    Design:
-    - BricksEngine always uses compose_provider (ClaudeCode if --claudecode).
-    - RawLLMEngine always uses baseline_provider (LiteLLM with --model).
-    - If --claudecode without --model, baseline uses DEFAULT_MODEL.
-
-    Args:
-        claudecode: If True, BricksEngine routes through ClaudeCodeProvider.
-        model: LiteLLM model string for RawLLMEngine (and BricksEngine when not claudecode).
-
-    Returns:
-        Tuple of (compose_provider, baseline_provider).
-    """
-    baseline_provider = _build_litellm_provider(model)
-
-    if claudecode:
-        from bricks_provider_claudecode import ClaudeCodeProvider  # type: ignore[import-untyped]
-
-        compose_provider = ClaudeCodeProvider(timeout=300)
-    else:
-        compose_provider = baseline_provider
-
-    return compose_provider, baseline_provider
 
 
 # ── main runner ─────────────────────────────────────────────────────────────
@@ -150,17 +131,18 @@ def run_benchmark(
     scenarios: list[str],
     run_dir: Path,
     logger: logging.Logger,
-    claudecode: bool = False,
     model: str = DEFAULT_MODEL,
 ) -> None:
     """Run the CRM benchmark with both engines on each scenario.
+
+    Both BricksEngine and RawLLMEngine share the same provider instance,
+    ensuring a fair comparison on identical compute.
 
     Args:
         scenarios: List of CRM scenario labels.
         run_dir: Timestamped run directory.
         logger: Logger for recording progress.
-        claudecode: If True, BricksEngine uses ClaudeCodeProvider for compose.
-        model: LiteLLM model string for LiteLLMProvider (and RawLLMEngine baseline).
+        model: Model string — ``'claudecode'`` or a LiteLLM model string.
     """
     from bricks_benchmark.showcase.crm_scenario import (
         run_crm_hallucination,
@@ -169,9 +151,9 @@ def run_benchmark(
     )
     from bricks_benchmark.showcase.engine import BricksEngine, RawLLMEngine
 
-    compose_provider, baseline_provider = _build_providers(claudecode, model)
-    bricks_engine = BricksEngine(provider=compose_provider)
-    llm_engine = RawLLMEngine(provider=baseline_provider)
+    provider = _build_provider(model)
+    bricks_engine = BricksEngine(provider=provider)
+    llm_engine = RawLLMEngine(provider=provider)
 
     t0 = time.monotonic()
 
@@ -242,8 +224,7 @@ def main() -> None:
             "  python -m bricks_benchmark.showcase.run --live --model gpt-4o-mini\n"
             "  python -m bricks_benchmark.showcase.run --live --model gemini/gemini-2.0-flash\n"
             "  python -m bricks_benchmark.showcase.run --live --model ollama/llama3\n"
-            "  python -m bricks_benchmark.showcase.run --live --claudecode\n"
-            "  python -m bricks_benchmark.showcase.run --live --claudecode --model gpt-4o-mini\n"
+            "  python -m bricks_benchmark.showcase.run --live --model claudecode\n"
         ),
     )
     parser.add_argument(
@@ -261,8 +242,9 @@ def main() -> None:
         type=str,
         default=DEFAULT_MODEL,
         help=(
-            f"LiteLLM model string (default: {DEFAULT_MODEL}). "
-            "Examples: gpt-4o-mini, gemini/gemini-2.0-flash, ollama/llama3. "
+            f"Model to use for both engines (default: {DEFAULT_MODEL}). "
+            "Use 'claudecode' to route through ClaudeCodeProvider (claude -p, free on Max plan). "
+            "Other examples: gpt-4o-mini, gemini/gemini-2.0-flash, ollama/llama3. "
             "API key is read from the corresponding env var automatically."
         ),
     )
@@ -275,16 +257,7 @@ def main() -> None:
         "--live",
         action="store_true",
         default=False,
-        help="Required. Make real LLM calls. Requires an API key (or --claudecode).",
-    )
-    parser.add_argument(
-        "--claudecode",
-        action="store_true",
-        default=False,
-        help=(
-            "Use ClaudeCodeProvider (claude -p) for BricksEngine compose step. "
-            "Zero cost on Max plan. RawLLMEngine still uses --model for fair comparison."
-        ),
+        help="Required. Make real LLM calls. Requires an API key (or --model claudecode).",
     )
     args = parser.parse_args()
 
@@ -295,10 +268,10 @@ def main() -> None:
         print("Usage:")
         print("  python -m bricks_benchmark.showcase.run --live")
         print("  python -m bricks_benchmark.showcase.run --live --model gpt-4o-mini")
-        print("  python -m bricks_benchmark.showcase.run --live --claudecode")
+        print("  python -m bricks_benchmark.showcase.run --live --model claudecode")
         print()
         print("API key is read from env (ANTHROPIC_API_KEY, OPENAI_API_KEY, etc.),")
-        print("or use --claudecode for zero-cost runs inside a Claude Code session.")
+        print("or use --model claudecode for zero-cost runs inside a Claude Code session.")
         sys.exit(1)
 
     raw_scenarios = args.scenarios or ["all"]
@@ -310,30 +283,21 @@ def main() -> None:
 
     logger = _setup_logger(run_dir)
 
-    if args.claudecode:
-        compose_label = "ClaudeCodeProvider (claude -p)"
-        baseline_label = f"LiteLLMProvider ({args.model})"
-        if args.model == DEFAULT_MODEL:
-            logger.info("--claudecode: BricksEngine via ClaudeCode, RawLLMEngine via %s", args.model)
-        else:
-            logger.info(
-                "--claudecode + --model: BricksEngine via ClaudeCode, RawLLMEngine via %s",
-                args.model,
-            )
+    if args.model == _CLAUDECODE_MODEL:
+        provider_label = "ClaudeCodeProvider (claude -p)"
+        logger.info("--model claudecode: both engines via ClaudeCode (fully free)")
     else:
-        compose_label = f"LiteLLMProvider ({args.model})"
-        baseline_label = compose_label
+        provider_label = f"LiteLLMProvider ({args.model})"
         logger.info("Benchmark model: %s", args.model)
         validate_model_env(args.model)
 
-    logger.info("Compose provider:   %s", compose_label)
-    logger.info("Baseline provider:  %s", baseline_label)
+    logger.info("Provider:  %s", provider_label)
     logger.info("Scenarios: %s", ", ".join(scenarios))
     logger.info("Bricks v%s", __version__)
     logger.info("Run folder: %s", run_dir)
 
     try:
-        run_benchmark(scenarios, run_dir, logger, claudecode=args.claudecode, model=args.model)
+        run_benchmark(scenarios, run_dir, logger, model=args.model)
     except Exception as exc:
         logger.error("FAILED: %s", exc, exc_info=True)
         sys.exit(1)
