@@ -121,9 +121,7 @@ class BricksEngine(Engine):
             EngineResult with blueprint execution outputs.
         """
         t0 = time.monotonic()
-        compose_result = self._composer.compose(
-            task_text, self._registry, input_keys=["raw_api_response"]
-        )
+        compose_result = self._composer.compose(task_text, self._registry, input_keys=["raw_api_response"])
 
         if not compose_result.is_valid:
             logger.error("[BricksEngine] Compose failed: %s", compose_result.validation_errors)

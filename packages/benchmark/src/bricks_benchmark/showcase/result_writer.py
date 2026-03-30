@@ -115,7 +115,6 @@ def check_correctness(
     return True
 
 
-
 def write_scenario_result(run_dir: Path, result: ScenarioResult) -> Path:
     """Write a structured scenario result JSON file.
 

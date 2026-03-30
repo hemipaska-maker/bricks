@@ -7,6 +7,20 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.4.32] — 2026-03-31
+
+### Added
+- **LICENSE**: MIT license file (copyright Nahum Paska)
+- **CONTRIBUTING.md**: setup instructions, code style, PR process
+- **SECURITY.md**: responsible disclosure policy
+- **`.github/ISSUE_TEMPLATE/bug_report.md`** and **`feature_request.md`**: structured issue templates
+- **`.github/PULL_REQUEST_TEMPLATE.md`**: checklist PR template
+
+### Fixed
+- **CI workflow**: updated to monorepo install (`packages/core[dev,ai]`, `packages/stdlib`, `packages/benchmark`) replacing broken root `pip install -e ".[dev,ai,benchmark]"` — badge now green
+- **CI mypy path**: `mypy packages/core/src/bricks --strict` (was `mypy bricks --strict`)
+- **ruff format**: auto-formatted 3 benchmark files that were out-of-spec
+
 ## [0.4.31] — 2026-03-30
 
 ### Changed

@@ -70,25 +70,25 @@ def _print_side_by_side(
     """
     print()
     print(f"  {scenario_label} Results (seed={seed})")
-    print(f"  {'─' * 70}")
+    print(f"  {'-' * 70}")
     header = f"  {'Key':<25} {'BricksEngine':>20} {'RawLLMEngine':>20}"
     print(header)
-    print(f"  {'─' * 70}")
+    print(f"  {'-' * 70}")
 
     all_keys = sorted(set(bricks.expected.keys()) | set(bricks.outputs.keys()) | set(llm.outputs.keys()))
     for key in all_keys:
         exp = bricks.expected.get(key, "?")
         b_val = bricks.outputs.get(key, "—")
         l_val = llm.outputs.get(key, "—")
-        b_mark = "✓" if key in bricks.outputs and check_correctness({key: bricks.outputs[key]}, {key: exp}) else "✗"
-        l_mark = "✓" if key in llm.outputs and check_correctness({key: llm.outputs[key]}, {key: exp}) else "✗"
+        b_mark = "OK" if key in bricks.outputs and check_correctness({key: bricks.outputs[key]}, {key: exp}) else "X"
+        l_mark = "OK" if key in llm.outputs and check_correctness({key: llm.outputs[key]}, {key: exp}) else "X"
         b_str = f"{b_val} {b_mark}"
         l_str = f"{l_val} {l_mark}"
         print(f"  {key:<25} {b_str:>20} {l_str:>20}")
 
-    print(f"  {'─' * 70}")
-    b_ok = "YES ✓" if bricks.correct else "NO  ✗"
-    l_ok = "YES ✓" if llm.correct else "NO  ✗"
+    print(f"  {'-' * 70}")
+    b_ok = "YES OK" if bricks.correct else "NO  X"
+    l_ok = "YES OK" if llm.correct else "NO  X"
     print(f"  {'Correct':<25} {b_ok:>20} {l_ok:>20}")
     b_tok = f"{bricks.tokens_in}/{bricks.tokens_out}"
     l_tok = f"{llm.tokens_in}/{llm.tokens_out}"
@@ -202,7 +202,10 @@ def run_crm_hallucination(
         l_status = "PASS" if llm_result.correct else "FAIL"
         logger.info(
             "[CRM-hallucination] Run %d/%d: bricks=%s llm=%s",
-            i + 1, runs, b_status, l_status,
+            i + 1,
+            runs,
+            b_status,
+            l_status,
         )
         run_records.append(
             {
@@ -219,7 +222,9 @@ def run_crm_hallucination(
     elapsed = time.monotonic() - t0
     logger.info(
         "[CRM-hallucination] done  bricks_pass_rate=%.0f%%  llm_pass_rate=%.0f%%  [%.1fs]",
-        bricks_rate, llm_rate, elapsed,
+        bricks_rate,
+        llm_rate,
+        elapsed,
     )
     print()
     print(f"  CRM-hallucination ({runs} seeds)")
@@ -262,11 +267,12 @@ def run_crm_reuse(
 
     logger.info(
         "[CRM-reuse] Bricks: compose once + reuse %dx. RawLLM: %d calls.",
-        seeds - 1, seeds,
+        seeds - 1,
+        seeds,
     )
     t0 = time.monotonic()
 
-    # ── Bricks: compose once ──────────────────────────────────────────────
+    # -- Bricks: compose once ----------------------------------------------
     first_task = generate_crm_task(42)
     first_bricks = run_scenario(bricks_engine, first_task)
     blueprint_yaml = first_bricks.raw_response
@@ -282,7 +288,7 @@ def run_crm_reuse(
         }
     ]
 
-    # ── Bricks: reuse 19x ────────────────────────────────────────────────
+    # -- Bricks: reuse 19x ------------------------------------------------
     bricks_reuse_correct = 0
     if first_bricks.correct or blueprint_yaml:
         for i in range(1, seeds):
@@ -300,7 +306,7 @@ def run_crm_reuse(
             logger.info("[CRM-reuse] Bricks reuse %d/%d: %s", i, seeds - 1, status)
             bricks_records.append({"seed": seed, "correct": correct, "tokens": 0, "reused": True})
 
-    # ── RawLLM: 20 calls ─────────────────────────────────────────────────
+    # -- RawLLM: 20 calls -------------------------------------------------
     llm_passes = 0
     llm_tokens_total = 0
     llm_records: list[dict[str, Any]] = []
@@ -323,7 +329,10 @@ def run_crm_reuse(
 
     logger.info(
         "[CRM-reuse] done  bricks_compose=%d tokens  reuse_pass=%.0f%%  llm_pass=%.0f%%  [%.1fs]",
-        bricks_total_tokens, reuse_rate, llm_rate, elapsed,
+        bricks_total_tokens,
+        reuse_rate,
+        llm_rate,
+        elapsed,
     )
     print()
     print(f"  CRM-reuse ({seeds} seeds)")
