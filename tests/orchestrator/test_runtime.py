@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 from bricks.ai.composer import ComposeResult
@@ -12,6 +12,7 @@ from bricks.core.exceptions import OrchestratorError
 from bricks.core.models import ExecutionResult, Verbosity
 from bricks.core.registry import BrickRegistry
 from bricks.core.selector import AllBricksSelector
+from bricks.llm.base import CompletionResult, LLMProvider
 from bricks.orchestrator.runtime import RuntimeOrchestrator
 from bricks.selector.selector import TieredBrickSelector
 
@@ -57,16 +58,21 @@ def _make_config(
     )
 
 
+def _make_mock_provider() -> LLMProvider:
+    """Build a mock LLMProvider that returns a dummy CompletionResult."""
+    provider = MagicMock(spec=LLMProvider)
+    provider.complete.return_value = CompletionResult(text="")
+    return provider
+
+
 def _make_orchestrator(
     config: SystemConfig | None = None,
     registry: BrickRegistry | None = None,
 ) -> RuntimeOrchestrator:
-    """Create a RuntimeOrchestrator with a mocked Anthropic client."""
+    """Create a RuntimeOrchestrator with a mock LLM provider."""
     cfg = config or _make_config()
     reg = registry or _make_registry()
-    with patch("anthropic.Anthropic"):
-        orch = RuntimeOrchestrator(cfg, reg)
-    return orch
+    return RuntimeOrchestrator(cfg, reg, provider=_make_mock_provider())
 
 
 def _valid_compose_result(cache_hit: bool = False) -> ComposeResult:
@@ -161,30 +167,26 @@ class TestRuntimeOrchestrator:
     def test_orchestrator_uses_tiered_selector_with_categories(self) -> None:
         """When categories are configured, TieredBrickSelector is used."""
         cfg = _make_config(categories=["math", "data_transformation"])
-        with patch("anthropic.Anthropic"):
-            orch = RuntimeOrchestrator(cfg, _make_registry())
+        orch = RuntimeOrchestrator(cfg, _make_registry(), provider=_make_mock_provider())
         assert isinstance(orch._composer._selector, TieredBrickSelector)
 
     def test_orchestrator_uses_all_bricks_selector_without_categories(self) -> None:
         """When no categories are configured, AllBricksSelector is used."""
         cfg = _make_config(categories=[])
-        with patch("anthropic.Anthropic"):
-            orch = RuntimeOrchestrator(cfg, _make_registry())
+        orch = RuntimeOrchestrator(cfg, _make_registry(), provider=_make_mock_provider())
         assert isinstance(orch._composer._selector, AllBricksSelector)
 
     def test_orchestrator_no_store_when_disabled(self) -> None:
         """When store is disabled in config, composer store is None."""
         cfg = _make_config(store_enabled=False)
-        with patch("anthropic.Anthropic"):
-            orch = RuntimeOrchestrator(cfg, _make_registry())
+        orch = RuntimeOrchestrator(cfg, _make_registry(), provider=_make_mock_provider())
         assert orch._composer._store is None
 
     def test_orchestrator_store_enabled(self) -> None:
         """When store is enabled, composer receives a non-None store."""
         cfg = _make_config(store_enabled=True)
         cfg.store.backend = "memory"
-        with patch("anthropic.Anthropic"):
-            orch = RuntimeOrchestrator(cfg, _make_registry())
+        orch = RuntimeOrchestrator(cfg, _make_registry(), provider=_make_mock_provider())
         assert orch._composer._store is not None
 
     def test_execute_engine_error_raises_orchestrator_error(self) -> None:
