@@ -7,6 +7,17 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.4.34] — 2026-03-31
+
+### Removed
+- **`MY-WORKFLOW.md`**: outdated workflow doc (referenced GitLab, superseded by README/CLAUDE.md)
+- **19 benchmark result directories**: all historical runs removed; 3 representative runs kept (v0.1.1, v0.4.12, v0.4.26)
+- **`results.json`, `summary.md`, `determinism_report.md`**: legacy top-level result files removed from results/
+
+### Changed
+- **`.gitignore`**: added `.claude/` (local tooling config) and `showcase/results/` (generated data)
+- **`.claude/settings.local.json`**: untracked (file kept locally, no longer in git)
+
 ## [0.4.33] — 2026-03-31
 
 ### Changed
