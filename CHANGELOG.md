@@ -7,6 +7,15 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.4.35] — 2026-04-01
+
+### Changed
+- **Test structure aligned to monorepo**: all root `tests/` content moved into owning packages
+  - `tests/{core,ai,boot,cli,mcp,llm,orchestrator,selector,store,integration,live}/` + `conftest.py` + top-level tests → `packages/core/tests/`
+  - `tests/stdlib/` → `packages/stdlib/tests/`
+- **`pyproject.toml`**: updated `testpaths` to `packages/core/tests`, `packages/stdlib/tests`, `packages/benchmark/...`; added `--import-mode=importlib` to handle same-named modules across packages
+- Root `tests/` directory removed
+
 ## [0.4.34] — 2026-03-31
 
 ### Removed
