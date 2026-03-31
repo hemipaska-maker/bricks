@@ -147,6 +147,29 @@ Write professional, idiomatic Python. Every piece of code should look like it be
 - Include context: `f"Step {step.name!r}: brick {step.brick!r} not found in registry"`
 - Suggest fixes when possible: `f"Did you mean {closest_match!r}?"`
 
+## Git Workflow
+
+### Branching Rules
+
+- **Numbered missions (MISSION_XXX) that touch code:** Create a feature branch `mission-XXX-short-name` before starting work. Do all work on the branch. Run the full verification suite (`pytest`, `mypy`, `ruff`). Merge to `main` only after all checks pass. Push both branch and main.
+- **Bench missions (BENCH_XXX):** Always on a separate branch (e.g., `bench/001-support-tickets`). Never merge to main without explicit CTO approval.
+- **Docs-only changes** (research files, marketing, README tweaks with no code impact): Can go straight to `main`.
+
+### Branch Naming
+
+| Mission Type | Branch Format | Example |
+|---|---|---|
+| Numbered mission | `mission-XXX-short-name` | `mission-042-repo-hygiene` |
+| Bench mission | `bench/XXX-short-name` | `bench/003-log-parser` |
+
+### Merge Process
+
+1. Ensure all tests pass on the branch
+2. `git checkout main && git merge mission-XXX-short-name`
+3. Tag the new version on main
+4. Push: `git push origin main && git push origin --tags`
+5. Delete the feature branch: `git branch -d mission-XXX-short-name`
+
 ## Versioning
 
 - Scheme: semantic versioning -- `0.PHASE.PATCH`
@@ -167,8 +190,8 @@ Every mission must end with both the commit and the tag live on GitHub. No excep
 ## File Maintenance Contract
 
 After every version bump, update: `pyproject.toml`, `bricks/__init__.py`, `CHANGELOG.md`, git tag, push to GitHub.
-After every phase completion, also update: `PROGRESS.md`, `CLAUDE.md`, `MY-WORKFLOW.md`, `README.md`.
-After any rename (e.g., Sequence -> Blueprint), update ALL of: `CLAUDE.md`, `MY-WORKFLOW.md`, `PROGRESS.md`, `README.md`, `CHANGELOG.md`.
+After every phase completion, also update: `CLAUDE.md`, `README.md`.
+After any rename (e.g., Sequence -> Blueprint), update ALL of: `CLAUDE.md`, `README.md`, `CHANGELOG.md`.
 
 ## Research Knowledge Base
 
@@ -185,8 +208,11 @@ The benchmark runner must embed `bricks.__version__` in ALL output: `results.jso
 
 ## Missions
 
+**MANDATORY — after completing ANY mission, you MUST fill in the `## Results` section of that mission file. Update the Status to ✅ Done, record the date, list files changed, and paste test results. No exceptions. This is how the PM verifies your work.**
+
 When the user says **"new mission"**, do the following:
 1. Read `.missions/PROTOCOL.md`
 2. Find the highest-numbered `MISSION_XXX.md` file in `.missions/`
 3. Read it and execute the task
-4. Fill in the Results section when done
+4. Fill in the Results section when done — **this step is not optional**
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              

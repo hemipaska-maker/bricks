@@ -1,13 +1,13 @@
 [project]
-name = "bricks"
-version = "0.4.35"
+name = "bricks-ai"
+version = "0.4.36"
 description = "Deterministic execution engine: typed Python building blocks composed into auditable YAML blueprints."
 requires-python = ">=3.10"
 license = "MIT"
 authors = [
-    { name = "Hemi", email = "hemi@example.com" },
+    { name = "Hemi", email = "hemipaska@gmail.com" },
 ]
-keywords = ["sequencing", "automation", "bricks", "yaml", "workflow", "validation"]
+keywords = ["bricks", "ai", "agents", "deterministic", "workflow", "yaml", "automation", "llm", "mcp"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -15,8 +15,14 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Typing :: Typed",
 ]
+
+[project.readme]
+file = "README.md"
+content-type = "text/markdown"
 
 dependencies = [
     "pydantic>=2.0",
@@ -26,10 +32,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-stdlib = ["bricks-stdlib>=0.4.23"]
+stdlib = ["bricks-ai-stdlib>=0.4.23"]
 ai = ["litellm>=1.0"]
 mcp = ["mcp>=1.0"]
-all = ["bricks-stdlib>=0.4.23", "litellm>=1.0", "mcp>=1.0"]
+all = ["bricks-ai-stdlib>=0.4.23", "litellm>=1.0", "mcp>=1.0"]
 dev = [
     "pytest>=9.0",
     "mypy>=1.8",
@@ -40,9 +46,10 @@ dev = [
 bricks = "bricks.cli.main:app"
 
 [project.urls]
-Homepage = "https://gitlab.com/hemi/bricks"
-Repository = "https://gitlab.com/hemi/bricks"
-Issues = "https://gitlab.com/hemi/bricks/-/issues"
+Homepage = "https://github.com/hemipaska-maker/bricks"
+Repository = "https://github.com/hemipaska-maker/bricks"
+Issues = "https://github.com/hemipaska-maker/bricks/issues"
+Documentation = "https://github.com/hemipaska-maker/bricks#readme"
 
 [build-system]
 requires = ["setuptools>=68.0"]

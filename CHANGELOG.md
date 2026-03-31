@@ -7,6 +7,14 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.4.36] — 2026-04-01
+
+### Changed
+- **PyPI readiness**: renamed packages `bricks` → `bricks-ai` and `bricks-stdlib` → `bricks-ai-stdlib`
+- Updated author email, URLs (GitLab → GitHub), keywords, and classifiers in both `pyproject.toml` files
+- Added `[project.readme]` to both packages; created `README.md` for `packages/core/` and `packages/stdlib/`
+- Both wheels build cleanly and pass `twine check`
+
 ## [0.4.35] — 2026-04-01
 
 ### Changed
