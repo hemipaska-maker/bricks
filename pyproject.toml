@@ -40,7 +40,7 @@ module = ["litellm", "litellm.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
-module = ["bricks.mcp.server"]
+module = ["bricks.mcp.server", "bricks.cli.check_env"]
 warn_unused_ignores = false
 
 [tool.ruff]

@@ -98,14 +98,14 @@ def _read_long_paths_registry() -> bool | None:
         True if enabled, False if disabled, None if unreadable.
     """
     try:
-        import winreg  # noqa: PLC0415
+        import winreg  # noqa: PLC0415  # type: ignore[import]
 
-        key = winreg.OpenKey(
-            winreg.HKEY_LOCAL_MACHINE,
+        key = winreg.OpenKey(  # type: ignore[attr-defined]
+            winreg.HKEY_LOCAL_MACHINE,  # type: ignore[attr-defined]
             r"SYSTEM\CurrentControlSet\Control\FileSystem",
         )
-        value, _ = winreg.QueryValueEx(key, "LongPathsEnabled")
-        winreg.CloseKey(key)
+        value, _ = winreg.QueryValueEx(key, "LongPathsEnabled")  # type: ignore[attr-defined]
+        winreg.CloseKey(key)  # type: ignore[attr-defined]
         return bool(value)
     except OSError:
         return None
