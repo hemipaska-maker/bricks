@@ -13,10 +13,10 @@ from bricks_benchmark.showcase.run import expand_scenarios, validate_model_env
 class TestExpandScenarios:
     """Tests for expand_scenarios()."""
 
-    def test_all_expands_to_three_crm(self) -> None:
-        """'all' expands to all three CRM scenarios in order."""
+    def test_all_expands_to_all_scenarios(self) -> None:
+        """'all' expands to all CRM + ticket scenarios in order."""
         result = expand_scenarios(["all"])
-        assert result == ["CRM-pipeline", "CRM-hallucination", "CRM-reuse"]
+        assert result == ["CRM-pipeline", "CRM-hallucination", "CRM-reuse", "TICKET-pipeline"]
 
     def test_single_scenario(self) -> None:
         """Single scenario name returns just that scenario."""
@@ -28,8 +28,8 @@ class TestExpandScenarios:
         assert result == ["CRM-pipeline", "CRM-reuse"]
 
     def test_default_is_all(self) -> None:
-        """expand_scenarios(['all']) produces all three."""
-        assert len(expand_scenarios(["all"])) == 3
+        """expand_scenarios(['all']) produces all four scenarios."""
+        assert len(expand_scenarios(["all"])) == 4
 
     def test_deduplication(self) -> None:
         """Duplicate scenario names are deduplicated."""

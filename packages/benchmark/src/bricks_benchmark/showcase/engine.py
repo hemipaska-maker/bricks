@@ -15,9 +15,27 @@ import logging
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Protocol
 
 logger = logging.getLogger(__name__)
+
+
+class BenchmarkTask(Protocol):
+    """Common interface for all benchmark tasks.
+
+    Any task dataclass or Pydantic model with these four fields satisfies this
+    protocol automatically — no inheritance needed.  ``CRMTask`` and
+    ``TicketTask`` both satisfy it without changes.
+    """
+
+    task_text: str
+    """Natural language description of what to compute."""
+    raw_api_response: str
+    """Raw data string (markdown-fenced JSON) passed to the engine."""
+    expected_outputs: dict[str, Any]
+    """Ground-truth output values for correctness checking."""
+    required_bricks: list[str]
+    """Stdlib brick names the scenario expects the LLM to use."""
 
 
 @dataclass

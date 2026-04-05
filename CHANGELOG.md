@@ -7,6 +7,16 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.4.43] — 2026-04-05
+
+### Added
+- **BenchmarkTask Protocol**: `showcase/engine.py` gains a `BenchmarkTask` Protocol so any scenario task type plugs into the shared runner without inheritance
+- **Shared scenario runner**: `showcase/scenario_runner.py` (new) — `run_scenario()` and `_print_side_by_side()` extracted from `crm_scenario.py`, typed against `BenchmarkTask`
+- **Support tickets generator** (BENCH_001): `showcase/ticket_generator.py` (new) — deterministic 100-record dataset with `SupportTicket`, `TicketTask`, and `generate_ticket_task(seed)`; ~20% invalid emails, embedded PII messages, all four priorities and three categories
+- **TICKET-pipeline scenario**: `showcase/ticket_scenario.py` (new) — `run_ticket_pipeline()` mirroring CRM-pipeline; outputs `TICKET-pipeline_compose.json`
+- **CLI routing**: `run.py` now supports `--scenario TICKET-pipeline`; `expand_scenarios()` covers all four scenarios; `--scenario all` runs CRM-pipeline, CRM-hallucination, CRM-reuse, TICKET-pipeline
+- **9 new unit tests**: `tests/test_ticket_generator.py` — determinism, 100-ticket count, ~20% invalid emails, all priorities/categories present, expected outputs match manual calculation, required bricks listed
+
 ## [0.4.42] — 2026-04-05
 
 ### Added

@@ -1,16 +1,17 @@
-"""Benchmark showcase entry point — CRM unified Engine pipeline.
+"""Benchmark showcase entry point — CRM + Ticket unified Engine pipeline.
 
 BricksEngine and RawLLMEngine receive identical input.
 Both are evaluated with the same check_correctness() function.
 Only the system under test changes.
 
 Usage:
-    python -m bricks_benchmark.showcase.run --live                         # all CRM scenarios, default model
+    python -m bricks_benchmark.showcase.run --live                          # all scenarios, default model
     python -m bricks_benchmark.showcase.run --live --scenario CRM-pipeline
-    python -m bricks_benchmark.showcase.run --live --model gpt-4o-mini     # OpenAI
+    python -m bricks_benchmark.showcase.run --live --scenario TICKET-pipeline
+    python -m bricks_benchmark.showcase.run --live --model gpt-4o-mini      # OpenAI
     python -m bricks_benchmark.showcase.run --live --model gemini/gemini-2.0-flash
-    python -m bricks_benchmark.showcase.run --live --model ollama/llama3   # local, no API key
-    python -m bricks_benchmark.showcase.run --live --model claudecode      # ClaudeCode (claude -p), both engines
+    python -m bricks_benchmark.showcase.run --live --model ollama/llama3    # local, no API key
+    python -m bricks_benchmark.showcase.run --live --model claudecode       # ClaudeCode (claude -p), both engines
 """
 
 from __future__ import annotations
@@ -36,7 +37,8 @@ _DEFAULT_OUTPUT = Path(__file__).parent / "results"
 
 # Valid --scenario values
 CRM_SCENARIOS = {"CRM-pipeline", "CRM-hallucination", "CRM-reuse"}
-VALID_SCENARIOS = {"all"} | CRM_SCENARIOS
+TICKET_SCENARIOS = {"TICKET-pipeline"}
+VALID_SCENARIOS = {"all"} | CRM_SCENARIOS | TICKET_SCENARIOS
 
 # Special model value that routes through ClaudeCodeProvider
 _CLAUDECODE_MODEL = "claudecode"
@@ -54,7 +56,7 @@ def expand_scenarios(raw: list[str]) -> list[str]:
     Returns:
         De-duplicated, ordered list of individual scenario labels.
     """
-    order: list[str] = ["CRM-pipeline", "CRM-hallucination", "CRM-reuse"]
+    order: list[str] = ["CRM-pipeline", "CRM-hallucination", "CRM-reuse", "TICKET-pipeline"]
     selected: set[str] = set()
 
     for s in raw:
@@ -150,6 +152,7 @@ def run_benchmark(
         run_crm_reuse,
     )
     from bricks_benchmark.showcase.engine import BricksEngine, RawLLMEngine
+    from bricks_benchmark.showcase.ticket_scenario import run_ticket_pipeline
 
     provider = _build_provider(model)
     bricks_engine = BricksEngine(provider=provider)
@@ -165,6 +168,8 @@ def run_benchmark(
             run_crm_hallucination(bricks_engine, llm_engine, run_dir)
         elif crm_label == "CRM-reuse":
             run_crm_reuse(bricks_engine, llm_engine, run_dir)
+        elif crm_label == "TICKET-pipeline":
+            run_ticket_pipeline(bricks_engine, llm_engine, run_dir)
 
     elapsed = time.monotonic() - t0
     print_cost_summary(0, 0, elapsed)
@@ -234,7 +239,8 @@ def main() -> None:
         default=None,
         help=(
             "Which scenario(s) to run. Accepts: all (default), "
-            "CRM-pipeline, CRM-hallucination, CRM-reuse. Can be specified multiple times."
+            "CRM-pipeline, CRM-hallucination, CRM-reuse, TICKET-pipeline. "
+            "Can be specified multiple times."
         ),
     )
     parser.add_argument(
