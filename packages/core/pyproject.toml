@@ -30,9 +30,9 @@ dependencies = [
 
 [project.optional-dependencies]
 stdlib = ["bricks-ai-stdlib>=0.4.23"]
-ai = ["litellm>=1.0"]
+ai = ["litellm>=1.0,<1.82.7"]
 mcp = ["mcp>=1.0"]
-all = ["bricks-ai-stdlib>=0.4.23", "litellm>=1.0", "mcp>=1.0"]
+all = ["bricks-ai-stdlib>=0.4.23", "litellm>=1.0,<1.82.7", "mcp>=1.0"]
 dev = [
     "pytest>=9.0",
     "mypy>=1.8",
