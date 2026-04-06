@@ -435,6 +435,51 @@ def compose(
 
 
 @app.command()
+def demo(
+    act: int = typer.Option(0, "--act", help="Run only act 1, 2, or 3. Default 0 = all acts."),
+    model: str = typer.Option("claude-haiku-4-5", "--model", help="LiteLLM model string."),
+    provider_name: str = typer.Option("", "--provider", help="Provider override: 'claudecode' (no API key needed)."),
+) -> None:
+    """Interactive 3-act demo: simplicity -> correctness -> savings."""
+    from bricks.demo.runner import DemoRunner  # noqa: PLC0415
+    from bricks.llm.base import LLMProvider  # noqa: PLC0415
+
+    resolved_provider: LLMProvider | None = None
+
+    if provider_name == "claudecode":
+        try:
+            from bricks_provider_claudecode.provider import (  # noqa: PLC0415
+                ClaudeCodeProvider,  # type: ignore[import-untyped]
+            )
+
+            resolved_provider = ClaudeCodeProvider()
+        except ImportError:
+            typer.echo(
+                "ClaudeCodeProvider not installed. Run: pip install -e packages/provider-claudecode --no-deps",
+                err=True,
+            )
+            raise typer.Exit(code=1) from None
+    elif os.getenv("BRICKS_MODEL") or os.getenv("ANTHROPIC_API_KEY") or os.getenv("OPENAI_API_KEY"):
+        from bricks.llm.litellm_provider import LiteLLMProvider  # noqa: PLC0415
+
+        resolved_model = os.getenv("BRICKS_MODEL", model)
+        resolved_provider = LiteLLMProvider(model=resolved_model)
+
+    runner = DemoRunner(provider=resolved_provider)
+    if act == 0:
+        runner.run_all()
+    elif act == 1:
+        runner.run_act1()
+    elif act == 2:
+        runner.run_act2()
+    elif act == 3:
+        runner.run_act3()
+    else:
+        typer.echo(f"Invalid act {act!r}. Choose 1, 2, or 3.", err=True)
+        raise typer.Exit(code=1)
+
+
+@app.command()
 def serve(
     config: str | None = typer.Option(None, "--config", "-c", help="Path to agent.yaml config file."),
     model: str = typer.Option("claude-haiku-4-5", "--model", "-m", help="LiteLLM model string."),

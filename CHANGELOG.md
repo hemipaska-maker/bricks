@@ -7,6 +7,20 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.4.44] — 2026-04-06
+
+### Added
+- **`bricks demo` CLI command**: interactive 3-act walkthrough — simplicity → correctness → savings
+  - `--act 1/2/3` to run individual acts; default runs all three
+  - `--provider claudecode` uses `ClaudeCodeProvider` (no API key needed)
+  - `--model <litellm-model>` for any LiteLLM-compatible provider
+  - Fully works in demo mode (no API key): pre-composed blueprint, simulated LLM responses
+- **`bricks/demo/` module**: self-contained demo package with `data.py`, `printer.py`, `runner.py`
+  - Act 1: compose (or load) a CRM pipeline blueprint → execute → show result
+  - Act 2: run 5 variant datasets through Bricks (always correct) vs raw LLM (variable accuracy)
+  - Act 3: token cost comparison table with scale projection
+- **`rich>=13.0`** added to required dependencies (was already available transitively)
+
 ## [0.4.43] — 2026-04-05
 
 ### Added
