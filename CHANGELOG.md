@@ -7,6 +7,19 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.5.1] — 2026-04-07
+
+### Added
+- **Benchmark web API** — FastAPI server at `python -m bricks_benchmark.web` on port 8742
+- `GET /api/datasets` — 3 built-in datasets (CRM, support tickets, orders+customers)
+- `GET /api/bricks` — all stdlib bricks with name, description, category
+- `GET /api/presets` — preset YAML scenarios loaded from `web/presets/`
+- `POST /api/run` — runs BricksEngine + RawLLMEngine, returns savings ratio + percent
+- `web/ticket_generator.py` — deterministic 100-record support ticket dataset generator
+- `web/datasets.py` — DatasetLoader supporting flat and multi-table JSON datasets
+- `web/schemas.py` — Pydantic v2 schemas: BenchmarkRequest, EngineResultResponse, BenchmarkResponse
+- Benchmark package dependencies: `fastapi>=0.100`, `uvicorn>=0.20`, `PyYAML>=6.0`
+
 ## [0.5.0] — 2026-04-07
 
 ### Added
