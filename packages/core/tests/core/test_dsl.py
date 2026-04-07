@@ -130,6 +130,33 @@ class TestNode:
         n1.depends_on.append("abc")
         assert n2.depends_on == []  # no shared state
 
+    def test_node_output_returns_self(self) -> None:
+        """step1.output is step1 — property returns the node itself."""
+        step1 = step.brick_a()
+        assert step1.output is step1
+
+    def test_node_output_as_param_reference(self) -> None:
+        """step2.params['data'] is step1 when passed via step1.output."""
+        step1 = step.brick_a()
+        step2 = step.brick_b(data=step1.output)
+        assert step2.params["data"] is step1
+
+    def test_flow_with_output_chaining_no_error(self) -> None:
+        """@flow with .output chaining traces and converts to DAG without AttributeError."""
+        from bricks.core.dsl import flow as dsl_flow
+
+        @dsl_flow
+        def chained_flow(inp: None) -> None:
+            s1 = step.a(x=inp)
+            s2 = step.b(y=s1.output)
+            return s2
+
+        dag = chained_flow.to_dag()
+        assert len(dag.nodes) == 2
+        # s2 must depend on s1
+        edges_flat = [dep for deps in dag.edges.values() for dep in deps]
+        assert len(edges_flat) == 1
+
 
 class TestImports:
     """Tests that public exports work as documented."""

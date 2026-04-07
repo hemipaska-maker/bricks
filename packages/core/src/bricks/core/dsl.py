@@ -88,6 +88,16 @@ class Node:
     # DAG wiring — populated by DAGBuilder (Mission 059)
     depends_on: list[str] = field(default_factory=list)
 
+    @property
+    def output(self) -> Node:
+        """Allow step1.output syntax — returns self for use as param reference.
+
+        During @flow trace, step.X() returns a Node. LLM-generated DSL often
+        chains steps via step1.output. This property makes that work by returning
+        the Node itself, which DAGBuilder resolves as a dependency edge.
+        """
+        return self
+
     def __repr__(self) -> str:
         """Return a concise string representation.
 
