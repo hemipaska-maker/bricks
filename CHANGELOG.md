@@ -7,6 +7,17 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.4.50] — 2026-04-07
+
+### Added
+- **`PythonDSLValidator`**: AST-based whitelist validator for LLM-generated Python DSL code
+- **`ValidationResult`**: dataclass with `valid`, `errors`, and `warnings` fields
+- **`validate_dsl()`**: convenience wrapper around `PythonDSLValidator`
+- **Security gate**: rejects imports, exec/eval/open, class definitions, loops, if/try/with, comprehensions; warns on f-strings and unknown attribute access
+- **Public exports**: `PythonDSLValidator`, `ValidationResult`, `validate_dsl` exported from `bricks.core`
+
+---
+
 ## [0.4.49] — 2026-04-07
 
 ### Added
