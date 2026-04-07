@@ -124,7 +124,7 @@ def compact_brick_signatures(registry: BrickRegistry) -> str:
         Multi-line string with one signature per brick, sorted alphabetically.
     """
     lines: list[str] = []
-    for name, _meta in sorted(registry.list_all(), key=lambda x: x[0]):
+    for name, _meta in sorted(registry.list_public(), key=lambda x: x[0]):
         callable_, _meta_obj = registry.get(name)
         param_str = signature_params(callable_)
         output_str = _signature_output(callable_)

@@ -58,6 +58,16 @@ class BrickRegistry:
         """
         return [(name, meta) for name, (_, meta) in sorted(self._bricks.items())]
 
+    def list_public(self) -> list[tuple[str, BrickMeta]]:
+        """Return public (non-built-in) brick names and their metadata.
+
+        Excludes any brick whose name starts with ``__`` (built-in bricks).
+
+        Returns:
+            List of ``(name, BrickMeta)`` tuples, sorted by name.
+        """
+        return [(name, meta) for name, meta in self.list_all() if not name.startswith("__")]
+
     def has(self, name: str) -> bool:
         """Check if a brick name is registered.
 

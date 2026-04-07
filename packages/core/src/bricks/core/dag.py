@@ -155,7 +155,7 @@ class DAG:
                     resolved[key] = f"${{{node_to_step_name[value.id]}.result}}"
                 else:
                     resolved[key] = value
-            return StepDefinition(name=step_name, brick=node.brick_name, params=resolved)
+            return StepDefinition(name=step_name, brick=node.brick_name, params=resolved, save_as=step_name)
 
         if node.type == "for_each":
             items_ref: str = ""
@@ -166,6 +166,7 @@ class DAG:
                 name=step_name,
                 brick="__for_each__",
                 params={"items": items_ref, "do_brick": do_name, "on_error": node.on_error},
+                save_as=step_name,
             )
 
         # branch
@@ -177,4 +178,5 @@ class DAG:
                 "if_true_brick": "",
                 "if_false_brick": "",
             },
+            save_as=step_name,
         )
