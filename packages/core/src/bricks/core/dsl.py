@@ -375,9 +375,7 @@ class FlowDefinition:
         else:
             bp = self.to_blueprint()
 
-        resolved_engine: BlueprintEngine = (
-            engine if engine is not None else BlueprintEngine(BrickRegistry())
-        )
+        resolved_engine: BlueprintEngine = engine if engine is not None else BlueprintEngine(BrickRegistry())
         result = resolved_engine.run(bp, inputs={})
         return dict(result.outputs)
 
