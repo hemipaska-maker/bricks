@@ -124,10 +124,20 @@ class DAG:
             step = self._node_to_step(node, step_name, node_to_step_name)
             steps.append(step)
 
+        # Surface the terminal brick node's result via outputs_map so execute()
+        # callers receive {"result": <value>} instead of an empty dict.
+        # Only applies to plain brick nodes — for_each/branch manage their own output.
+        outputs_map: dict[str, str] = {}
+        root_node = self.nodes.get(self.root_id) if self.root_id else None
+        if root_node is not None and root_node.type == "brick" and self.root_id in node_to_step_name:
+            root_step = node_to_step_name[self.root_id]
+            outputs_map = {"result": f"${{{root_step}.result}}"}
+
         return BlueprintDefinition(
             name=name,
             description=description or f"DSL-generated pipeline with {len(steps)} steps",
             steps=steps,
+            outputs_map=outputs_map,
         )
 
     def _node_to_step(

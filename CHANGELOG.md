@@ -7,6 +7,12 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.5.5] — 2026-04-08
+
+### Added
+- **CI smoke test** — `test_smoke_pipeline.py` in benchmark tests: `test_smoke_compose_to_execute` verifies real DSL → execute → correct output with no LLM; `test_compose_result_flow_def_survives_to_engine` is a regression guard ensuring `flow_def.execute()` is used (not `BlueprintLoader`)
+- `dag.to_blueprint()` now sets `outputs_map = {"result": "${final_step.result}"}` for single-output brick flows, so `FlowDefinition.execute()` returns `{"result": value}` instead of `{}`
+
 ## [0.5.4] — 2026-04-07
 
 ### Fixed
