@@ -1,0 +1,241 @@
+{
+  "id": "crm-customers",
+  "name": "CRM Customers",
+  "description": "25 customer records with mixed statuses, revenues, and email validity",
+  "fields": [
+    "id",
+    "name",
+    "email",
+    "status",
+    "plan",
+    "monthly_revenue",
+    "signup_date"
+  ],
+  "data": [
+    {
+      "id": 1,
+      "name": "Quinn Taylor",
+      "email": "quinn.taylor0@example.com",
+      "status": "active",
+      "plan": "basic",
+      "monthly_revenue": 50.0,
+      "signup_date": "2020-07-15"
+    },
+    {
+      "id": 2,
+      "name": "Vince Taylor",
+      "email": "vince.taylor1@example.com",
+      "status": "inactive",
+      "plan": "pro",
+      "monthly_revenue": 110.5,
+      "signup_date": "2021-02-18"
+    },
+    {
+      "id": 3,
+      "name": "Alice Taylor",
+      "email": "alice.taylor2@example.com",
+      "status": "suspended",
+      "plan": "enterprise",
+      "monthly_revenue": 501.0,
+      "signup_date": "2022-09-21"
+    },
+    {
+      "id": 4,
+      "name": "Frank Wilson",
+      "email": "frank.wilson3@example.com",
+      "status": "active",
+      "plan": "pro",
+      "monthly_revenue": 116.5,
+      "signup_date": "2023-04-24"
+    },
+    {
+      "id": 5,
+      "name": "Kim Wilson",
+      "email": "kim.wilson4@example.com",
+      "status": "inactive",
+      "plan": "enterprise",
+      "monthly_revenue": 507.0,
+      "signup_date": "2024-11-27"
+    },
+    {
+      "id": 6,
+      "name": "Paul Wilson",
+      "email": "paul.wilson5@example.com",
+      "status": "suspended",
+      "plan": "pro",
+      "monthly_revenue": 122.5,
+      "signup_date": "2020-06-02"
+    },
+    {
+      "id": 7,
+      "name": "Uma Davis",
+      "email": "uma.davis6@example.com",
+      "status": "active",
+      "plan": "enterprise",
+      "monthly_revenue": 513.0,
+      "signup_date": "2021-01-05"
+    },
+    {
+      "id": 8,
+      "name": "Zoe Davis",
+      "email": "zoe.davis7@example.com",
+      "status": "inactive",
+      "plan": "pro",
+      "monthly_revenue": 103.5,
+      "signup_date": "2022-08-08"
+    },
+    {
+      "id": 9,
+      "name": "Eve Davis",
+      "email": "eve.davis8@example.com",
+      "status": "suspended",
+      "plan": "enterprise",
+      "monthly_revenue": 519.0,
+      "signup_date": "2023-03-11"
+    },
+    {
+      "id": 10,
+      "name": "Jack Miller",
+      "email": "jack.miller9@example.com",
+      "status": "active",
+      "plan": "basic",
+      "monthly_revenue": 39.5,
+      "signup_date": "2024-10-14"
+    },
+    {
+      "id": 11,
+      "name": "Olivia Miller",
+      "email": "olivia.miller10@example.com",
+      "status": "inactive",
+      "plan": "enterprise",
+      "monthly_revenue": 500.0,
+      "signup_date": "2020-05-17"
+    },
+    {
+      "id": 12,
+      "name": "Tina Miller",
+      "email": "tina.miller11@example.com",
+      "status": "suspended",
+      "plan": "basic",
+      "monthly_revenue": 45.5,
+      "signup_date": "2021-12-20"
+    },
+    {
+      "id": 13,
+      "name": "Yara Moore",
+      "email": "yara.moore12@example.com",
+      "status": "active",
+      "plan": "enterprise",
+      "monthly_revenue": 506.0,
+      "signup_date": "2022-07-23"
+    },
+    {
+      "id": 14,
+      "name": "Dave Moore",
+      "email": "dave.moore13@example.com",
+      "status": "inactive",
+      "plan": "basic",
+      "monthly_revenue": 51.5,
+      "signup_date": "2023-02-26"
+    },
+    {
+      "id": 15,
+      "name": "Iris Moore",
+      "email": "iris.moore14@example.com",
+      "status": "suspended",
+      "plan": "enterprise",
+      "monthly_revenue": 512.0,
+      "signup_date": "2024-09-01"
+    },
+    {
+      "id": 16,
+      "name": "Ned Clark",
+      "email": "ned.clark15@example.com",
+      "status": "active",
+      "plan": "basic",
+      "monthly_revenue": 32.5,
+      "signup_date": "2020-04-04"
+    },
+    {
+      "id": 17,
+      "name": "Sam Clark",
+      "email": "sam.clark16@example.com",
+      "status": "inactive",
+      "plan": "pro",
+      "monthly_revenue": 118.0,
+      "signup_date": "2021-11-07"
+    },
+    {
+      "id": 18,
+      "name": "Xander Clark",
+      "email": "xander.clark17@example.com",
+      "status": "suspended",
+      "plan": "basic",
+      "monthly_revenue": 38.5,
+      "signup_date": "2022-06-10"
+    },
+    {
+      "id": 19,
+      "name": "Carol Smith",
+      "email": "carol.smith18@example.com",
+      "status": "active",
+      "plan": "pro",
+      "monthly_revenue": 99.0,
+      "signup_date": "2023-01-13"
+    },
+    {
+      "id": 20,
+      "name": "Hank Smith",
+      "email": "hank.smith19@example.com",
+      "status": "inactive",
+      "plan": "basic",
+      "monthly_revenue": 44.5,
+      "signup_date": "2024-08-16"
+    },
+    {
+      "id": 21,
+      "name": "Mia Smith",
+      "email": "mia.smith20@example.com",
+      "status": "suspended",
+      "plan": "pro",
+      "monthly_revenue": 105.0,
+      "signup_date": "2020-03-19"
+    },
+    {
+      "id": 22,
+      "name": "Rose Jones",
+      "email": "rose.jones21@example.com",
+      "status": "active",
+      "plan": "basic",
+      "monthly_revenue": 50.5,
+      "signup_date": "2021-10-22"
+    },
+    {
+      "id": 23,
+      "name": "Wendy Jones",
+      "email": "wendy.jones22@example.com",
+      "status": "inactive",
+      "plan": "pro",
+      "monthly_revenue": 111.0,
+      "signup_date": "2022-05-25"
+    },
+    {
+      "id": 24,
+      "name": "Bob Jones",
+      "email": "bob.jones23@example.com",
+      "status": "suspended",
+      "plan": "enterprise",
+      "monthly_revenue": 501.5,
+      "signup_date": "2023-12-28"
+    },
+    {
+      "id": 25,
+      "name": "Grace Lee",
+      "email": "grace.lee24@example.com",
+      "status": "active",
+      "plan": "pro",
+      "monthly_revenue": 117.0,
+      "signup_date": "2024-07-03"
+    }
+  ]
+}

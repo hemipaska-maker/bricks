@@ -13,6 +13,9 @@ dependencies = [
     "bricks-ai-stdlib>=0.4.23",
     "tiktoken>=0.5",
     "matplotlib>=3.7",
+    "fastapi>=0.100",
+    "uvicorn>=0.20",
+    "PyYAML>=6.0",
 ]
 
 [project.urls]
