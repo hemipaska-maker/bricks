@@ -268,6 +268,110 @@ class TestFlowDictReturn:
                 return {"a": "not_a_node"}  # type: ignore[return-value]
 
 
+class TestFlowCallForm:
+    """Tests for @flow(), @flow(kwargs), and bare @flow call forms (Mission 073)."""
+
+    def test_flow_accepts_kwargs(self) -> None:
+        """@flow(outputs_map={}) decorates without raising TypeError."""
+        from bricks.core.dsl import FlowDefinition
+        from bricks.core.dsl import flow as dsl_flow
+
+        @dsl_flow(outputs_map={})
+        def my_flow(data: None) -> None:
+            return step.some_brick(text=data)
+
+        assert isinstance(my_flow, FlowDefinition)
+
+    def test_flow_accepts_empty_call(self) -> None:
+        """@flow() (empty parentheses) decorates without error."""
+        from bricks.core.dsl import FlowDefinition
+        from bricks.core.dsl import flow as dsl_flow
+
+        @dsl_flow()
+        def my_flow(data: None) -> None:
+            return step.some_brick(text=data)
+
+        assert isinstance(my_flow, FlowDefinition)
+
+    def test_flow_bare_still_works(self) -> None:
+        """Regression: bare @flow still returns FlowDefinition after Mission 073 changes."""
+        from bricks.core.dsl import FlowDefinition
+        from bricks.core.dsl import flow as dsl_flow
+
+        @dsl_flow
+        def my_flow(data: None) -> None:
+            return step.some_brick(text=data)
+
+        assert isinstance(my_flow, FlowDefinition)
+
+    def test_flow_dict_return_multi_output(self) -> None:
+        """Flow returning dict of Nodes produces all declared output keys with correct values."""
+        from typing import cast
+
+        from bricks.core.brick import BrickFunction, brick
+        from bricks.core.dsl import FlowDefinition
+        from bricks.core.dsl import flow as dsl_flow
+        from bricks.core.engine import BlueprintEngine
+        from bricks.core.registry import BrickRegistry
+
+        registry = BrickRegistry()
+
+        @brick(description="Double the number. Returns {result: doubled}.")
+        def double_num(n: int) -> dict:  # type: ignore[type-arg]
+            """Double."""
+            return {"result": n * 2}
+
+        @brick(description="Square the number. Returns {result: squared}.")
+        def square_num(n: int) -> dict:  # type: ignore[type-arg]
+            """Square."""
+            return {"result": n * n}
+
+        for fn in (double_num, square_num):
+            typed = cast(BrickFunction, fn)
+            registry.register(typed.__brick_meta__.name, typed, typed.__brick_meta__)
+
+        @dsl_flow
+        def multi_flow(val: None) -> None:
+            a = step.double_num(n=val)
+            b = step.square_num(n=val)
+            return {"doubled": a, "squared": b}  # type: ignore[return-value]
+
+        assert isinstance(multi_flow, FlowDefinition)
+        engine = BlueprintEngine(registry=registry)
+        result = multi_flow.execute(inputs={"val": 4}, engine=engine)
+
+        assert result["doubled"] == 8, f"Expected 8, got {result['doubled']}"
+        assert result["squared"] == 16, f"Expected 16, got {result['squared']}"
+
+    def test_execute_passes_inputs_to_engine(self) -> None:
+        """execute(inputs=...) passes the dict to BlueprintEngine.run() so step params resolve."""
+        from typing import cast
+
+        from bricks.core.brick import BrickFunction, brick
+        from bricks.core.dsl import flow as dsl_flow
+        from bricks.core.engine import BlueprintEngine
+        from bricks.core.registry import BrickRegistry
+
+        registry = BrickRegistry()
+
+        @brick(description="Echo text. Returns {result: text}.")
+        def echo_text(text: str) -> dict:  # type: ignore[type-arg]
+            """Echo."""
+            return {"result": text}
+
+        typed = cast(BrickFunction, echo_text)
+        registry.register(typed.__brick_meta__.name, typed, typed.__brick_meta__)
+
+        @dsl_flow
+        def echo_flow(raw_text: None) -> None:
+            return step.echo_text(text=raw_text)
+
+        engine = BlueprintEngine(registry=registry)
+        result = echo_flow.execute(inputs={"raw_text": "hello world"}, engine=engine)
+
+        assert result.get("result") == "hello world", f"Expected 'hello world', got: {result}"
+
+
 class TestImports:
     """Tests that public exports work as documented."""
 

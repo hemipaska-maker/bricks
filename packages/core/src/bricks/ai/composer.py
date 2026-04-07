@@ -103,7 +103,10 @@ Rules:
 5. Only use step.brick_name() for brick calls — brick names must match the available bricks list above
 6. Parameters must be keyword-only: step.clean(text=data) NOT step.clean(data)
 7. You can assign step results to variables and pass them to other steps
-8. Return the final step result
+8. To return ONE output: return the final step node directly (e.g. return step4)
+   To return MULTIPLE named outputs: return a dict of names to step nodes
+   (e.g. return {{"count": step3, "total": step4}})
+   Use dict return whenever the task requires multiple output keys.
 9. on_error="fail" (default) stops on first error. on_error="collect" continues and gathers errors.
 10. branch condition must be a brick name string that returns boolean
 
