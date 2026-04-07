@@ -3,6 +3,6 @@
 from bricks.api import Bricks
 from bricks.core.dsl import Node, branch, for_each, step
 
-__version__ = "0.4.46"
+__version__ = "0.4.47"
 
 __all__ = ["Bricks", "Node", "__version__", "branch", "for_each", "step"]
