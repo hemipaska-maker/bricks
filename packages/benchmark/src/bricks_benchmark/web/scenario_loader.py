@@ -60,10 +60,7 @@ def load_scenario(path: Path) -> ScenarioDefinition:
             "('data', 'data_file', or 'dataset_id') — none found"
         )
     if len(data_sources) > 1:
-        raise ValueError(
-            f"Scenario {path.name!r}: only one data source allowed, "
-            f"but found multiple: {data_sources!r}"
-        )
+        raise ValueError(f"Scenario {path.name!r}: only one data source allowed, but found multiple: {data_sources!r}")
 
     return ScenarioDefinition(
         name=raw["name"],
