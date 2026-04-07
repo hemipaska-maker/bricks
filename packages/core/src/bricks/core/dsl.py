@@ -417,11 +417,14 @@ class FlowDefinition:
             bp = self.to_blueprint()
 
         resolved_engine: BlueprintEngine = engine if engine is not None else BlueprintEngine(BrickRegistry())
-        result = resolved_engine.run(bp, inputs={})
+        result = resolved_engine.run(bp, inputs=merged)
         return dict(result.outputs)
 
 
-def flow(func: Callable[..., Any]) -> FlowDefinition:
+def flow(
+    func: Callable[..., Any] | None = None,
+    **_kwargs: Any,
+) -> FlowDefinition | Callable[..., FlowDefinition]:
     """Decorator that traces a function once and returns a :class:`FlowDefinition`.
 
     The decorated function is called **once at decoration time** with ``None``
@@ -430,12 +433,21 @@ def flow(func: Callable[..., Any]) -> FlowDefinition:
     :class:`Node` objects.  Actual values are irrelevant during tracing;
     only the graph structure is captured.
 
+    Supports three call forms::
+
+        @flow               # bare decorator
+        @flow()             # empty call
+        @flow(outputs_map={...})  # call with kwargs (kwargs are ignored)
+
     Args:
-        func: The pipeline function to trace. Its parameters become mock
-            ``None`` values during the trace phase.
+        func: The pipeline function to trace. Pass ``None`` (implicitly) when
+            the decorator is called with keyword arguments.
+        **_kwargs: Ignored keyword arguments — allows ``@flow(outputs_map={...})``
+            without raising ``TypeError``.
 
     Returns:
-        A :class:`FlowDefinition` with the traced DAG.
+        A :class:`FlowDefinition` when called directly on a function, or a
+        single-argument decorator when called with keyword arguments.
 
     Example::
 
@@ -448,6 +460,9 @@ def flow(func: Callable[..., Any]) -> FlowDefinition:
 
         bp = clean_pipeline.to_blueprint()
     """
+    if func is None:
+        return lambda f: flow(f)  # type: ignore[return-value]
+
     from bricks.core.dag_builder import DAGBuilder  # noqa: PLC0415
 
     sig = inspect.signature(func)

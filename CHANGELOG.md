@@ -7,6 +7,15 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.5.7] — 2026-04-08
+
+### Fixed
+- `flow()` crashed with `TypeError` when called with kwargs (e.g. `@flow(outputs_map={...})`). Function now accepts `func=None, **_kwargs` and returns a lambda decorator when `func is None`, allowing bare `@flow`, `@flow()`, and `@flow(key=val)` to all work.
+- `FlowDefinition.execute()` passed `inputs={}` to `BlueprintEngine.run()`, breaking `${variable}` reference resolution in multi-step flows. Now passes `inputs=merged` (the merged dict of `inputs=` and `**kwargs`).
+
+### Changed
+- `DSL_PROMPT_TEMPLATE` rule 8: teaches the LLM both single-output (`return step4`) and multi-output (`return {{"count": step3, "total": step4}}`) return syntax so multi-output tasks use dict-return correctly.
+
 ## [0.5.6] — 2026-04-07
 
 ### Fixed
