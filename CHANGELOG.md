@@ -7,6 +7,19 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.4.52] — 2026-04-07
+
+### Added
+- **`builtins.py`**: `__for_each__` and `__branch__` built-in DSL control-flow bricks
+- **`register_builtins(registry)`**: registers built-ins as registry-bound partials (idempotent)
+- **`DAGExecutionEngine`**: thin wrapper around `BlueprintEngine` that auto-registers builtins and executes `FlowDefinition` objects
+- **`BrickRegistry.list_public()`**: returns only non-builtin bricks (excludes `__` prefix names)
+- `compact_brick_signatures()` now uses `list_public()` to exclude built-ins from LLM prompts
+- **Exports**: `DAGExecutionEngine`, `register_builtins` added to `bricks` and `bricks.core`
+- Fixed `dag.to_blueprint()` to set `save_as` on every step (required for cross-step references to resolve)
+
+---
+
 ## [0.4.51] — 2026-04-07
 
 ### Changed

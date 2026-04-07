@@ -1,6 +1,7 @@
 """Bricks core: engine, context, validation, and Brick base classes."""
 
 from bricks.core.brick import BaseBrick, BrickModel, brick
+from bricks.core.builtins import register_builtins
 from bricks.core.catalog import TieredCatalog
 from bricks.core.config import (
     AiConfig,
@@ -17,7 +18,7 @@ from bricks.core.dag import DAG
 from bricks.core.dag_builder import DAGBuilder
 from bricks.core.discovery import BrickDiscovery
 from bricks.core.dsl import ExecutionTracer, FlowDefinition, Node, StepProxy, branch, flow, for_each, step
-from bricks.core.engine import BlueprintEngine
+from bricks.core.engine import BlueprintEngine, DAGExecutionEngine
 from bricks.core.exceptions import (
     BlueprintValidationError,
     BrickError,
@@ -93,6 +94,7 @@ __all__ = [
     "ConfigError",
     "ConfigLoader",
     "DAGBuilder",
+    "DAGExecutionEngine",
     "DuplicateBlueprintError",
     "DuplicateBrickError",
     "ExecutionContext",
@@ -126,6 +128,7 @@ __all__ = [
     "output_key_table",
     "output_keys",
     "parse_description_keys",
+    "register_builtins",
     "registry_schema",
     "signature_params",
     "step",

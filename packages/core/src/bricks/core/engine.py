@@ -330,3 +330,46 @@ class BlueprintEngine:
                 actual=str(scope)[:200],
             )
         return None, None
+
+
+class DAGExecutionEngine:
+    """Executes a :class:`~bricks.core.dsl.FlowDefinition` through :class:`BlueprintEngine`.
+
+    Converts ``FlowDefinition → BlueprintDefinition → BlueprintEngine.run()``.
+    Built-in DSL bricks (``__for_each__``, ``__branch__``) are registered
+    automatically when this engine is created.
+
+    Args:
+        engine: The underlying :class:`BlueprintEngine` to delegate to.
+    """
+
+    def __init__(self, engine: BlueprintEngine) -> None:
+        """Initialise the DAGExecutionEngine.
+
+        Args:
+            engine: A :class:`BlueprintEngine` instance. Built-in bricks are
+                registered into its registry on construction.
+        """
+        from bricks.core.builtins import register_builtins  # noqa: PLC0415
+
+        self._engine = engine
+        register_builtins(engine._registry)
+
+    def execute(
+        self,
+        flow_def: Any,
+        inputs: dict[str, Any] | None = None,
+        verbosity: Verbosity = Verbosity.MINIMAL,
+    ) -> ExecutionResult:
+        """Execute a :class:`~bricks.core.dsl.FlowDefinition`.
+
+        Args:
+            flow_def: The ``FlowDefinition`` to execute.
+            inputs: Runtime input values for ``${inputs.X}`` references.
+            verbosity: Controls execution trace detail in the returned result.
+
+        Returns:
+            :class:`~bricks.core.models.ExecutionResult` from the engine.
+        """
+        blueprint = flow_def.to_blueprint()
+        return self._engine.run(blueprint, inputs or {}, verbosity=verbosity)

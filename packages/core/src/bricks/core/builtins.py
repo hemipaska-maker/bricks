@@ -1,0 +1,127 @@
+"""Built-in bricks for DSL control flow (__for_each__, __branch__).
+
+These bricks are registered automatically when a ``DAGExecutionEngine`` is
+used. They are hidden from user-facing catalog listings — any brick whose
+name starts with ``__`` is excluded from ``list_public()`` and signature output.
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+from bricks.core.models import BrickMeta
+from bricks.core.registry import BrickRegistry
+
+
+def _for_each_impl(
+    items: list[Any],
+    do_brick: str,
+    on_error: str = "fail",
+    registry: BrickRegistry | None = None,
+) -> dict[str, Any]:
+    """Execute a brick for each item in the list.
+
+    Args:
+        items: List of items to iterate over.
+        do_brick: Name of the brick to apply to each item.
+        on_error: ``"fail"`` stops on first error; ``"collect"`` continues.
+        registry: Registry to look up ``do_brick``. Required.
+
+    Returns:
+        ``{"results": [...]}`` on success (fail mode).
+        ``{"results": [...], "errors": [...]}`` in collect mode.
+
+    Raises:
+        ValueError: If ``registry`` is None.
+        Exception: Any exception raised by the target brick in fail mode.
+    """
+    if registry is None:
+        raise ValueError("__for_each__ requires a registry parameter.")
+
+    callable_, _ = registry.get(do_brick)
+    results: list[Any] = []
+    errors: list[dict[str, Any]] = []
+
+    for i, item in enumerate(items):
+        try:
+            result = callable_(item=item)
+            results.append(result)
+        except Exception as exc:
+            if on_error != "collect":
+                raise
+            errors.append({"index": i, "error": str(exc), "item": item})
+            results.append(None)
+
+    output: dict[str, Any] = {"results": results}
+    if on_error == "collect":
+        output["errors"] = errors
+    return output
+
+
+def _branch_impl(
+    condition_brick: str,
+    condition_input: Any = None,
+    if_true_brick: str = "",
+    if_false_brick: str = "",
+    registry: BrickRegistry | None = None,
+) -> dict[str, Any]:
+    """Evaluate a condition brick and route to the true or false branch.
+
+    Args:
+        condition_brick: Brick name that returns a boolean or ``{"result": bool}``.
+        condition_input: Input passed to the condition brick.
+        if_true_brick: Brick to execute when condition is True.
+        if_false_brick: Brick to execute when condition is False.
+        registry: Registry to look up bricks. Required.
+
+    Returns:
+        Output of the executed branch plus ``{"branch_taken": "true"|"false"}``.
+
+    Raises:
+        ValueError: If ``registry`` is None.
+    """
+    if registry is None:
+        raise ValueError("__branch__ requires a registry parameter.")
+
+    condition_fn, _ = registry.get(condition_brick)
+    raw = condition_fn(input=condition_input)
+    is_true = bool(raw.get("result", False) if isinstance(raw, dict) else raw)
+
+    if is_true and if_true_brick:
+        target_fn, _ = registry.get(if_true_brick)
+        branch_result = target_fn(input=condition_input)
+        branch_taken = "true"
+    elif if_false_brick:
+        target_fn, _ = registry.get(if_false_brick)
+        branch_result = target_fn(input=condition_input)
+        branch_taken = "false"
+    else:
+        branch_result = {}
+        branch_taken = "false"
+
+    output = dict(branch_result) if isinstance(branch_result, dict) else {"result": branch_result}
+    output["branch_taken"] = branch_taken
+    return output
+
+
+def register_builtins(registry: BrickRegistry) -> None:
+    """Register all built-in DSL bricks into *registry*.
+
+    Each built-in is registered as a partial that closes over ``registry``,
+    so the engine can call it without explicitly passing ``registry=``.
+
+    Silently skips if they are already registered (idempotent).
+
+    Args:
+        registry: The registry to populate.
+    """
+    import functools  # noqa: PLC0415
+
+    for name, fn, description in (
+        ("__for_each__", _for_each_impl, "Internal: maps a brick over each item in a list."),
+        ("__branch__", _branch_impl, "Internal: conditional routing based on a brick's boolean output."),
+    ):
+        if not registry.has(name):
+            bound = functools.partial(fn, registry=registry)
+            meta = BrickMeta(name=name, description=description, category="__builtin__")
+            registry.register(name, bound, meta)
