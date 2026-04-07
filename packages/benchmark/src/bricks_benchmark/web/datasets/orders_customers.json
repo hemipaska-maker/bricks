@@ -1,0 +1,545 @@
+{
+  "id": "orders-customers",
+  "name": "Orders and Customers",
+  "description": "50 orders linked to 30 customers with plan types and order statuses",
+  "fields": [
+    "orders: order_id, customer_id, amount, status, order_date",
+    "customers: id, name, email, plan"
+  ],
+  "data": {
+    "orders": [
+      {
+        "order_id": 1,
+        "customer_id": 13,
+        "amount": 226.4,
+        "status": "completed",
+        "order_date": "2024-07-15"
+      },
+      {
+        "order_id": 2,
+        "customer_id": 6,
+        "amount": 475.5,
+        "status": "refunded",
+        "order_date": "2025-12-12"
+      },
+      {
+        "order_id": 3,
+        "customer_id": 29,
+        "amount": 254.6,
+        "status": "pending",
+        "order_date": "2024-05-09"
+      },
+      {
+        "order_id": 4,
+        "customer_id": 22,
+        "amount": 33.7,
+        "status": "completed",
+        "order_date": "2025-10-06"
+      },
+      {
+        "order_id": 5,
+        "customer_id": 15,
+        "amount": 282.8,
+        "status": "refunded",
+        "order_date": "2024-03-03"
+      },
+      {
+        "order_id": 6,
+        "customer_id": 8,
+        "amount": 61.9,
+        "status": "pending",
+        "order_date": "2025-08-28"
+      },
+      {
+        "order_id": 7,
+        "customer_id": 1,
+        "amount": 311.0,
+        "status": "completed",
+        "order_date": "2024-01-25"
+      },
+      {
+        "order_id": 8,
+        "customer_id": 24,
+        "amount": 90.1,
+        "status": "refunded",
+        "order_date": "2025-06-22"
+      },
+      {
+        "order_id": 9,
+        "customer_id": 17,
+        "amount": 339.2,
+        "status": "pending",
+        "order_date": "2024-11-19"
+      },
+      {
+        "order_id": 10,
+        "customer_id": 10,
+        "amount": 118.3,
+        "status": "completed",
+        "order_date": "2025-04-16"
+      },
+      {
+        "order_id": 11,
+        "customer_id": 3,
+        "amount": 367.4,
+        "status": "refunded",
+        "order_date": "2024-09-13"
+      },
+      {
+        "order_id": 12,
+        "customer_id": 26,
+        "amount": 146.5,
+        "status": "pending",
+        "order_date": "2025-02-10"
+      },
+      {
+        "order_id": 13,
+        "customer_id": 19,
+        "amount": 395.6,
+        "status": "completed",
+        "order_date": "2024-07-07"
+      },
+      {
+        "order_id": 14,
+        "customer_id": 12,
+        "amount": 174.7,
+        "status": "refunded",
+        "order_date": "2025-12-04"
+      },
+      {
+        "order_id": 15,
+        "customer_id": 5,
+        "amount": 423.8,
+        "status": "pending",
+        "order_date": "2024-05-01"
+      },
+      {
+        "order_id": 16,
+        "customer_id": 28,
+        "amount": 202.9,
+        "status": "completed",
+        "order_date": "2025-10-26"
+      },
+      {
+        "order_id": 17,
+        "customer_id": 21,
+        "amount": 452.0,
+        "status": "refunded",
+        "order_date": "2024-03-23"
+      },
+      {
+        "order_id": 18,
+        "customer_id": 14,
+        "amount": 231.1,
+        "status": "pending",
+        "order_date": "2025-08-20"
+      },
+      {
+        "order_id": 19,
+        "customer_id": 7,
+        "amount": 480.2,
+        "status": "completed",
+        "order_date": "2024-01-17"
+      },
+      {
+        "order_id": 20,
+        "customer_id": 20,
+        "amount": 259.3,
+        "status": "pending",
+        "order_date": "2025-02-22"
+      },
+      {
+        "order_id": 21,
+        "customer_id": 13,
+        "amount": 38.4,
+        "status": "completed",
+        "order_date": "2024-07-19"
+      },
+      {
+        "order_id": 22,
+        "customer_id": 6,
+        "amount": 287.5,
+        "status": "refunded",
+        "order_date": "2025-12-16"
+      },
+      {
+        "order_id": 23,
+        "customer_id": 29,
+        "amount": 66.6,
+        "status": "pending",
+        "order_date": "2024-05-13"
+      },
+      {
+        "order_id": 24,
+        "customer_id": 22,
+        "amount": 315.7,
+        "status": "completed",
+        "order_date": "2025-10-10"
+      },
+      {
+        "order_id": 25,
+        "customer_id": 15,
+        "amount": 94.8,
+        "status": "refunded",
+        "order_date": "2024-03-07"
+      },
+      {
+        "order_id": 26,
+        "customer_id": 8,
+        "amount": 343.9,
+        "status": "pending",
+        "order_date": "2025-08-04"
+      },
+      {
+        "order_id": 27,
+        "customer_id": 1,
+        "amount": 123.0,
+        "status": "completed",
+        "order_date": "2024-01-01"
+      },
+      {
+        "order_id": 28,
+        "customer_id": 24,
+        "amount": 372.1,
+        "status": "refunded",
+        "order_date": "2025-06-26"
+      },
+      {
+        "order_id": 29,
+        "customer_id": 17,
+        "amount": 151.2,
+        "status": "pending",
+        "order_date": "2024-11-23"
+      },
+      {
+        "order_id": 30,
+        "customer_id": 10,
+        "amount": 400.3,
+        "status": "completed",
+        "order_date": "2025-04-20"
+      },
+      {
+        "order_id": 31,
+        "customer_id": 3,
+        "amount": 179.4,
+        "status": "refunded",
+        "order_date": "2024-09-17"
+      },
+      {
+        "order_id": 32,
+        "customer_id": 26,
+        "amount": 428.5,
+        "status": "pending",
+        "order_date": "2025-02-14"
+      },
+      {
+        "order_id": 33,
+        "customer_id": 19,
+        "amount": 207.6,
+        "status": "completed",
+        "order_date": "2024-07-11"
+      },
+      {
+        "order_id": 34,
+        "customer_id": 12,
+        "amount": 456.7,
+        "status": "refunded",
+        "order_date": "2025-12-08"
+      },
+      {
+        "order_id": 35,
+        "customer_id": 5,
+        "amount": 235.8,
+        "status": "pending",
+        "order_date": "2024-05-05"
+      },
+      {
+        "order_id": 36,
+        "customer_id": 28,
+        "amount": 484.9,
+        "status": "completed",
+        "order_date": "2025-10-02"
+      },
+      {
+        "order_id": 37,
+        "customer_id": 21,
+        "amount": 264.0,
+        "status": "refunded",
+        "order_date": "2024-03-27"
+      },
+      {
+        "order_id": 38,
+        "customer_id": 4,
+        "amount": 43.1,
+        "status": "completed",
+        "order_date": "2025-04-04"
+      },
+      {
+        "order_id": 39,
+        "customer_id": 27,
+        "amount": 292.2,
+        "status": "refunded",
+        "order_date": "2024-09-01"
+      },
+      {
+        "order_id": 40,
+        "customer_id": 20,
+        "amount": 71.3,
+        "status": "pending",
+        "order_date": "2025-02-26"
+      },
+      {
+        "order_id": 41,
+        "customer_id": 13,
+        "amount": 320.4,
+        "status": "completed",
+        "order_date": "2024-07-23"
+      },
+      {
+        "order_id": 42,
+        "customer_id": 6,
+        "amount": 99.5,
+        "status": "refunded",
+        "order_date": "2025-12-20"
+      },
+      {
+        "order_id": 43,
+        "customer_id": 29,
+        "amount": 348.6,
+        "status": "pending",
+        "order_date": "2024-05-17"
+      },
+      {
+        "order_id": 44,
+        "customer_id": 22,
+        "amount": 127.7,
+        "status": "completed",
+        "order_date": "2025-10-14"
+      },
+      {
+        "order_id": 45,
+        "customer_id": 15,
+        "amount": 376.8,
+        "status": "refunded",
+        "order_date": "2024-03-11"
+      },
+      {
+        "order_id": 46,
+        "customer_id": 8,
+        "amount": 155.9,
+        "status": "pending",
+        "order_date": "2025-08-08"
+      },
+      {
+        "order_id": 47,
+        "customer_id": 1,
+        "amount": 405.0,
+        "status": "completed",
+        "order_date": "2024-01-05"
+      },
+      {
+        "order_id": 48,
+        "customer_id": 24,
+        "amount": 184.1,
+        "status": "refunded",
+        "order_date": "2025-06-02"
+      },
+      {
+        "order_id": 49,
+        "customer_id": 17,
+        "amount": 433.2,
+        "status": "pending",
+        "order_date": "2024-11-27"
+      },
+      {
+        "order_id": 50,
+        "customer_id": 10,
+        "amount": 212.3,
+        "status": "completed",
+        "order_date": "2025-04-24"
+      }
+    ],
+    "customers": [
+      {
+        "id": 1,
+        "name": "Mia Taylor",
+        "email": "mia.taylor0@orders.io",
+        "plan": "basic"
+      },
+      {
+        "id": 2,
+        "name": "Xander Miller",
+        "email": "xander.miller1@orders.io",
+        "plan": "enterprise"
+      },
+      {
+        "id": 3,
+        "name": "Eve Jones",
+        "email": "eve.jones2@orders.io",
+        "plan": "pro"
+      },
+      {
+        "id": 4,
+        "name": "Paul Wilson",
+        "email": "paul.wilson3@orders.io",
+        "plan": "basic"
+      },
+      {
+        "id": 5,
+        "name": "Aaron Moore",
+        "email": "aaron.moore4@orders.io",
+        "plan": "enterprise"
+      },
+      {
+        "id": 6,
+        "name": "Hank Lee",
+        "email": "hank.lee5@orders.io",
+        "plan": "pro"
+      },
+      {
+        "id": 7,
+        "name": "Sam Davis",
+        "email": "sam.davis6@orders.io",
+        "plan": "basic"
+      },
+      {
+        "id": 8,
+        "name": "Diana Clark",
+        "email": "diana.clark7@orders.io",
+        "plan": "enterprise"
+      },
+      {
+        "id": 9,
+        "name": "Kim Brown",
+        "email": "kim.brown8@orders.io",
+        "plan": "pro"
+      },
+      {
+        "id": 10,
+        "name": "Vince Miller",
+        "email": "vince.miller9@orders.io",
+        "plan": "basic"
+      },
+      {
+        "id": 11,
+        "name": "Carol Smith",
+        "email": "carol.smith10@orders.io",
+        "plan": "enterprise"
+      },
+      {
+        "id": 12,
+        "name": "Ned Taylor",
+        "email": "ned.taylor11@orders.io",
+        "plan": "pro"
+      },
+      {
+        "id": 13,
+        "name": "Yara Moore",
+        "email": "yara.moore12@orders.io",
+        "plan": "basic"
+      },
+      {
+        "id": 14,
+        "name": "Frank Jones",
+        "email": "frank.jones13@orders.io",
+        "plan": "enterprise"
+      },
+      {
+        "id": 15,
+        "name": "Quinn Wilson",
+        "email": "quinn.wilson14@orders.io",
+        "plan": "pro"
+      },
+      {
+        "id": 16,
+        "name": "Bella Clark",
+        "email": "bella.clark15@orders.io",
+        "plan": "basic"
+      },
+      {
+        "id": 17,
+        "name": "Iris Lee",
+        "email": "iris.lee16@orders.io",
+        "plan": "enterprise"
+      },
+      {
+        "id": 18,
+        "name": "Tina Davis",
+        "email": "tina.davis17@orders.io",
+        "plan": "pro"
+      },
+      {
+        "id": 19,
+        "name": "Alice Smith",
+        "email": "alice.smith18@orders.io",
+        "plan": "basic"
+      },
+      {
+        "id": 20,
+        "name": "Leo Brown",
+        "email": "leo.brown19@orders.io",
+        "plan": "enterprise"
+      },
+      {
+        "id": 21,
+        "name": "Wendy Miller",
+        "email": "wendy.miller20@orders.io",
+        "plan": "pro"
+      },
+      {
+        "id": 22,
+        "name": "Dave Jones",
+        "email": "dave.jones21@orders.io",
+        "plan": "basic"
+      },
+      {
+        "id": 23,
+        "name": "Olivia Taylor",
+        "email": "olivia.taylor22@orders.io",
+        "plan": "enterprise"
+      },
+      {
+        "id": 24,
+        "name": "Zoe Moore",
+        "email": "zoe.moore23@orders.io",
+        "plan": "pro"
+      },
+      {
+        "id": 25,
+        "name": "Aaron Moore",
+        "email": "aaron.moore24@orders.io",
+        "plan": "enterprise"
+      },
+      {
+        "id": 26,
+        "name": "Hank Lee",
+        "email": "hank.lee25@orders.io",
+        "plan": "pro"
+      },
+      {
+        "id": 27,
+        "name": "Sam Davis",
+        "email": "sam.davis26@orders.io",
+        "plan": "basic"
+      },
+      {
+        "id": 28,
+        "name": "Diana Clark",
+        "email": "diana.clark27@orders.io",
+        "plan": "enterprise"
+      },
+      {
+        "id": 29,
+        "name": "Kim Brown",
+        "email": "kim.brown28@orders.io",
+        "plan": "pro"
+      },
+      {
+        "id": 30,
+        "name": "Vince Miller",
+        "email": "vince.miller29@orders.io",
+        "plan": "basic"
+      }
+    ]
+  }
+}

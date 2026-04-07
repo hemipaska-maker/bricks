@@ -1,0 +1,17 @@
+name: Support Ticket Pipeline
+description: Find high-priority open tickets and count by category
+dataset_id: support-tickets
+task_text: |
+  Parse the JSON ticket data. Filter to tickets with priority="high" AND status="open".
+  Count the total (open_high_count), then count by category:
+  billing (billing_count), technical (technical_count), general (general_count).
+expected_outputs:
+  open_high_count: 9
+  billing_count: 4
+  technical_count: 2
+  general_count: 3
+required_bricks:
+  - extract_json_from_str
+  - filter_dict_list
+  - count_dict_list
+model: claudecode

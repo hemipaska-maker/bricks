@@ -1,0 +1,17 @@
+name: CRM Pipeline
+description: Filter active CRM customers and compute revenue statistics
+dataset_id: crm-customers
+task_text: |
+  Parse the JSON customer data. Filter to only active customers (status = "active").
+  Calculate: total number of active customers (active_count), sum of their monthly_revenue
+  (total_active_revenue), and average revenue per active customer (avg_active_revenue).
+expected_outputs:
+  active_count: 9
+  total_active_revenue: 1524.0
+  avg_active_revenue: 169.33
+required_bricks:
+  - extract_json_from_str
+  - filter_dict_list
+  - calculate_aggregates
+  - count_dict_list
+model: claudecode
