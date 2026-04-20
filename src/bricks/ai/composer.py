@@ -56,6 +56,7 @@ class CallDetail(BaseModel):
     user_prompt: str = ""
     input_tokens: int = 0
     output_tokens: int = 0
+    cached_input_tokens: int = 0
     total_tokens: int = 0
     duration_seconds: float = 0.0
     yaml_text: str = ""
@@ -361,6 +362,7 @@ class BlueprintComposer:
         last = calls[-1]
         total_input = sum(c.input_tokens for c in calls)
         total_output = sum(c.output_tokens for c in calls)
+        total_cached_in = sum(c.cached_input_tokens for c in calls)
 
         blueprint_yaml = ""
         dsl_code = ""
@@ -413,6 +415,7 @@ class BlueprintComposer:
             total_input_tokens=total_input,
             total_output_tokens=total_output,
             total_tokens=total_input + total_output,
+            total_cached_input_tokens=total_cached_in,
             model="",
             duration_seconds=time.monotonic() - t0,
             system_prompt=system,
@@ -552,16 +555,17 @@ class BlueprintComposer:
         )
 
         call_t0 = time.monotonic()
-        raw_text, in_tok, out_tok = self._make_api_call(system, user_message)
+        raw_text, in_tok, out_tok, cached_in = self._make_api_call(system, user_message)
         is_valid, errors = self._validate_dsl_text(raw_text)
         call_elapsed = time.monotonic() - call_t0
 
         logger.info(
-            "Compose call #%d: valid=%s, code=%d chars, %.1fs",
+            "Compose call #%d: valid=%s, code=%d chars, %.1fs (cached_in=%d)",
             call_number,
             is_valid,
             len(raw_text),
             call_elapsed,
+            cached_in,
         )
         if not is_valid:
             logger.warning("Compose call #%d validation failed: %s", call_number, errors)
@@ -572,6 +576,7 @@ class BlueprintComposer:
             user_prompt=user_message,
             input_tokens=in_tok,
             output_tokens=out_tok,
+            cached_input_tokens=cached_in,
             total_tokens=in_tok + out_tok,
             duration_seconds=call_elapsed,
             yaml_text=raw_text,
@@ -579,15 +584,17 @@ class BlueprintComposer:
             validation_errors=errors,
         )
 
-    def _make_api_call(self, system: str, user_message: str) -> tuple[str, int, int]:
-        """Make a single LLM call and return (raw_text, input_tokens, output_tokens).
+    def _make_api_call(self, system: str, user_message: str) -> tuple[str, int, int, int]:
+        """Make a single LLM call.
 
         Args:
             system: System prompt.
             user_message: User message.
 
         Returns:
-            Tuple of (raw text from LLM, input tokens, output tokens).
+            Tuple of ``(raw_text, input_tokens, output_tokens, cached_input_tokens)``.
+            The cached counter is ``0`` when the provider doesn't surface
+            cache metrics or when caching is inactive.
 
         Raises:
             ComposerError: If the API call fails or returns no text.
@@ -601,7 +608,12 @@ class BlueprintComposer:
         except Exception as exc:
             logger.error("API call failed: %s", exc, exc_info=True)
             raise ComposerError(f"API call failed: {exc}", cause=exc) from exc
-        return completion.text, completion.input_tokens, completion.output_tokens
+        return (
+            completion.text,
+            completion.input_tokens,
+            completion.output_tokens,
+            getattr(completion, "cached_input_tokens", 0),
+        )
 
     def _validate_dsl_text(self, code: str) -> tuple[bool, list[str]]:
         """Run AST whitelist validation on raw DSL text (strips fences first).
