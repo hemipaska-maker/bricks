@@ -10,17 +10,22 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any
+from unittest.mock import MagicMock
 
 import pytest
 
 from bricks.ai.healing import (
     ChainResult,
+    FullRecomposeHealer,
     HealAttempt,
     HealContext,
     HealerChain,
     HealResult,
+    LLMRetryHealer,
+    ShapeAwareLLMHealer,
 )
 from bricks.core.exceptions import BrickExecutionError
+from bricks.llm.base import CompletionResult, LLMProvider
 
 # --- test doubles -----------------------------------------------------------
 
@@ -285,3 +290,196 @@ def test_chain_result_defaults() -> None:
     assert result.attempts == []
     assert result.total_tokens_in == 0
     assert result.total_tokens_out == 0
+
+
+# --- LLMRetryHealer (tier 20) -----------------------------------------------
+
+
+class TestLLMRetryHealer:
+    """Tier-20 LLM retry — fires on any BrickExecutionError."""
+
+    def _provider_returning(self, text: str, tokens_in: int = 42, tokens_out: int = 17) -> MagicMock:
+        provider = MagicMock(spec=LLMProvider)
+        provider.complete.return_value = CompletionResult(
+            text=text,
+            input_tokens=tokens_in,
+            output_tokens=tokens_out,
+            model="test",
+            duration_seconds=0.1,
+            estimated=False,
+        )
+        return provider
+
+    def test_can_heal_accepts_any_brick_execution_error(self) -> None:
+        healer = LLMRetryHealer(provider=MagicMock(spec=LLMProvider), system_prompt="SYS")
+        assert healer.can_heal(_make_ctx()) is True
+
+    def test_heal_prompts_with_brick_step_cause_and_strips_fences(self) -> None:
+        provider = self._provider_returning("```python\n@flow\ndef fixed():\n    return 1\n```")
+        healer = LLMRetryHealer(provider=provider, system_prompt="SYSTEM-PROMPT")
+
+        ctx = _make_ctx("missing columns")
+        result = healer.heal(ctx)
+
+        assert result.new_dsl.startswith("@flow"), "fences must be stripped"
+        assert "```" not in result.new_dsl
+        assert result.tokens_in == 42
+        assert result.tokens_out == 17
+
+        # The call must carry the system prompt and reference the failing step.
+        provider.complete.assert_called_once()
+        call = provider.complete.call_args
+        assert call.kwargs["system"] == "SYSTEM-PROMPT"
+        prompt = call.kwargs["prompt"]
+        assert "brick_x" in prompt, "retry prompt must include the failing brick name"
+        assert "step_1_brick_x" in prompt, "retry prompt must include the failing step name"
+        assert "missing columns" in prompt, "retry prompt must include the cause message"
+
+    def test_heal_passes_through_empty_dsl_if_llm_returns_empty(self) -> None:
+        provider = self._provider_returning("")
+        healer = LLMRetryHealer(provider=provider, system_prompt="SYS")
+        result = healer.heal(_make_ctx())
+        assert result.new_dsl == ""
+        assert result.produced_something is False
+
+
+# --- ShapeAwareLLMHealer (tier 30) ------------------------------------------
+
+
+class TestShapeAwareLLMHealer:
+    """Tier-30 shape-aware retry — only fires after tier 20 failed."""
+
+    def _provider(self, text: str = "@flow\ndef v2():\n    return 1\n") -> MagicMock:
+        provider = MagicMock(spec=LLMProvider)
+        provider.complete.return_value = CompletionResult(
+            text=text, input_tokens=100, output_tokens=50, model="test", duration_seconds=0.1, estimated=False
+        )
+        return provider
+
+    def test_can_heal_false_without_trace_executor(self) -> None:
+        healer = ShapeAwareLLMHealer(provider=self._provider(), system_prompt="SYS", trace_executor=None)
+        ctx = _make_ctx()
+        # Even with a prior tier-20 failure, no trace_executor → cannot heal.
+        ctx.prior_attempts = [
+            HealAttempt(
+                healer_name=LLMRetryHealer.name,
+                tier=20,
+                produced_flow=True,
+                exec_succeeded=False,
+                error_after="x",
+            )
+        ]
+        assert healer.can_heal(ctx) is False
+
+    def test_can_heal_false_on_first_attempt(self) -> None:
+        """Without a prior tier-20 failure, tier-30 must stand down."""
+        healer = ShapeAwareLLMHealer(provider=self._provider(), system_prompt="SYS", trace_executor=lambda _: {})
+        ctx = _make_ctx()
+        ctx.prior_attempts = []
+        assert healer.can_heal(ctx) is False
+
+    def test_can_heal_true_after_tier_20_failed(self) -> None:
+        healer = ShapeAwareLLMHealer(provider=self._provider(), system_prompt="SYS", trace_executor=lambda _: {})
+        ctx = _make_ctx()
+        ctx.prior_attempts = [
+            HealAttempt(
+                healer_name=LLMRetryHealer.name,
+                tier=20,
+                produced_flow=True,
+                exec_succeeded=False,
+                error_after="x",
+            )
+        ]
+        assert healer.can_heal(ctx) is True
+
+    def test_heal_includes_observed_shapes_in_prompt(self) -> None:
+        trace_result = {"step_1_parse": "dict<keys=['customers']>", "step_2_filter": "str"}
+
+        def _trace_exec(_: Any) -> dict[str, Any]:
+            return trace_result
+
+        provider = self._provider()
+        healer = ShapeAwareLLMHealer(provider=provider, system_prompt="SYS", trace_executor=_trace_exec)
+        result = healer.heal(_make_ctx())
+
+        prompt = provider.complete.call_args.kwargs["prompt"]
+        for step_name, shape in trace_result.items():
+            assert step_name in prompt
+            assert shape in prompt
+
+        assert result.tokens_in == 100
+        assert result.tokens_out == 50
+
+    def test_heal_tolerates_trace_executor_raising(self) -> None:
+        """A crashing trace_executor must not crash the healer."""
+
+        def _bad_trace(_: Any) -> dict[str, Any]:
+            raise RuntimeError("tracer broke")
+
+        provider = self._provider()
+        healer = ShapeAwareLLMHealer(provider=provider, system_prompt="SYS", trace_executor=_bad_trace)
+        result = healer.heal(_make_ctx())
+
+        prompt = provider.complete.call_args.kwargs["prompt"]
+        assert "(no shape info available)" in prompt
+        assert result.produced_something is True
+
+
+# --- FullRecomposeHealer (tier 40) ------------------------------------------
+
+
+class TestFullRecomposeHealer:
+    """Tier-40 full recompose — only fires after 3 prior attempts failed."""
+
+    def test_can_heal_requires_three_prior_attempts(self) -> None:
+        healer = FullRecomposeHealer(fresh_compose=lambda task, excluded: HealResult())
+        ctx = _make_ctx()
+        ctx.prior_attempts = []
+        assert healer.can_heal(ctx) is False
+        ctx.prior_attempts = [HealAttempt(healer_name="a", tier=10, produced_flow=False, exec_succeeded=None)] * 2
+        assert healer.can_heal(ctx) is False
+        ctx.prior_attempts = [HealAttempt(healer_name="a", tier=10, produced_flow=False, exec_succeeded=None)] * 3
+        assert healer.can_heal(ctx) is True
+
+    def test_heal_extracts_failed_brick_names_and_delegates(self) -> None:
+        called: dict[str, Any] = {}
+
+        def _fresh(task: str, excluded: list[str]) -> HealResult:
+            called["task"] = task
+            called["excluded"] = excluded
+            return HealResult(new_dsl="@flow\ndef fresh():\n    return 1\n", tokens_in=7, tokens_out=3)
+
+        healer = FullRecomposeHealer(fresh_compose=_fresh)
+        ctx = _make_ctx()
+        ctx.prior_attempts = [
+            HealAttempt(
+                healer_name="t20",
+                tier=20,
+                produced_flow=True,
+                exec_succeeded=False,
+                error_after="Brick 'filter_dict_list' failed at step 'step_2': oops",
+            ),
+            HealAttempt(
+                healer_name="t30",
+                tier=30,
+                produced_flow=True,
+                exec_succeeded=False,
+                error_after="Brick 'filter_dict_list' failed at step 'step_3': oops",
+            ),
+            HealAttempt(
+                healer_name="t20",
+                tier=20,
+                produced_flow=True,
+                exec_succeeded=False,
+                error_after="Brick 'map_values' failed at step 'step_1': boom",
+            ),
+        ]
+
+        result = healer.heal(ctx)
+
+        assert called["task"] == ctx.task
+        # Exclusions dedupe, preserve first-seen order, and include current error's brick.
+        assert called["excluded"] == ["filter_dict_list", "map_values", "brick_x"]
+        assert result.tokens_in == 7
+        assert result.tokens_out == 3
+        assert result.new_dsl.startswith("@flow")
