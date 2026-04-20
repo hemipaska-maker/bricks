@@ -122,15 +122,46 @@ Rules:
     WRONG:   for_each(items=data, do=lambda item: step.count_dict_list(item=item))
 12. Prefer filter_dict_list + calculate_aggregates over for_each when filtering and aggregating a single list.
 
-Example (study this pattern — do not copy it literally):
+Examples (study these patterns — do not copy them literally):
+
+# Example A — unwrap a dict-wrapped list before filtering, then aggregate
 @flow
 def crm_summary(raw_api_response):
-    parsed   = step.extract_json_from_str(text=raw_api_response)
-    actives  = step.filter_dict_list(items=parsed.output, key="status", value="active")
-    count    = step.count_dict_list(items=actives.output)
-    total    = step.calculate_aggregates(items=actives.output, field="monthly_revenue", operation="sum")
-    average  = step.calculate_aggregates(items=actives.output, field="monthly_revenue", operation="avg")
+    parsed    = step.extract_json_from_str(text=raw_api_response)
+    customers = step.extract_dict_field(data=parsed.output, field="customers")
+    actives   = step.filter_dict_list(items=customers.output, key="status", value="active")
+    count     = step.count_dict_list(items=actives.output)
+    total     = step.calculate_aggregates(items=actives.output, field="monthly_revenue", operation="sum")
+    average   = step.calculate_aggregates(items=actives.output, field="monthly_revenue", operation="avg")
     return {{"active_count": count, "total_revenue": total, "avg_revenue": average}}
+
+# Example B — for_each over extracted values + reduce_sum across multiple counts
+@flow
+def ticket_urgency_report(raw_api_response):
+    parsed       = step.extract_json_from_str(text=raw_api_response)
+    tickets      = step.extract_dict_field(data=parsed.output, field="tickets")
+    emails       = step.map_values(items=tickets.output, key="customer_email")
+    validations  = for_each(items=emails.output, do=lambda e: step.is_email_valid(email=e))
+    valid_count  = step.count_dict_list(items=validations.output)
+    high         = step.filter_dict_list(items=tickets.output, key="priority", value="high")
+    critical     = step.filter_dict_list(items=tickets.output, key="priority", value="critical")
+    high_count   = step.count_dict_list(items=high.output)
+    crit_count   = step.count_dict_list(items=critical.output)
+    urgent_total = step.reduce_sum(values=[high_count, crit_count])
+    return {{"valid_count": valid_count, "high_count": high_count,
+            "critical_count": crit_count, "total_urgent": urgent_total}}
+
+# Example C — branch on a computed condition, returning one of two summaries
+@flow
+def file_report(raw_api_response):
+    parsed       = step.extract_json_from_str(text=raw_api_response)
+    record_count = step.count_dict_list(items=parsed.output)
+    summary      = branch(
+        condition="is_nonempty_list",
+        if_true=lambda: step.generate_summary(count=record_count.output, status="ok"),
+        if_false=lambda: step.generate_summary(count=0, status="empty"),
+    )
+    return summary
 
 Task: {task}
 {input_context}
