@@ -75,6 +75,61 @@ class TestDAGBuilder:
         dag = _build(nodes)
         assert data.id in dag.edges[fe.id]
 
+    def test_dag_builder_detects_nodes_inside_list_kwarg(self) -> None:
+        """Node refs nested inside a list param register as dependencies.
+
+        Regression for issue #25: when the LLM emits
+        ``step.reduce_sum(values=[a.output, b.output])`` the consumer must
+        declare edges on both producers so topological sort orders them
+        before the consumer.
+        """
+        _tracer.start()
+        a = step.count_a()
+        b = step.count_b()
+        total = step.reduce_sum(values=[a, b])
+        _tracer.stop()
+        nodes = _tracer.get_nodes()
+
+        dag = _build(nodes)
+        assert a.id in dag.edges[total.id]
+        assert b.id in dag.edges[total.id]
+
+    def test_dag_builder_detects_nodes_inside_dict_kwarg(self) -> None:
+        """Node refs nested inside a dict param register as dependencies."""
+        _tracer.start()
+        a = step.load_a()
+        b = step.load_b()
+        merged = step.merge(sources={"x": a, "y": b})
+        _tracer.stop()
+        nodes = _tracer.get_nodes()
+
+        dag = _build(nodes)
+        assert a.id in dag.edges[merged.id]
+        assert b.id in dag.edges[merged.id]
+
+    def test_dag_to_blueprint_with_list_kwarg_serialises_to_yaml(self) -> None:
+        """End-to-end regression: list-of-Nodes kwarg round-trips to YAML.
+
+        Pre-fix this raised ``RepresenterError`` because the consumer's list
+        kwarg kept raw ``Node`` objects through blueprint_to_yaml.
+        """
+        from bricks.core.utils import blueprint_to_yaml
+
+        _tracer.start()
+        a = step.count_a()
+        b = step.count_b()
+        step.reduce_sum(values=[a, b])
+        _tracer.stop()
+        nodes = _tracer.get_nodes()
+
+        dag = _build(nodes)
+        blueprint = dag.to_blueprint()
+        yaml_text = blueprint_to_yaml(blueprint)
+
+        # Both producer refs must appear as ${...result} strings in the YAML.
+        assert yaml_text.count(".result}") >= 2
+        assert "Node(" not in yaml_text
+
     def test_dag_builder_root_is_last_node(self) -> None:
         """root_id defaults to the last node in the list."""
         _tracer.start()

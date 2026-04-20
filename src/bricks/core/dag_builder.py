@@ -11,8 +11,10 @@ class DAGBuilder:
 
     Resolves dependency edges by inspecting:
 
-    - ``params`` values that are themselves :class:`~bricks.core.dsl.Node` objects
-      (brick→brick data flow).
+    - ``params`` values that are themselves :class:`~bricks.core.dsl.Node` objects,
+      including Nodes nested inside list or dict values (brick→brick data flow).
+      Must stay symmetric with :func:`bricks.core.dag._resolve_param`, which
+      recurses into the same containers when writing reference strings.
     - ``items`` field of ``for_each`` nodes when it is a
       :class:`~bricks.core.dsl.Node`.
 
@@ -77,8 +79,7 @@ class DAGBuilder:
 
         if node.type == "brick":
             for value in node.params.values():
-                if isinstance(value, Node) and value.id in node_map:
-                    deps.append(value.id)
+                self._collect_node_deps(value, node_map, deps)
 
         elif node.type == "for_each" and isinstance(node.items, Node) and node.items.id in node_map:
             deps.append(node.items.id)
@@ -87,3 +88,27 @@ class DAGBuilder:
         # traced list; no extra wiring needed at this stage.
 
         return deps
+
+    def _collect_node_deps(
+        self,
+        value: object,
+        node_map: dict[str, Node],
+        deps: list[str],
+    ) -> None:
+        """Append dep ids from any :class:`Node` refs reachable inside *value*.
+
+        Recurses into list and dict containers, mirroring
+        :func:`bricks.core.dag._resolve_param`. De-duplicates while preserving
+        first-seen order.
+        """
+        if isinstance(value, Node):
+            if value.id in node_map and value.id not in deps:
+                deps.append(value.id)
+            return
+        if isinstance(value, list):
+            for item in value:
+                self._collect_node_deps(item, node_map, deps)
+            return
+        if isinstance(value, dict):
+            for item in value.values():
+                self._collect_node_deps(item, node_map, deps)
