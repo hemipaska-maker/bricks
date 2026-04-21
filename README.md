@@ -108,6 +108,30 @@ print(result["cache_hit"])    # True on second call — zero tokens!
 print(result["tokens_used"])  # 0 on cache hit
 ```
 
+**Verified output** (a deterministic stdlib brick, regenerated on every commit):
+
+<!-- [[[cog
+from bricks.core.registry import BrickRegistry
+reg = BrickRegistry.from_stdlib()
+fn, _ = reg.get("count_words_chars")
+out = fn(text="hello world")
+cog.outl("```python")
+cog.outl('>>> from bricks.core.registry import BrickRegistry')
+cog.outl('>>> reg = BrickRegistry.from_stdlib()')
+cog.outl('>>> fn, _ = reg.get("count_words_chars")')
+cog.outl('>>> fn(text="hello world")')
+cog.outl(repr(out))
+cog.outl("```")
+]]] -->
+```python
+>>> from bricks.core.registry import BrickRegistry
+>>> reg = BrickRegistry.from_stdlib()
+>>> fn, _ = reg.get("count_words_chars")
+>>> fn(text="hello world")
+{'result': {'words': 2, 'chars': 11}}
+```
+<!-- [[[end]]] -->
+
 ---
 
 ## Python DSL
@@ -214,6 +238,51 @@ This command checks your Python version, litellm installation, and (on Windows) 
 
 ---
 
+## CLI Reference
+
+<!-- [[[cog
+import os, subprocess
+env = {**os.environ, "NO_COLOR": "1", "TERM": "dumb", "COLUMNS": "100"}
+out = subprocess.run(
+    ["bricks", "--help"],
+    capture_output=True, text=True, check=True, env=env,
+).stdout.rstrip()
+cog.outl("```")
+cog.outl(out)
+cog.outl("```")
+]]] -->
+```
+                                                                                                   
+ Usage: bricks [OPTIONS] COMMAND [ARGS]...                                                         
+                                                                                                   
+ Bricks - Deterministic sequencing engine for typed Python building blocks.                        
+                                                                                                   
++- Options ---------------------------------------------------------------------------------------+
+| --install-completion          Install completion for the current shell.                         |
+| --show-completion             Show completion for the current shell, to copy it or customize    |
+|                               the installation.                                                 |
+| --help                        Show this message and exit.                                       |
++-------------------------------------------------------------------------------------------------+
++- Commands --------------------------------------------------------------------------------------+
+| init       Scaffold a new Bricks project in the current directory.                              |
+| check      Validate a blueprint YAML file (lint without executing).                             |
+| run        Execute a blueprint.                                                                 |
+| dry-run    Validate a blueprint without executing (dry run).                                    |
+| list       List all available Bricks in the registry.                                           |
+| check-env  Diagnose the local environment (Python version, litellm, Windows path limits).       |
+| compose    AI-compose a blueprint from a natural language description.                          |
+| demo       Interactive 3-act demo: simplicity -> correctness -> savings.                        |
+| serve      Start the Bricks MCP server on stdio transport.                                      |
+| new        Scaffold new Bricks components.                                                      |
+| store      Blueprint store management.                                                          |
++-------------------------------------------------------------------------------------------------+
+```
+<!-- [[[end]]] -->
+
+Run `bricks <command> --help` for per-command flags.
+
+---
+
 ## Community Packs
 
 Create a `bricks-{name}` package and publish it to PyPI. Users install it and it auto-registers:
@@ -240,6 +309,46 @@ def register(registry: BrickRegistry) -> None:
 After `pip install bricks-mypack`, `Bricks.default()` discovers and loads it automatically.
 
 See `examples/agent.yaml` for a full configuration reference and `examples/skill.md` for how to describe a skill.
+
+---
+
+## Stdlib Bricks Snapshot
+
+<!-- [[[cog
+from bricks.core.registry import BrickRegistry
+reg = BrickRegistry.from_stdlib()
+all_bricks = reg.list_public()
+cog.outl("")
+cog.outl("| Brick | Tags | Description |")
+cog.outl("|---|---|---|")
+for name, meta in all_bricks[:15]:
+    tags = ", ".join(meta.tags) if meta.tags else "—"
+    desc = meta.description.splitlines()[0] if meta.description else ""
+    cog.outl(f"| `{name}` | {tags} | {desc} |")
+cog.outl("")
+cog.outl(f"_Showing 15 of {len(all_bricks)} stdlib bricks._ Full list: [docs/BRICK_CATALOG.md](docs/BRICK_CATALOG.md).")
+]]] -->
+
+| Brick | Tags | Description |
+|---|---|---|
+| `absolute_value` | math, arithmetic | Return the absolute value of a number. Returns {result: absolute}. |
+| `add_days` | date, arithmetic | Add a number of days to an ISO 8601 date. Returns {result: new_date}. |
+| `add_hours` | date, arithmetic | Add hours to an ISO 8601 datetime string. Returns {result: new_datetime}. |
+| `base64_decode` | encoding, base64 | Decode a base64 string to UTF-8. Returns {result: decoded}. |
+| `base64_encode` | encoding, base64 | Encode a UTF-8 string to base64. Returns {result: encoded}. |
+| `calculate_aggregates` | data, aggregate, math | Aggregate a numeric field across a list of dicts. Returns {result: aggregated_value}. |
+| `cast_data_types` | data, casting, types | Cast dict values to specified types. Returns {result: cast_dict}. |
+| `ceil_value` | math, rounding | Round value up to nearest integer. Returns {result: ceiling}. |
+| `chunk_list` | list, chunk, split | Split a list into chunks of a given size. Returns {result: chunks}. |
+| `clamp_value` | math, range | Clamp value to [minimum, maximum]. Returns {result: clamped}. |
+| `clean_whitespace` | string, cleaning | Strip leading/trailing whitespace and collapse internal runs. Returns {result: cleaned}. |
+| `compare_values` | validation, comparison | Compare two values using an operator. Returns {result: bool}. |
+| `compute_hash` | security, hash, digest | Compute a hash digest of a string. Returns {result: hex_digest}. |
+| `concatenate_strings` | string, join | Join a list of strings with a separator. Returns {result: joined}. |
+| `convert_case` | string, case, transform | Convert string case. Returns {result: converted}. |
+
+_Showing 15 of 100 stdlib bricks._ Full list: [docs/BRICK_CATALOG.md](docs/BRICK_CATALOG.md).
+<!-- [[[end]]] -->
 
 ---
 
