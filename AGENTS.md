@@ -32,6 +32,13 @@ See docs/architecture.md for detail.
 - Imports: stdlib → third-party → local
 - Tests in tests/, mirror src/ layout
 
+## README Auto-Sections
+README.md has cog-driven blocks (CLI help, stdlib brick snapshot, verified example output).
+- Refresh locally: `cog -r README.md`
+- Pre-commit will rewrite the blocks if README.md or any source they read from changes
+- CI runs `cog --check README.md` and a lychee link checker; both must be green
+- To add a new block, wrap Python in `<!-- [[[cog ... ]]] -->` / `<!-- [[[end]]] -->` markers
+
 ## Git Workflow
 1. Pick an Issue from the active milestone
 2. Branch: feat/issue-<num>-short-desc or fix/issue-<num>-short-desc

@@ -18,6 +18,16 @@ jobs:
       - run: ruff format --check .
       - run: pip install -e ".[dev,ai,mcp,benchmark]"
       - run: mypy src/bricks
+      - run: cog --check README.md
+
+  links:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: lycheeverse/lychee-action@v2
+        with:
+          args: --no-progress --max-concurrency 4 README.md docs/**/*.md
+          fail: true
 
   test:
     runs-on: ubuntu-latest

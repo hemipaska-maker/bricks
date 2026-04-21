@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Bricks Playground</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Fraunces:wght@500&family=Space+Grotesk:wght@600&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* warm paper palette — adjacent to Claude but its own */
+    --paper:  #F7F4EC;
+    --paper-2:#F0ECE0;
+    --paper-3:#E8E3D4;
+    --ink:    #1C1A16;
+    --ink-2:  #3A3731;
+    --muted:  #8A8578;
+    --faint:  #B5B0A1;
+    --rule:   #E0DBCC;
+    --rule-2: #D0CAB8;
+
+    --accent:       #3F6356;   /* muted deep sage — calmer, paper-friendly */
+    --accent-ink:   #2A4A40;
+    --accent-soft:  #D6E2DC;
+    --accent-bg:    #E5ECE6;
+
+    --ok:   #3F6356;
+    --err:  #B24A3A;
+    --info: #4A6C8F;
+
+    --sans:  'Inter', ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --serif: 'Instrument Serif', 'Tiempos Text', Georgia, serif;
+    --mono:  'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  button, input, select, textarea { font-family: inherit; color: inherit; }
+  input:focus, textarea:focus, select:focus { outline: none; }
+
+  /* ===== top bar ===== */
+  .topbar {
+    display: flex; align-items: center; gap: 14px;
+    height: 54px; padding: 0 22px;
+    border-bottom: 1px solid var(--rule);
+    background: var(--paper);
+  }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 500; letter-spacing: -0.01em; }
+  .brand-mark {
+    width: 16px; height: 16px;
+    display: grid; grid-template: 1fr 1fr / 1fr 1fr; gap: 2px;
+  }
+  .brand-mark i { background: var(--ink); border-radius: 1px; }
+  .brand-mark i:nth-child(1) { background: var(--accent); }
+  .brand-sub {
+    font-family: var(--mono);
+    font-size: 11px; color: var(--muted);
+    padding-left: 10px; margin-left: 2px;
+    border-left: 1px solid var(--rule);
+  }
+  .spacer { flex: 1; }
+
+  .byok {
+    display: flex; align-items: center;
+    background: #fff;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    height: 32px;
+    overflow: hidden;
+  }
+  .byok select {
+    background: transparent; border: none;
+    color: var(--muted);
+    font-family: var(--mono); font-size: 11px;
+    padding: 0 22px 0 10px; height: 100%;
+    cursor: pointer;
+    appearance: none; -webkit-appearance: none;
+    border-right: 1px solid var(--rule);
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'><path d='M0 0l4 5 4-5z' fill='%238a8578'/></svg>");
+    background-repeat: no-repeat; background-position: right 8px center;
+  }
+  .byok input {
+    background: transparent; border: none;
+    font-family: var(--mono); font-size: 12px;
+    padding: 0 10px; height: 100%; width: 180px;
+    color: var(--ink);
+  }
+  .byok input::placeholder { color: var(--faint); }
+  .byok-dot {
+    padding: 0 10px; height: 100%;
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--mono); font-size: 10.5px; color: var(--muted);
+    letter-spacing: 0.06em; text-transform: uppercase;
+    border-left: 1px solid var(--rule);
+  }
+  .byok-dot i { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); }
+
+  .tb-btn {
+    height: 32px; padding: 0 14px;
+    background: transparent;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    font-size: 12.5px; font-weight: 500;
+    color: var(--ink-2);
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px;
+    transition: border-color .15s, color .15s;
+  }
+  .tb-btn:hover { border-color: var(--accent); color: var(--accent-ink); }
+  .tb-btn.primary {
+    background: var(--accent); border-color: var(--accent);
+    color: #FFF6EE; font-weight: 600;
+  }
+  .tb-btn.primary:hover { background: var(--accent-ink); border-color: var(--accent-ink); color:#FFF6EE; }
+  .kbd {
+    font-family: var(--mono); font-size: 10px;
+    padding: 1px 5px; border-radius: 3px;
+    background: rgba(0,0,0,0.08);
+  }
+
+  /* ===== views ===== */
+  .view { display: none; }
+  .view.on { display: block; }
+
+  /* ===== setup view ===== */
+  .setup {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 56px 32px 96px;
+  }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+  h1 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 44px;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    margin: 0 0 14px;
+  }
+  h1 em { font-style: italic; color: var(--accent); }
+  .lede {
+    color: var(--ink-2);
+    font-size: 15px;
+    max-width: 520px;
+    margin: 0 0 40px;
+  }
+
+  .block { margin-bottom: 28px; }
+  .block-label {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .block-label .l {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .block-label .r {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--faint);
+  }
+
+  /* scenario select */
+  .scen-select {
+    width: 100%;
+    height: 46px;
+    padding: 0 40px 0 14px;
+    background: #fff;
+    border: 1px solid var(--rule-2);
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink);
+    appearance: none; -webkit-appearance: none;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M0 0l5 6 5-6z' fill='%238a8578'/></svg>");
+    background-repeat: no-repeat; background-position: right 14px center;
+    transition: border-color .15s;
+  }
+  .scen-select:hover { border-color: var(--accent); }
+
+  /* task box */
+  .task-box {
+    width: 100%;
+    background: #fff;
+    border: 1px solid var(--rule-2);
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--ink);
+    resize: vertical;
+    min-height: 72px;
+    line-height: 1.5;
+    transition: border-color .15s;
+  }
+  .task-box:focus { border-color: var(--accent); }
+  .task-box::placeholder { color: var(--faint); }
+
+  /* data box */
+  .data-wrap {
+    background: #fff;
+    border: 1px solid var(--rule-2);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .data-wrap.drag { border-color: var(--accent); background: var(--accent-bg); }
+  .data-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--rule);
+    background: var(--paper-2);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .data-head .fname {
+    color: var(--ink-2);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .data-head .fsize { color: var(--faint); }
+  .data-head .push { flex: 1; }
+  .upload-mini {
+    background: transparent;
+    border: 1px dashed var(--rule-2);
+    color: var(--muted);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .upload-mini:hover { color: var(--accent-ink); border-color: var(--accent); }
+  .data-body {
+    max-height: 260px;
+    overflow: auto;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.6;
+    padding: 12px 16px;
+    color: var(--ink-2);
+    white-space: pre;
+  }
+  .data-body::-webkit-scrollbar { width: 8px; height: 8px; }
+  .data-body::-webkit-scrollbar-thumb { background: var(--rule-2); border-radius: 4px; }
+
+  /* json colors */
+  .j-key  { color: var(--accent-ink); }
+  .j-str  { color: var(--ok); }
+  .j-num  { color: #A35D1C; }
+  .j-bool { color: var(--info); }
+  .j-null { color: var(--faint); }
+
+  /* row with toggle */
+  .row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px;
+    background: #fff;
+    border: 1px solid var(--rule-2);
+    border-radius: 10px;
+    margin-bottom: 20px;
+  }
+  .row .l b { font-size: 13px; font-weight: 600; display: block; }
+  .row .l span { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .toggle {
+    position: relative;
+    width: 38px; height: 22px;
+    background: var(--paper-3);
+    border: 1px solid var(--rule-2);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .toggle::after {
+    content: "";
+    position: absolute; top: 2px; left: 2px;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--muted);
+    transition: all .18s ease;
+  }
+  .toggle.on { background: var(--accent-soft); border-color: var(--accent); }
+  .toggle.on::after { left: 18px; background: var(--accent); }
+
+  /* run */
+  .actions {
+    display: flex; gap: 10px; align-items: center;
+    margin-top: 32px;
+  }
+  .run-big {
+    background: var(--accent);
+    border: none;
+    color: #FFF6EE;
+    padding: 13px 24px;
+    border-radius: 10px;
+    font-size: 14.5px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 10px;
+    transition: background .15s;
+  }
+  .run-big:hover { background: var(--accent-ink); }
+  .ghost {
+    background: transparent;
+    border: 1px solid var(--rule);
+    color: var(--ink-2);
+    padding: 12px 18px;
+    border-radius: 10px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .ghost:hover { border-color: var(--accent); color: var(--accent-ink); }
+
+  /* ===== running view ===== */
+  .running {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 120px 32px;
+    text-align: center;
+  }
+  .spinner {
+    width: 40px; height: 40px;
+    margin: 0 auto 28px;
+    border: 2px solid var(--rule);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .running h2 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 28px;
+    letter-spacing: -0.01em;
+    margin: 0 0 6px;
+  }
+  .running p { color: var(--muted); font-size: 13px; margin: 0 0 32px; }
+
+  .steps {
+    list-style: none;
+    text-align: left;
+    max-width: 340px;
+    margin: 0 auto;
+    padding: 0;
+  }
+  .steps li {
+    padding: 10px 0;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--faint);
+    display: flex; align-items: center; gap: 12px;
+    border-top: 1px solid var(--rule);
+  }
+  .steps li:first-child { border-top: none; }
+  .steps li .mark {
+    width: 16px; height: 16px; border-radius: 50%;
+    border: 1px solid var(--rule-2);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 10px; color: var(--faint);
+  }
+  .steps li.active { color: var(--ink); }
+  .steps li.active .mark { border-color: var(--accent); color: var(--accent); }
+  .steps li.done { color: var(--ok); }
+  .steps li.done .mark { background: var(--ok); border-color: var(--ok); color: #fff; }
+  .steps li.done .mark::before { content: "✓"; }
+
+  /* ===== results view ===== */
+  .results {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 48px 32px 96px;
+  }
+  .res-top {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    margin-bottom: 32px;
+    gap: 24px;
+  }
+  .res-top .back {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    font-size: 13px;
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 0; margin-bottom: 10px;
+  }
+  .res-top .back:hover { color: var(--accent-ink); }
+
+  .verdict {
+    background: #fff;
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    padding: 40px 44px 36px;
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .verdict h2 {
+    font-family: var(--verdict-font, var(--sans));
+    font-weight: var(--verdict-weight, 600);
+    font-size: var(--verdict-size, 26px);
+    line-height: var(--verdict-lh, 1.35);
+    letter-spacing: var(--verdict-tracking, -0.015em);
+    margin: 0 0 32px;
+    max-width: 560px;
+    position: relative;
+    color: var(--ink);
+    text-wrap: balance;
+  }
+  .verdict h2 em {
+    font-style: var(--verdict-em-style, normal);
+    font-weight: var(--verdict-em-weight, 500);
+    color: var(--muted);
+    display: block;
+    margin-top: 4px;
+    font-size: 0.82em;
+    letter-spacing: -0.01em;
+  }
+  .verdict h2.with-dot::before {
+    content: "";
+    display: inline-block;
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--accent);
+    margin-right: 12px; vertical-align: middle;
+    transform: translateY(-4px);
+  }
+
+  .score-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 32px;
+    position: relative;
+  }
+  .score-grid.dual { grid-template-columns: 1fr 1fr; }
+  .scol .who {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .scol .who i { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+  .scol.win .who i { background: var(--accent); }
+  .scol.loss .who i { background: var(--err); }
+  .scol .num {
+    font-family: var(--serif);
+    font-size: 52px;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+  }
+  .scol .num .of { color: var(--faint); font-size: 26px; margin-left: 2px; }
+  .scol.win .num { color: var(--accent); }
+  .scol.loss .num { color: var(--err); opacity: 0.9; }
+  .scol .meta {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--muted);
+    margin-top: 10px;
+    letter-spacing: 0.01em;
+  }
+
+  /* metric strip */
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    background: #fff;
+    border: 1px solid var(--rule-2);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 40px;
+  }
+  .metrics.dual { grid-template-columns: repeat(4, 1fr); }
+  .metric {
+    padding: 20px 24px;
+    border-right: 1px solid var(--rule);
+  }
+  .metric:last-child { border-right: none; }
+  .metric .k {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+  .metric .v {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 22px;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .metric .sub {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+
+  /* section */
+  .res-sec { margin-bottom: 32px; }
+  .res-sec-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 18px;
+  }
+  .res-sec-head h3 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 22px;
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+  .res-sec-head .num {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+  }
+
+  /* compare table */
+  .cmp {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 13.5px;
+  }
+  .cmp th {
+    text-align: right;
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 0 16px 14px;
+    border-bottom: 1px solid var(--rule-2);
+  }
+  .cmp th:first-child { text-align: left; padding-left: 2px; }
+  .cmp td {
+    padding: 16px;
+    border-bottom: 1px solid var(--rule);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-2);
+  }
+  .cmp tr:last-child td { border-bottom: none; }
+  .cmp td:first-child { text-align: left; padding-left: 2px; font-weight: 500; color: var(--ink); }
+  .cmp .exp { color: var(--muted); }
+  .cmp .pass { color: var(--ok); font-weight: 600; position: relative; }
+  .cmp .pass::after { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--ok); margin-left: 8px; vertical-align: middle; transform: translateY(-1px); }
+  .cmp .fail { color: var(--err); font-weight: 600; }
+  .cmp .fail::after { content: " ✗"; }
+  .cmp .fail .s { text-decoration: line-through; text-decoration-color: rgba(178,74,58,.35); }
+
+  /* collapsed details */
+  details.drawer {
+    background: #fff;
+    border: 1px solid var(--rule-2);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  details.drawer + details.drawer { margin-top: 10px; }
+  details.drawer summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 14px 18px;
+    display: flex; align-items: center; justify-content: space-between;
+    user-select: none;
+  }
+  details.drawer summary::-webkit-details-marker { display: none; }
+  .drw-l {
+    display: flex; align-items: baseline; gap: 12px;
+  }
+  .drw-t { font-family: var(--mono); font-size: 13px; font-weight: 500; }
+  .drw-s { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .chev { width: 14px; height: 14px; color: var(--muted); transition: transform .2s; }
+  details.drawer[open] .chev { transform: rotate(180deg); }
+
+  pre.yaml {
+    margin: 0;
+    padding: 16px 20px;
+    background: var(--paper-2);
+    border-top: 1px solid var(--rule);
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.65;
+    color: var(--ink-2);
+    white-space: pre;
+    overflow-x: auto;
+    max-height: 400px;
+    overflow-y: auto;
+  }
+  .y-key { color: var(--accent-ink); }
+  .y-str { color: var(--ok); }
+  .y-num { color: #A35D1C; }
+  .y-ref { color: var(--accent); }
+  .y-dash { color: var(--muted); }
+
+  .bricks-used {
+    padding: 16px 20px;
+    background: var(--paper-2);
+    border-top: 1px solid var(--rule);
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .brick-pill {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 4px 10px;
+    background: #fff;
+    border: 1px solid var(--rule-2);
+    border-radius: 999px;
+    color: var(--ink-2);
+  }
+  .brick-pill em {
+    font-style: normal;
+    color: var(--faint);
+    margin-left: 6px;
+  }
+  .brick-pill .pill-count {
+    font-style: normal;
+    font-weight: 500;
+    margin-left: 8px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent-ink);
+    font-size: 10px;
+  }
+
+  /* res footer */
+  .res-foot {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--rule);
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .res-foot b { color: var(--ink-2); font-weight: 500; margin-right: 5px; }
+
+  @media (max-width: 720px) {
+    h1 { font-size: 32px; }
+    .verdict h2 { font-size: 26px; }
+    .metrics, .metrics.dual { grid-template-columns: 1fr 1fr; }
+    .metric { border-right: none; border-bottom: 1px solid var(--rule); }
+    .byok input { width: 100px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ====== TOP BAR ====== -->
+<nav class="topbar">
+  <div class="brand">
+    <div class="brand-mark"><i></i><i></i><i></i><i></i></div>
+    <span>bricks</span>
+    <span class="brand-sub">playground</span>
+  </div>
+  <div class="spacer"></div>
+  <div class="byok" title="Model">
+    <select id="modelSel" style="padding-right: 24px;">
+      <option>Haiku 4.5</option>
+      <option>Sonnet 4.5</option>
+      <option>GPT-4o Mini</option>
+      <option>Llama3 local</option>
+    </select>
+  </div>
+  <div class="byok" title="Bring your own key">
+    <select>
+      <option>Anthropic</option>
+      <option>OpenAI</option>
+    </select>
+    <input type="password" placeholder="sk-ant-•••••••••" value="sk-ant-api03-xXxXxXx" />
+    <div class="byok-dot"><i></i>connected</div>
+  </div>
+</nav>
+
+<!-- ====== VIEW 1 — SETUP ====== -->
+<main class="view on" id="view-setup">
+  <div class="setup">
+
+    <div class="eyebrow">Playground</div>
+    <h1>Compose a task. <em>Run it both ways.</em></h1>
+    <p class="lede">Deterministic pipelines beat raw LLM reasoning on structured data. Try it on a sample or your own.</p>
+
+    <!-- SCENARIO SELECT -->
+    <div class="block">
+      <div class="block-label">
+        <span class="l">01 · Scenario</span>
+        <span class="r">presets + your own</span>
+      </div>
+      <select class="scen-select" id="scenSelect">
+        <option value="crm-pipeline">CRM · customer aggregates</option>
+        <option value="crm-hallucination">CRM · consistency at scale</option>
+        <option value="crm-reuse">CRM · reuse across a batch</option>
+        <option value="support">Support · ticket triage</option>
+        <option value="orders">Orders · revenue by plan</option>
+        <option value="custom">Blank · start from scratch</option>
+      </select>
+    </div>
+
+    <!-- TASK -->
+    <div class="block">
+      <div class="block-label">
+        <span class="l">02 · Task</span>
+        <span class="r">what should the pipeline produce?</span>
+      </div>
+      <textarea class="task-box" id="taskInput" placeholder="Describe the task in plain English…">Parse the customer JSON, filter to active customers, and return: active_count, total_active_revenue, avg_active_revenue (rounded to 2 decimals).</textarea>
+    </div>
+
+    <!-- DATA -->
+    <div class="block">
+      <div class="block-label">
+        <span class="l">03 · Data</span>
+        <span class="r">drag a file or edit inline</span>
+      </div>
+      <div class="data-wrap" id="dropzone">
+        <div class="data-head">
+          <span class="fname">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            customers.json
+          </span>
+          <span class="fsize">24 rows · 3.2 KB</span>
+          <span class="push"></span>
+          <button class="upload-mini">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Upload CSV / JSON
+          </button>
+        </div>
+        <div class="data-body" id="dataBody"></div>
+      </div>
+    </div>
+
+    <!-- EXPECTED OUTPUT (optional) -->
+    <div class="block">
+      <div class="block-label">
+        <span class="l">04 · Expected output <span style="color:var(--faint); text-transform:none; letter-spacing:0; font-size:10.5px; margin-left:6px;">optional</span></span>
+        <span class="r">for pass/fail comparison</span>
+      </div>
+      <textarea class="task-box" id="expectedInput" style="font-family: var(--mono); font-size: 12.5px; min-height: 88px;" placeholder='{"active_count": 18, "total_active_revenue": 3447.50}'>{
+  "active_count": 18,
+  "total_active_revenue": 3447.50,
+  "avg_active_revenue": 191.53
+}</textarea>
+    </div>
+
+    <!-- COMPARE -->
+    <div class="row">
+      <div class="l">
+        <b>Compare to raw LLM</b>
+        <span>Run the same task with a plain prompt — side-by-side results.</span>
+      </div>
+      <div class="toggle" id="cmpToggle" role="switch" aria-checked="false"></div>
+    </div>
+
+    <!-- ACTIONS -->
+    <div class="actions">
+      <button class="run-big" id="runBtn">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Run
+        <span class="kbd">⌘↵</span>
+      </button>
+      <button class="ghost">Save as YAML</button>
+    </div>
+
+  </div>
+</main>
+
+<!-- ====== VIEW 2 — RUNNING ====== -->
+<main class="view" id="view-running">
+  <div class="running">
+    <div class="spinner"></div>
+    <h2 id="runHeadline">Running your pipeline…</h2>
+    <p id="runSub">Bricks composing a blueprint, then executing deterministically.</p>
+    <ol class="steps" id="steps">
+      <li data-s="0"><span class="mark">1</span>Parsing input data</li>
+      <li data-s="1"><span class="mark">2</span>Bricks — composing blueprint</li>
+      <li data-s="2"><span class="mark">3</span>Bricks — executing pipeline</li>
+      <li data-s="3" class="hide-if-solo"><span class="mark">4</span>Raw LLM — sending full prompt</li>
+      <li data-s="4"><span class="mark">5</span>Checking outputs</li>
+    </ol>
+  </div>
+</main>
+
+<!-- ====== VIEW 3 — RESULTS ====== -->
+<main class="view" id="view-results">
+  <div class="results">
+
+    <div class="res-top">
+      <div>
+        <div class="eyebrow">Results</div>
+      </div>
+      <div style="font-family: var(--mono); font-size: 11px; color: var(--muted);">
+        run · 2026-04-20 · seed 42
+      </div>
+    </div>
+
+    <!-- verdict -->
+    <div class="verdict">
+      <h2 id="verdictTitle">Bricks ran deterministically.</h2>
+      <div class="score-grid" id="scoreGrid">
+        <div class="scol win">
+          <div class="who"><i></i>Bricks</div>
+          <div class="num">3<span class="of">/3</span></div>
+          <div class="meta">100% · 2,400 tokens · $0.0012</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- metrics -->
+    <div class="metrics" id="metrics">
+      <div class="metric"><div class="k">Tokens</div><div class="v">2,400</div><div class="sub">composed once</div></div>
+      <div class="metric"><div class="k">Cost</div><div class="v">$0.0012</div><div class="sub">claude-haiku-4-5</div></div>
+      <div class="metric"><div class="k">Duration</div><div class="v">6.2s</div><div class="sub">wall clock</div></div>
+    </div>
+
+    <!-- output comparison -->
+    <div class="res-sec">
+      <div class="res-sec-head">
+        <h3>Outputs</h3>
+        <span class="num">key · expected · got</span>
+      </div>
+      <table class="cmp" id="cmpTable">
+        <thead>
+          <tr>
+            <th>Key</th>
+            <th>Expected</th>
+            <th>Bricks</th>
+            <th class="raw-col" style="display:none;">Raw LLM</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>active_count</td>
+            <td class="exp">18</td>
+            <td class="pass">18</td>
+            <td class="raw-col fail" style="display:none;"><span class="s">17</span></td>
+          </tr>
+          <tr>
+            <td>total_active_revenue</td>
+            <td class="exp">3,447.50</td>
+            <td class="pass">3,447.50</td>
+            <td class="raw-col fail" style="display:none;"><span class="s">3,200.00</span></td>
+          </tr>
+          <tr>
+            <td>avg_active_revenue</td>
+            <td class="exp">191.53</td>
+            <td class="pass">191.53</td>
+            <td class="raw-col fail" style="display:none;"><span class="s">188.24</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- details (collapsed) -->
+    <div class="res-sec">
+      <div class="res-sec-head">
+        <h3>Details</h3>
+        <span class="num">optional</span>
+      </div>
+
+      <details class="drawer">
+        <summary>
+          <div class="drw-l">
+            <span class="drw-t">Blueprint</span>
+            <span class="drw-s">6 steps · YAML · reusable</span>
+          </div>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </summary>
+        <pre class="yaml" id="yamlCode"></pre>
+      </details>
+
+      <details class="drawer">
+        <summary>
+          <div class="drw-l">
+            <span class="drw-t">Bricks used</span>
+            <span class="drw-s">5 unique · 6 calls · deterministic</span>
+          </div>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </summary>
+        <div class="bricks-used">
+          <span class="brick-pill">extract_markdown_fences<em>str</em></span>
+          <span class="brick-pill">extract_json_from_str<em>str</em></span>
+          <span class="brick-pill">filter_dict_list<em>list</em></span>
+          <span class="brick-pill">count_dict_list<em>list</em></span>
+          <span class="brick-pill">calculate_aggregates<em>math</em><b class="pill-count">×2</b></span>
+        </div>
+      </details>
+    </div>
+
+    <div class="res-foot">
+      <span><b>model</b>claude-haiku-4-5</span>
+      <span><b>seed</b>42</span>
+      <span><b>version</b>0.4.26</span>
+    </div>
+
+    <div class="actions" style="justify-content:flex-start; margin-top:40px;">
+      <button class="run-big" id="backBtn">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        New run
+      </button>
+      <button class="ghost" id="copyYamlBtn">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px; vertical-align:-2px;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        <span id="copyYamlLabel">Copy YAML</span>
+      </button>
+      <button class="ghost">Share results</button>
+    </div>
+
+  </div>
+</main>
+
+<script>
+  // ---- sample customers (hardcoded) ----
+  const customers = {
+    customers: [
+      { id: 1,  name: "Acme Corp",         status: "active",   monthly_revenue: 245.00, plan: "pro" },
+      { id: 2,  name: "Globex Ltd",        status: "active",   monthly_revenue: 189.50, plan: "pro" },
+      { id: 3,  name: "Initech",           status: "inactive", monthly_revenue: 0,      plan: "free" },
+      { id: 4,  name: "Umbrella Inc",      status: "active",   monthly_revenue: 312.00, plan: "enterprise" },
+      { id: 5,  name: "Soylent Co",        status: "active",   monthly_revenue: 145.75, plan: "pro" },
+      { id: 6,  name: "Stark Industries",  status: "active",   monthly_revenue: 498.00, plan: "enterprise" },
+      { id: 7,  name: "Wayne Enterprises", status: "active",   monthly_revenue: 421.25, plan: "enterprise" },
+      { id: 8,  name: "Oscorp",            status: "inactive", monthly_revenue: 0,      plan: "free" },
+      { id: 9,  name: "Tyrell Corp",       status: "active",   monthly_revenue: 158.00, plan: "pro" },
+      { id: 10, name: "Cyberdyne Sys",     status: "active",   monthly_revenue: 267.50, plan: "pro" }
+    ]
+  };
+
+  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function hlJson(obj){
+    const s = JSON.stringify(obj, null, 2);
+    return esc(s)
+      .replace(/"([^"\\]*)"(\s*:)/g, '<span class="j-key">"$1"</span>$2')
+      .replace(/:\s*"([^"\\]*)"/g, ': <span class="j-str">"$1"</span>')
+      .replace(/:\s*(-?\d+(?:\.\d+)?)/g, ': <span class="j-num">$1</span>')
+      .replace(/:\s*(true|false)/g, ': <span class="j-bool">$1</span>')
+      .replace(/:\s*null/g, ': <span class="j-null">null</span>');
+  }
+  document.getElementById('dataBody').innerHTML = hlJson(customers);
+
+  // ---- yaml highlight ----
+  const yamlRaw = `name: parse_and_analyze_customers
+inputs:
+  raw_api_response: ""
+steps:
+  - name: extract_json
+    brick: extract_markdown_fences
+    params:
+      text: "\${inputs.raw_api_response}"
+    save_as: json_fenced
+  - name: parse_json
+    brick: extract_json_from_str
+    params:
+      text: "\${json_fenced.result}"
+    save_as: parsed_data
+  - name: filter_active
+    brick: filter_dict_list
+    params:
+      items: "\${parsed_data.data.customers}"
+      key: "status"
+      value: "active"
+    save_as: active_customers
+  - name: active_count
+    brick: count_dict_list
+    params:
+      items: "\${active_customers.result}"
+    save_as: count_result
+  - name: total_active_revenue
+    brick: calculate_aggregates
+    params:
+      items: "\${active_customers.result}"
+      field: "monthly_revenue"
+      operation: "sum"
+    save_as: total_revenue
+  - name: avg_active_revenue
+    brick: calculate_aggregates
+    params:
+      items: "\${active_customers.result}"
+      field: "monthly_revenue"
+      operation: "avg"
+    save_as: avg_revenue
+outputs_map:
+  active_count: "\${count_result.result}"
+  total_active_revenue: "\${total_revenue.result}"
+  avg_active_revenue: "\${avg_revenue.result}"`;
+
+  function hlYaml(src){
+    return src.split('\n').map(line => {
+      const m = line.match(/^(\s*)(- )?([A-Za-z_][A-Za-z0-9_]*)(:)(\s*)(.*)$/);
+      if (!m) return esc(line);
+      const [, ind, dash, key, colon, sp, val] = m;
+      let v = '';
+      if (val === '') v = '';
+      else if (val.startsWith('"') && val.endsWith('"')) {
+        const inner = esc(val.slice(1,-1)).replace(/\$\{[^}]+\}/g, x=>`<span class="y-ref">${x}</span>`);
+        v = `<span class="y-str">"${inner}"</span>`;
+      } else if (/^-?\d+(\.\d+)?$/.test(val)) v = `<span class="y-num">${esc(val)}</span>`;
+      else v = esc(val);
+      const d = dash ? `<span class="y-dash">- </span>` : '';
+      return `${ind}${d}<span class="y-key">${esc(key)}</span><span class="y-dash">${colon}</span>${sp}${v}`;
+    }).join('\n');
+  }
+  document.getElementById('yamlCode').innerHTML = hlYaml(yamlRaw);
+
+  // ---- view switching ----
+  function showView(id) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('on'));
+    document.getElementById(id).classList.add('on');
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }
+
+  // ---- compare toggle ----
+  const toggle = document.getElementById('cmpToggle');
+  let compareOn = false;
+  toggle.addEventListener('click', () => {
+    compareOn = !compareOn;
+    window.compareOn = compareOn;
+    toggle.classList.toggle('on', compareOn);
+    toggle.setAttribute('aria-checked', String(compareOn));
+  });
+
+  // ---- run flow ----
+  const runBtn = document.getElementById('runBtn');
+  const steps = document.querySelectorAll('#steps li');
+  const runHeadline = document.getElementById('runHeadline');
+  const runSub = document.getElementById('runSub');
+
+  runBtn.addEventListener('click', startRun);
+  document.addEventListener('keydown', e => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') startRun();
+  });
+
+  function startRun() {
+    // configure steps
+    const rawStep = document.querySelector('#steps li[data-s="3"]');
+    rawStep.style.display = compareOn ? '' : 'none';
+    steps.forEach(s => s.classList.remove('active', 'done'));
+    runHeadline.textContent = compareOn ? 'Running both pipelines…' : 'Running your pipeline…';
+    runSub.textContent = compareOn
+      ? 'Bricks composing + executing, raw LLM doing it in one shot.'
+      : 'Bricks composing a blueprint, then executing deterministically.';
+
+    showView('view-running');
+
+    const sequence = compareOn ? [0, 1, 2, 3, 4] : [0, 1, 2, 4];
+    let i = 0;
+    const tick = () => {
+      if (i > 0) {
+        const prev = document.querySelector(`#steps li[data-s="${sequence[i-1]}"]`);
+        prev.classList.remove('active'); prev.classList.add('done');
+      }
+      if (i < sequence.length) {
+        const cur = document.querySelector(`#steps li[data-s="${sequence[i]}"]`);
+        cur.classList.add('active');
+        i++;
+        setTimeout(tick, 520 + Math.random() * 300);
+      } else {
+        setTimeout(showResults, 450);
+      }
+    };
+    tick();
+  }
+
+  // ---- results ----
+  function showResults() {
+    const verdictTitle = document.getElementById('verdictTitle');
+    const scoreGrid = document.getElementById('scoreGrid');
+    const metrics = document.getElementById('metrics');
+    const cmpTable = document.getElementById('cmpTable');
+
+    if (compareOn) {
+      verdictTitle.innerHTML = 'Bricks beat raw LLM';
+      scoreGrid.className = 'score-grid dual';
+      scoreGrid.innerHTML = `
+        <div class="scol win">
+          <div class="who"><i></i>Bricks</div>
+          <div class="num">3<span class="of">/3</span></div>
+          <div class="meta">deterministic · 2,400 tok · $0.0012</div>
+        </div>
+        <div class="scol loss">
+          <div class="who"><i></i>Raw LLM</div>
+          <div class="num">0<span class="of">/3</span></div>
+          <div class="meta">drifted · 9,730 tok · $0.0049</div>
+        </div>`;
+      metrics.className = 'metrics dual';
+      metrics.innerHTML = `
+        <div class="metric"><div class="k">Accuracy</div><div class="v">+100%</div><div class="sub">vs raw LLM</div></div>
+        <div class="metric"><div class="k">Tokens</div><div class="v">4× less</div><div class="sub">2,400 vs 9,730</div></div>
+        <div class="metric"><div class="k">Cost</div><div class="v">−75%</div><div class="sub">$0.0012 vs $0.0049</div></div>
+        <div class="metric"><div class="k">Duration</div><div class="v">6.2s</div><div class="sub">vs 4.9s</div></div>`;
+      cmpTable.querySelectorAll('.raw-col').forEach(el => el.style.display = '');
+    } else {
+      verdictTitle.innerHTML = 'Bricks ran deterministically.';
+      scoreGrid.className = 'score-grid';
+      scoreGrid.innerHTML = `
+        <div class="scol win">
+          <div class="who"><i></i>Bricks</div>
+          <div class="num">3<span class="of">/3</span></div>
+          <div class="meta">100% · 2,400 tokens · $0.0012</div>
+        </div>`;
+      metrics.className = 'metrics';
+      metrics.innerHTML = `
+        <div class="metric"><div class="k">Tokens</div><div class="v">2,400</div><div class="sub">composed once</div></div>
+        <div class="metric"><div class="k">Cost</div><div class="v">$0.0012</div><div class="sub">claude-haiku-4-5</div></div>
+        <div class="metric"><div class="k">Duration</div><div class="v">6.2s</div><div class="sub">wall clock</div></div>`;
+      cmpTable.querySelectorAll('.raw-col').forEach(el => el.style.display = 'none');
+    }
+
+    if (typeof applyTweaks === 'function') applyTweaks();
+    showView('view-results');
+  }
+
+  // ---- back ----
+  document.getElementById('backBtn').addEventListener('click', () => showView('view-setup'));
+
+  // ---- drag & drop ----
+  const dz = document.getElementById('dropzone');
+  ['dragenter','dragover'].forEach(ev => dz.addEventListener(ev, e => {
+    e.preventDefault(); dz.classList.add('drag');
+  }));
+  ['dragleave','drop'].forEach(ev => dz.addEventListener(ev, e => {
+    e.preventDefault(); dz.classList.remove('drag');
+  }));
+
+  // ---- copy yaml ----
+  const copyYamlBtn = document.getElementById('copyYamlBtn');
+  if (copyYamlBtn) {
+    const label = document.getElementById('copyYamlLabel');
+    copyYamlBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(yamlRaw);
+        label.textContent = 'Copied ✓';
+        setTimeout(() => { label.textContent = 'Copy YAML'; }, 1600);
+      } catch (err) {
+        label.textContent = 'Copy failed';
+        setTimeout(() => { label.textContent = 'Copy YAML'; }, 1600);
+      }
+    });
+  }
+
+  /* ================= TWEAKS ================= */
+  const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+    "verdictFont": "Instrument Serif",
+    "verdictSize": 36,
+    "verdictItalicEm": false,
+    "verdictDot": true,
+    "verdictCopy": "Bricks ran deterministically."
+  }/*EDITMODE-END*/;
+
+  const FONT_PRESETS = {
+    "Inter Semibold":    { family: "'Inter', sans-serif",             weight: 600, tracking: "-0.02em", lh: 1.18 },
+    "Inter Bold":        { family: "'Inter', sans-serif",             weight: 700, tracking: "-0.025em", lh: 1.15 },
+    "Space Grotesk":     { family: "'Space Grotesk', sans-serif",     weight: 600, tracking: "-0.02em", lh: 1.15 },
+    "Fraunces":          { family: "'Fraunces', serif",               weight: 500, tracking: "-0.015em", lh: 1.12 },
+    "Playfair Display":  { family: "'Playfair Display', serif",       weight: 600, tracking: "-0.01em",  lh: 1.12 },
+    "Instrument Serif":  { family: "'Instrument Serif', serif",       weight: 400, tracking: "-0.01em",  lh: 1.1  },
+    "JetBrains Mono":    { family: "'JetBrains Mono', monospace",     weight: 500, tracking: "-0.02em",  lh: 1.2  },
+  };
+
+  const state = { ...TWEAK_DEFAULTS };
+
+  function applyTweaks(){
+    const preset = FONT_PRESETS[state.verdictFont] || FONT_PRESETS["Inter Semibold"];
+    const root = document.documentElement.style;
+    root.setProperty('--verdict-font', preset.family);
+    root.setProperty('--verdict-weight', preset.weight);
+    root.setProperty('--verdict-size', state.verdictSize + 'px');
+    root.setProperty('--verdict-tracking', preset.tracking);
+    root.setProperty('--verdict-lh', preset.lh);
+    root.setProperty('--verdict-em-style', state.verdictItalicEm ? 'italic' : 'normal');
+    root.setProperty('--verdict-em-weight', state.verdictItalicEm ? '400' : 'inherit');
+
+    // re-render verdict copy (non-compare view only)
+    const el = document.getElementById('verdictTitle');
+    if (el && !window.compareOn) {
+      const html = (state.verdictCopy || '')
+        .replace(/\{em\}/g, '<em>')
+        .replace(/\{\/em\}/g, '</em>');
+      el.innerHTML = html;
+    }
+    if (el) el.classList.toggle('with-dot', !!state.verdictDot);
+  }
+
+  function persist(patch){
+    Object.assign(state, patch);
+    applyTweaks();
+    try { window.parent.postMessage({ type: '__edit_mode_set_keys', edits: patch }, '*'); } catch(e){}
+  }
+
+  // ---- tweaks panel DOM ----
+  const tweaks = document.createElement('div');
+  tweaks.id = 'tweaks-panel';
+  tweaks.style.cssText = `
+    position: fixed; right: 20px; bottom: 20px;
+    width: 280px; background: #fff;
+    border: 1px solid var(--rule-2); border-radius: 14px;
+    box-shadow: 0 12px 40px rgba(28,26,22,.14), 0 2px 6px rgba(28,26,22,.06);
+    padding: 18px 18px 16px; z-index: 9999;
+    font-family: var(--sans); color: var(--ink);
+    display: none;
+  `;
+  tweaks.innerHTML = `
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+      <div style="font-family:var(--mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted);">Tweaks</div>
+      <button id="tw-close" style="background:none; border:none; color:var(--muted); cursor:pointer; padding:2px 6px; font-size:16px; line-height:1;">×</button>
+    </div>
+
+    <div style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:6px;">Verdict font</div>
+    <select id="tw-font" style="width:100%; padding:8px 10px; border:1px solid var(--rule-2); border-radius:8px; background:var(--paper); margin-bottom:14px; font-size:13px;"></select>
+
+    <div style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:6px; display:flex; justify-content:space-between;">
+      <span>Size</span><span id="tw-size-val" style="font-family:var(--mono); text-transform:none; letter-spacing:0;"></span>
+    </div>
+    <input type="range" id="tw-size" min="20" max="56" step="1" style="width:100%; margin-bottom:14px; accent-color:var(--accent);">
+
+    <label style="display:flex; align-items:center; gap:8px; font-size:13px; margin-bottom:10px; cursor:pointer;">
+      <input type="checkbox" id="tw-italic" style="accent-color:var(--accent);">
+      Italicize accent phrase
+    </label>
+    <label style="display:flex; align-items:center; gap:8px; font-size:13px; margin-bottom:14px; cursor:pointer;">
+      <input type="checkbox" id="tw-dot" style="accent-color:var(--accent);">
+      Leading status dot
+    </label>
+
+    <div style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:6px;">Copy <span style="text-transform:none; letter-spacing:0; color:var(--faint);">— wrap accent in {em}…{/em}</span></div>
+    <textarea id="tw-copy" rows="3" style="width:100%; padding:8px 10px; border:1px solid var(--rule-2); border-radius:8px; font-family:var(--sans); font-size:12.5px; resize:vertical; background:var(--paper);"></textarea>
+  `;
+  document.body.appendChild(tweaks);
+
+  // populate font dropdown
+  const fontSel = tweaks.querySelector('#tw-font');
+  Object.keys(FONT_PRESETS).forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name; opt.textContent = name;
+    fontSel.appendChild(opt);
+  });
+
+  function syncTweakUI(){
+    fontSel.value = state.verdictFont;
+    tweaks.querySelector('#tw-size').value = state.verdictSize;
+    tweaks.querySelector('#tw-size-val').textContent = state.verdictSize + 'px';
+    tweaks.querySelector('#tw-italic').checked = !!state.verdictItalicEm;
+    tweaks.querySelector('#tw-dot').checked = !!state.verdictDot;
+    tweaks.querySelector('#tw-copy').value = state.verdictCopy;
+  }
+
+  fontSel.addEventListener('change', e => persist({ verdictFont: e.target.value }));
+  tweaks.querySelector('#tw-size').addEventListener('input', e => {
+    tweaks.querySelector('#tw-size-val').textContent = e.target.value + 'px';
+    persist({ verdictSize: parseInt(e.target.value, 10) });
+  });
+  tweaks.querySelector('#tw-italic').addEventListener('change', e => persist({ verdictItalicEm: e.target.checked }));
+  tweaks.querySelector('#tw-dot').addEventListener('change', e => persist({ verdictDot: e.target.checked }));
+  tweaks.querySelector('#tw-copy').addEventListener('input', e => persist({ verdictCopy: e.target.value }));
+  tweaks.querySelector('#tw-close').addEventListener('click', () => { tweaks.style.display = 'none'; });
+
+  // host protocol
+  window.addEventListener('message', ev => {
+    const d = ev.data || {};
+    if (d.type === '__activate_edit_mode') { syncTweakUI(); tweaks.style.display = 'block'; }
+    if (d.type === '__deactivate_edit_mode') { tweaks.style.display = 'none'; }
+  });
+  try { window.parent.postMessage({ type: '__edit_mode_available' }, '*'); } catch(e){}
+
+  // initial paint
+  applyTweaks();
+</script>
+</body>
+</html>

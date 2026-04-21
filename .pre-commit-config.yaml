@@ -8,6 +8,16 @@ repos:
       - id: check-added-large-files
         args: [--maxkb=500]
 
+  - repo: local
+    hooks:
+      - id: cog
+        name: cog (refresh README auto-sections)
+        entry: cog -r README.md
+        language: python
+        additional_dependencies: ["cogapp>=3.4"]
+        files: ^(README\.md|src/bricks/cli/main\.py|src/bricks/core/registry\.py|src/bricks/stdlib/.*)$
+        pass_filenames: false
+
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.11
     hooks:
