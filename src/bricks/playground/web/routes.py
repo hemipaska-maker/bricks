@@ -225,41 +225,21 @@ async def upload(file: UploadFile = File(...)) -> UploadResponse:  # noqa: B008
 # ── POST /playground/run ─────────────────────────────────────────────────────
 
 
-@router.post("/run", response_model=RunResponse, response_model_exclude_none=True)
-async def run_playground(req: RunRequest) -> RunResponse:
-    """Run BricksEngine on the task and return structured results.
+def _checks_for(outputs: dict[str, Any], expected: dict[str, Any] | None) -> list[dict[str, Any]]:
+    """Build per-key correctness checks; empty list if no expected output."""
+    if expected is None:
+        return []
+    got = outputs or {}
+    return [{"key": k, "expected": v, "got": got.get(k), "pass": got.get(k) == v} for k, v in expected.items()]
 
-    ``compare`` is wired in #45; this PR always omits ``raw_llm`` from the
-    response.
-    """
-    from bricks.playground.showcase.engine import BricksEngine
-    from bricks.playground.showcase.result_writer import check_correctness
 
-    provider = _build_provider(req.provider, req.model, req.api_key)
-    engine = BricksEngine(provider=provider)
-
-    raw_data = req.data if isinstance(req.data, str) else json.dumps(req.data)
-    fenced = raw_data if raw_data.strip().startswith("```") else f"```json\n{raw_data}\n```"
-
-    t0 = time.monotonic()
-    result = engine.solve(req.task, fenced)
-    duration_ms = int((time.monotonic() - t0) * 1000)
-
-    checks = []
-    if req.expected_output is not None:
-        expected = req.expected_output
-        got = result.outputs or {}
-        for key, exp_val in expected.items():
-            got_val = got.get(key)
-            checks.append({"key": key, "expected": exp_val, "got": got_val, "pass": got_val == exp_val})
-        # Whole-dict correctness is available via check_correctness as a sanity
-        # gate but we already expose per-key results above.
-        check_correctness(got, expected)
-
-    bricks_result = EngineResult(
-        blueprint_yaml=result.raw_response or None,
-        outputs=result.outputs or {},
-        response=None,
+def _engine_result(result: Any, duration_ms: int, expected: dict[str, Any] | None, *, is_raw: bool) -> EngineResult:
+    """Shape a showcase engine result into an :class:`EngineResult`."""
+    outputs = result.outputs or {}
+    return EngineResult(
+        blueprint_yaml=None if is_raw else (result.raw_response or None),
+        outputs=outputs,
+        response=result.raw_response if is_raw else None,
         tokens=TokenBreakdown(
             **{
                 "in": result.tokens_in,
@@ -269,14 +249,46 @@ async def run_playground(req: RunRequest) -> RunResponse:
         ),
         duration_ms=duration_ms,
         cost_usd=None,
-        checks=[{"key": c["key"], "expected": c["expected"], "got": c["got"], "pass": c["pass"]} for c in checks],
+        checks=_checks_for(outputs, expected),
     )
 
+
+@router.post("/run", response_model=RunResponse, response_model_exclude_none=True)
+async def run_playground(req: RunRequest) -> RunResponse:
+    """Run BricksEngine on the task and return structured results.
+
+    When ``compare`` is ``True``, also runs ``RawLLMEngine`` and includes
+    the ``raw_llm`` branch in the response. When ``False`` (default),
+    ``RawLLMEngine`` is **not** instantiated or called — the response
+    omits the ``raw_llm`` key entirely.
+    """
+    from bricks.playground.showcase.engine import BricksEngine, RawLLMEngine
+
+    provider = _build_provider(req.provider, req.model, req.api_key)
+
+    raw_data = req.data if isinstance(req.data, str) else json.dumps(req.data)
+    fenced = raw_data if raw_data.strip().startswith("```") else f"```json\n{raw_data}\n```"
+
+    t0 = time.monotonic()
+    bricks_raw = BricksEngine(provider=provider).solve(req.task, fenced)
+    bricks_ms = int((time.monotonic() - t0) * 1000)
+
+    raw_llm_result: EngineResult | None = None
+    if req.compare:
+        t_raw = time.monotonic()
+        raw_raw = RawLLMEngine(provider=provider).solve(req.task, fenced)
+        raw_ms = int((time.monotonic() - t_raw) * 1000)
+        raw_llm_result = _engine_result(raw_raw, raw_ms, req.expected_output, is_raw=True)
+
     metadata = RunMetadata(
-        model=result.model or req.model,
+        model=bricks_raw.model or req.model,
         provider=req.provider,
         version=_bricks_version,
         timestamp=datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
     )
 
-    return RunResponse(bricks=bricks_result, raw_llm=None, run_metadata=metadata)
+    return RunResponse(
+        bricks=_engine_result(bricks_raw, bricks_ms, req.expected_output, is_raw=False),
+        raw_llm=raw_llm_result,
+        run_metadata=metadata,
+    )
