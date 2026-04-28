@@ -206,13 +206,33 @@ class TestCompactBrickSignatures:
         reg = BrickRegistry()
         assert compact_brick_signatures(reg) == ""
 
-    def test_showcase_bricks_format(self) -> None:
-        """Showcase bricks produce correct compact signatures."""
-        from bricks.playground.showcase.bricks import build_showcase_registry
-        from bricks.playground.showcase.bricks.math_bricks import add, multiply, round_value, subtract
-        from bricks.playground.showcase.bricks.string_bricks import format_result
+    def test_compact_signatures_sort_alphabetically(self) -> None:
+        """``compact_brick_signatures`` emits one line per brick, sorted by name."""
+        reg = BrickRegistry()
 
-        reg = build_showcase_registry(multiply, round_value, add, subtract, format_result)
+        @brick(description="Returns {result: a+b}.")
+        def add(a: float, b: float) -> dict[str, float]:
+            return {"result": a + b}
+
+        @brick(description="Returns {display: str}.")
+        def format_result(label: str, value: float) -> dict[str, str]:
+            return {"display": f"{label}: {value}"}
+
+        @brick(description="Returns {result: a*b}.")
+        def multiply(a: float, b: float) -> dict[str, float]:
+            return {"result": a * b}
+
+        @brick(description="Returns {result: rounded float}.")
+        def round_value(value: float, ndigits: int) -> dict[str, float]:
+            return {"result": round(value, ndigits)}
+
+        @brick(description="Returns {result: a-b}.")
+        def subtract(a: float, b: float) -> dict[str, float]:
+            return {"result": a - b}
+
+        for fn in (multiply, round_value, add, subtract, format_result):
+            reg.register(fn.__name__, fn, fn.__brick_meta__)
+
         result = compact_brick_signatures(reg)
         lines = result.strip().split("\n")
         assert len(lines) == 5
@@ -274,14 +294,31 @@ class TestOutputKeyTable:
         arrow_positions = [ln.index("→") for ln in lines]
         assert len(set(arrow_positions)) == 1, f"Arrows not aligned: positions {arrow_positions}"
 
-    def test_showcase_bricks_table(self) -> None:
-        """Showcase bricks produce a valid output key table."""
+    def test_output_key_table_with_multiple_bricks(self) -> None:
+        """``output_key_table`` lists each brick with its arrow-separated keys."""
         from bricks.core.schema import output_key_table
-        from bricks.playground.showcase.bricks import build_showcase_registry
-        from bricks.playground.showcase.bricks.math_bricks import add, multiply, round_value
-        from bricks.playground.showcase.bricks.string_bricks import format_result
 
-        reg = build_showcase_registry(multiply, round_value, add, format_result)
+        reg = BrickRegistry()
+
+        @brick(description="Returns {result: a*b}.")
+        def multiply(a: float, b: float) -> dict[str, float]:
+            return {"result": a * b}
+
+        @brick(description="Returns {result: rounded float}.")
+        def round_value(value: float, ndigits: int) -> dict[str, float]:
+            return {"result": round(value, ndigits)}
+
+        @brick(description="Returns {result: a+b}.")
+        def add(a: float, b: float) -> dict[str, float]:
+            return {"result": a + b}
+
+        @brick(description="Returns {display: str}.")
+        def format_result(label: str, value: float) -> dict[str, str]:
+            return {"display": f"{label}: {value}"}
+
+        for fn in (multiply, round_value, add, format_result):
+            reg.register(fn.__name__, fn, fn.__brick_meta__)
+
         result = output_key_table(reg)
         assert "multiply" in result
         assert "→ result" in result

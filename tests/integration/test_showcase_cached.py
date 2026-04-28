@@ -7,14 +7,11 @@ the happy path and the heal path deterministically.
 
 Fixture refresh
 ---------------
-To capture fresh fixtures when prompts or bricks change intentionally::
-
-    ANTHROPIC_API_KEY=sk-ant-... python -m bricks.playground.showcase.run \\
-        --live --scenario CRM-pipeline --seed 42
-
-Copy the winning DSL into ``fixtures/crm_pipeline_happy.json``; for the
-heal fixture, break one kwarg (e.g. ``items=`` → ``item=``) so the
-deterministic ``ParamNameHealer`` tier triggers.
+To capture fresh fixtures when prompts or bricks change intentionally,
+run the CRM-pipeline preset against a live model and copy the winning
+DSL into ``fixtures/crm_pipeline_happy.json``. For the heal fixture,
+break one kwarg (e.g. ``items=`` → ``item=``) so the deterministic
+``ParamNameHealer`` tier triggers.
 """
 
 from __future__ import annotations
@@ -26,7 +23,7 @@ from typing import Any
 import pytest
 
 from bricks.llm.base import CompletionResult, LLMProvider
-from bricks.playground.showcase.engine import BricksEngine
+from bricks.playground.engine import BricksEngine
 
 _FIXTURE_DIR = Path(__file__).parent / "fixtures"
 

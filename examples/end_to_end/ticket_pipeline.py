@@ -86,26 +86,10 @@ _FALLBACK_DATA = json.dumps({"tickets": _FALLBACK_TICKETS})
 
 
 def _load_data() -> tuple[str, int, dict[str, int]]:
-    """Return (raw_json_string, high_count, expected_outputs_dict).
-
-    Uses the benchmark ticket generator when available; falls back to inline data.
-    """
-    try:
-        from bricks.playground.showcase.ticket_generator import generate_ticket_task
-
-        task = generate_ticket_task(seed=42)
-        raw = task.raw_api_response.strip()
-        if raw.startswith("```"):
-            lines = raw.splitlines()
-            raw = "\n".join(lines[1:-1])
-        data = json.loads(raw)
-        high_count = sum(1 for t in data["tickets"] if t["priority"] == "high")
-        print(f"  Using benchmark ticket generator: {len(data['tickets'])} records")
-        return raw, high_count, task.expected_outputs
-    except ImportError:
-        high_count = sum(1 for t in _FALLBACK_TICKETS if t["priority"] == "high")
-        print(f"  bricks.playground not installed — using {len(_FALLBACK_TICKETS)} inline records")
-        return _FALLBACK_DATA, high_count, {}
+    """Return (raw_json_string, high_count, expected_outputs_dict) from inline fallback data."""
+    high_count = sum(1 for t in _FALLBACK_TICKETS if t["priority"] == "high")
+    print(f"  Using {len(_FALLBACK_TICKETS)} inline records")
+    return _FALLBACK_DATA, high_count, {}
 
 
 def run_demo(raw_data: str, expected_high: int) -> None:
@@ -134,17 +118,11 @@ def run_live(raw_data: str, expected_outputs: dict[str, int]) -> None:
     provider = LiteLLMProvider(model=model)
     engine = Bricks.default(provider=provider)
 
-    try:
-        from bricks.playground.showcase.ticket_generator import generate_ticket_task
-
-        task = generate_ticket_task(seed=42)
-        task_text = task.task_text
-    except ImportError:
-        task_text = (
-            "Parse the JSON tickets list from raw_data. "
-            "Filter to keep only tickets with priority 'high' or 'critical'. "
-            "Count them and return high_count and critical_count."
-        )
+    task_text = (
+        "Parse the JSON tickets list from raw_data. "
+        "Filter to keep only tickets with priority 'high' or 'critical'. "
+        "Count them and return high_count and critical_count."
+    )
 
     result = engine.execute(task_text, inputs={"raw_data": raw_data})
     outputs = result["outputs"]

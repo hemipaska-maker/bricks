@@ -316,7 +316,7 @@ async def run_playground(req: RunRequest) -> RunResponse:
     ``RawLLMEngine`` is **not** instantiated or called — the response
     omits the ``raw_llm`` key entirely.
     """
-    from bricks.playground.showcase.engine import BricksEngine, RawLLMEngine
+    from bricks.playground.engine import BricksEngine, RawLLMEngine
 
     provider = _build_provider(req.provider, req.model, req.api_key)
 
@@ -435,7 +435,7 @@ async def run_playground_stream(req: RunRequest) -> StreamingResponse:
     and still the right choice for programmatic callers.
     """
     from bricks.core.hooks import get_plugin_manager
-    from bricks.playground.showcase.engine import BricksEngine, RawLLMEngine
+    from bricks.playground.engine import BricksEngine, RawLLMEngine
 
     provider = _build_provider(req.provider, req.model, req.api_key)
     raw_data = req.data if isinstance(req.data, str) else json.dumps(req.data)
