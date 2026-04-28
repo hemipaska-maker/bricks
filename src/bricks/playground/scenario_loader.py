@@ -4,6 +4,10 @@ Functions
 ---------
 load_scenario(path)
     Parse a YAML scenario file into a ScenarioDefinition.
+resolve_preset(name_or_path)
+    Resolve a preset stem ("crm_pipeline") or a YAML file path to an
+    absolute Path against the bundled ``presets/`` directory. Used by
+    both the web routes and the ``bricks playground run`` CLI.
 scenario_to_benchmark_request(scenario)
     Convert a ScenarioDefinition to a BenchmarkRequest for the web API.
 export_scenario(scenario, path)
@@ -18,11 +22,50 @@ from typing import Any
 
 import yaml  # type: ignore[import-untyped]
 
-from bricks.playground.web.scenario_format import ScenarioDefinition
+from bricks.playground.scenario_format import ScenarioDefinition
 from bricks.playground.web.schemas import BenchmarkRequest
 
 # Required keys every valid scenario YAML must contain.
 _REQUIRED_KEYS = ("name", "description", "task_text")
+
+# Bundled preset directory — same source of truth for web and CLI.
+_PRESETS_DIR = Path(__file__).parent / "presets"
+
+
+def resolve_preset(name_or_path: str) -> Path:
+    """Resolve a preset stem or a YAML file path to an absolute Path.
+
+    A path ending in ``.yaml`` or ``.yml`` is returned as-is (after
+    user-expansion). A bare name (``"crm_pipeline"`` or ``"crm-pipeline"``)
+    maps to ``_PRESETS_DIR/<name>.yaml``, with dash/underscore variants
+    tried so the web UI's kebab-case scenario IDs and the
+    snake-case YAML filenames agree.
+
+    Args:
+        name_or_path: Preset stem or path to a custom scenario YAML.
+
+    Returns:
+        The resolved absolute path to the YAML file.
+
+    Raises:
+        FileNotFoundError: If no matching file exists.
+    """
+    candidate = Path(name_or_path)
+    if candidate.suffix.lower() in (".yaml", ".yml"):
+        target = candidate.expanduser().resolve()
+        if target.is_file():
+            return target
+        raise FileNotFoundError(f"Scenario file {target} not found")
+
+    for stem in (name_or_path, name_or_path.replace("-", "_"), name_or_path.replace("_", "-")):
+        target = _PRESETS_DIR / f"{stem}.yaml"
+        if target.is_file():
+            return target.resolve()
+
+    raise FileNotFoundError(
+        f"Scenario {name_or_path!r} not found in {_PRESETS_DIR}. "
+        f"Bundled presets: {sorted(p.stem for p in _PRESETS_DIR.glob('*.yaml'))}"
+    )
 
 
 def load_scenario(path: Path) -> ScenarioDefinition:
@@ -101,7 +144,7 @@ def _resolve_raw_data(scenario: ScenarioDefinition, base_dir: Path | None = None
         return ref.read_text(encoding="utf-8")
 
     if scenario.dataset_id is not None:
-        from bricks.playground.web.datasets import DatasetLoader
+        from bricks.playground.dataset_loader import DatasetLoader
 
         loader = DatasetLoader()
         ds = loader.get_dataset(scenario.dataset_id)

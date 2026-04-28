@@ -15,7 +15,7 @@ Bricks is a deterministic execution engine for AI agents. Your LLM writes a YAML
 ```bash
 pip install -e ".[playground]"
 bricks playground
-# ✓ Bricks Playground running → http://localhost:8080
+# OK  Bricks Playground running -> http://localhost:8080
 #   (browser opened · Ctrl+C to stop)
 ```
 
@@ -273,7 +273,7 @@ Commands:
   init        Scaffold a new Bricks project in the...
   list        List all available Bricks in the registry.
   new         Scaffold new Bricks components.
-  playground  Start the Bricks Playground local web UI.
+  playground  Bricks Playground — web UI and headless...
   run         Execute a blueprint.
   serve       Start the Bricks MCP server on stdio...
   store       Blueprint store management.
@@ -412,13 +412,16 @@ Three acts: compose a blueprint, execute it on CRM data, compare Bricks vs raw L
 
 ## Benchmark Scenarios
 
-The playground ships preset scenarios (CRM, support tickets, dataset join, custom) selectable from the web UI:
+The playground ships preset scenarios (CRM, support tickets, dataset join, custom) selectable from the web UI or runnable headlessly via the CLI:
 
 ```bash
-bricks playground   # open the web UI, pick a scenario from the dropdown
+bricks playground                                    # web UI — pick a scenario from the dropdown
+bricks playground run crm_pipeline                   # headless: input data, blueprint, outputs
+bricks playground run crm_pipeline --compare-raw     # add a side-by-side raw-LLM run
+bricks playground run path/to/your_scenario.yaml     # your own scenario, same shape as the bundled YAMLs
 ```
 
-Each scenario runs both BricksEngine and (optionally) raw-LLM side by side. Headless single-shot CLI: `bricks playground run <preset>` (lands in a follow-up PR).
+Each preset runs BricksEngine on the bundled data, prints the composed blueprint, and (optionally) compares against a raw LLM call.
 
 | Scenario | What it proves | Bricks | Raw LLM |
 |----------|---------------|--------|---------|

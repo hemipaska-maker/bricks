@@ -1,4 +1,4 @@
-"""Tests for bricks.playground.web.datasets."""
+"""Tests for bricks.playground.dataset_loader."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from bricks.playground.web.datasets import DatasetLoader, _summarise_data
+from bricks.playground.dataset_loader import DatasetLoader, _summarise_data
 
 
 class TestSummariseData:
