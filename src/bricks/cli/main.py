@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
+from typing import Any
 
 import typer
 
@@ -534,8 +535,17 @@ def _find_free_port(preferred: int, host: str) -> int:
     raise OSError(f"No free port in range [{preferred}, {preferred + 20})")
 
 
-@app.command()
-def playground(
+playground_app = typer.Typer(
+    help="Bricks Playground \u2014 web UI and headless scenario runner.",
+    invoke_without_command=True,
+    no_args_is_help=False,
+)
+app.add_typer(playground_app, name="playground")
+
+
+@playground_app.callback()
+def _playground_root(
+    ctx: typer.Context,
     port: int = typer.Option(8080, "--port", help="Port to bind. Probes for a free port starting here."),
     host: str = typer.Option("127.0.0.1", "--host", help="Host to bind. Use 0.0.0.0 for LAN access."),
     no_browser: bool = typer.Option(False, "--no-browser", help="Skip auto-opening the browser."),
@@ -543,18 +553,23 @@ def playground(
         False, "--force-port", help="Fail if --port is taken instead of probing for a free one."
     ),
 ) -> None:
-    """Start the Bricks Playground local web UI.
+    """Start the Bricks Playground web UI when invoked without a subcommand.
 
     Serves the Playground at ``http://{host}:{port}`` and opens the default
-    browser to it. Ctrl+C shuts down cleanly.
+    browser to it. Ctrl+C shuts down cleanly. Use the ``run`` subcommand for
+    a headless one-shot scenario run.
     """
+    if ctx.invoked_subcommand is not None:
+        # A subcommand (e.g. ``run``) is taking over; don't spin up the server.
+        return
+
     import threading  # noqa: PLC0415
     import webbrowser  # noqa: PLC0415
 
     try:
         import uvicorn  # noqa: PLC0415
 
-        from bricks.playground.web.app import app as playground_app  # noqa: PLC0415
+        from bricks.playground.web.app import app as web_app  # noqa: PLC0415
     except ImportError as exc:
         typer.echo("Error: Playground features require the 'playground' extra.", err=True)
         typer.echo("Install with: pip install bricks[playground]", err=True)
@@ -583,6 +598,114 @@ def playground(
         typer.echo("  (Ctrl+C to stop)")
 
     try:
-        uvicorn.run(playground_app, host=host, port=bound_port, log_level="warning")
+        uvicorn.run(web_app, host=host, port=bound_port, log_level="warning")
     except KeyboardInterrupt:
         typer.echo("\nShutting down.")
+
+
+@playground_app.command("run")
+def playground_run(
+    target: str = typer.Argument(..., help="Preset stem (e.g. 'crm_pipeline') or path to a scenario YAML."),
+    compare_raw: bool = typer.Option(
+        False, "--compare-raw", help="Also run the raw-LLM engine for side-by-side comparison."
+    ),
+    api_key: str = typer.Option(
+        "",
+        "--api-key",
+        help="API key for the LLM provider (BYOK). Reads BRICKS_API_KEY / ANTHROPIC_API_KEY env if empty.",
+    ),
+) -> None:
+    """Run a playground scenario headlessly and print input data, blueprint, outputs.
+
+    Resolves *target* to a YAML path (preset stem under
+    ``bricks/playground/presets/`` or a literal file path), runs the
+    BricksEngine on the bundled data, and (with ``--compare-raw``) the
+    RawLLMEngine alongside it.
+    """
+    import os  # noqa: PLC0415
+
+    try:
+        from bricks.llm.litellm_provider import LiteLLMProvider  # noqa: PLC0415
+        from bricks.playground.engine import BricksEngine, RawLLMEngine  # noqa: PLC0415
+        from bricks.playground.scenario_loader import load_scenario, resolve_preset  # noqa: PLC0415
+    except ImportError as exc:
+        typer.echo("Error: Playground features require the 'playground' extra.", err=True)
+        typer.echo("Install with: pip install bricks[playground,ai]", err=True)
+        raise typer.Exit(code=1) from exc
+
+    try:
+        path = resolve_preset(target)
+    except FileNotFoundError as exc:
+        typer.echo(f"Error: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+
+    scenario = load_scenario(path)
+    raw_data = _resolve_scenario_raw_data(scenario, base_dir=path.parent)
+
+    typer.echo(f"=== INPUT DATA ({scenario.name}) ===")
+    typer.echo(_pretty_truncate(raw_data, max_chars=2000))
+    typer.echo("")
+
+    resolved_key = api_key or os.environ.get("BRICKS_API_KEY", "") or os.environ.get("ANTHROPIC_API_KEY", "")
+    provider = LiteLLMProvider(model=scenario.model, api_key=resolved_key)
+
+    bricks_engine = BricksEngine(provider=provider)
+    bricks_result = bricks_engine.solve(scenario.task_text, raw_data)
+
+    typer.echo("=== COMPOSED BLUEPRINT (bricks) ===")
+    typer.echo((bricks_result.dsl_code or bricks_result.raw_response or "(empty)").rstrip())
+    typer.echo("")
+
+    typer.echo("=== OUTPUTS (bricks) ===")
+    if bricks_result.error:
+        typer.echo(f"ERROR: {bricks_result.error}")
+    else:
+        typer.echo(_pretty_dict(bricks_result.outputs))
+    typer.echo("")
+
+    if compare_raw:
+        raw_engine = RawLLMEngine(provider=provider)
+        raw_result = raw_engine.solve(scenario.task_text, raw_data)
+        typer.echo("=== OUTPUTS (raw_llm) ===")
+        if raw_result.error:
+            typer.echo(f"ERROR: {raw_result.error}")
+        else:
+            typer.echo(_pretty_dict(raw_result.outputs))
+
+
+def _resolve_scenario_raw_data(scenario: Any, *, base_dir: Path) -> str:
+    """Resolve a ScenarioDefinition's data source to a JSON string for the engines."""
+    import json  # noqa: PLC0415
+
+    from bricks.playground.dataset_loader import DatasetLoader  # noqa: PLC0415
+
+    if scenario.data is not None:
+        return json.dumps(scenario.data)
+    if scenario.data_file is not None:
+        ref = Path(scenario.data_file)
+        if not ref.is_absolute():
+            ref = base_dir / ref
+        return ref.read_text(encoding="utf-8")
+    if scenario.dataset_id is not None:
+        ds = DatasetLoader().get_dataset(scenario.dataset_id)
+        if ds is None:
+            typer.echo(f"Error: dataset {scenario.dataset_id!r} not found", err=True)
+            raise typer.Exit(code=1)
+        return json.dumps(ds["data"])
+    typer.echo("Error: scenario has no data source", err=True)
+    raise typer.Exit(code=1)
+
+
+def _pretty_dict(d: dict[str, Any]) -> str:
+    """Render an output dict line-by-line for ADHD-friendly CLI output."""
+    if not d:
+        return "(empty)"
+    width = max(len(str(k)) for k in d)
+    return "\n".join(f"  {k:<{width}}  {v!r}" for k, v in d.items())
+
+
+def _pretty_truncate(text: str, *, max_chars: int) -> str:
+    """Truncate noisy raw data to ``max_chars`` with a marker."""
+    if len(text) <= max_chars:
+        return text
+    return text[:max_chars] + f"\n... (truncated, {len(text) - max_chars} more chars)"

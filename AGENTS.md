@@ -22,7 +22,7 @@ Run Playground:  bricks playground  (local web UI at http://localhost:8080)
 ## Architecture
 - `src/bricks/core/` — engine, context, DSL pipeline
 - `src/bricks/stdlib/` — standard bricks (text, data, logic)
-- `src/bricks/playground/` — web GUI, benchmark runner, FastAPI backend
+- `src/bricks/playground/` — web GUI + FastAPI backend, scenario runner (preset/custom YAML), `bricks playground run` CLI
 - `src/bricks/providers/` — LLM provider adapters (claudecode, anthropic, openai, ollama)
 See docs/architecture.md for detail.
 

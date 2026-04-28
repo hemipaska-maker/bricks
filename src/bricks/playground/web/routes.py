@@ -22,6 +22,7 @@ from fastapi.responses import StreamingResponse
 from bricks import __version__ as _bricks_version
 from bricks.core.hooks import hookimpl as _hookimpl
 from bricks.llm.base import LLMProvider
+from bricks.playground.scenario_loader import _PRESETS_DIR, resolve_preset
 from bricks.playground.web.schemas import (
     EngineResult,
     RunMetadata,
@@ -35,7 +36,6 @@ from bricks.playground.web.schemas import (
 
 router = APIRouter(prefix="/playground")
 
-_PRESETS_DIR = Path(__file__).parent / "presets"
 _UPLOAD_MAX_BYTES = 5 * 1024 * 1024  # 5 MB
 
 
@@ -89,19 +89,6 @@ def _build_provider(provider: str, model: str, api_key: str | None) -> LLMProvid
     )
 
 
-def _preset_path(scenario_id: str) -> Path | None:
-    """Resolve ``scenario_id`` to a YAML file inside ``presets/``.
-
-    Accepts both ``crm-pipeline`` (dashes) and ``crm_pipeline`` (underscores).
-    Returns ``None`` if no match exists.
-    """
-    for sep in (scenario_id, scenario_id.replace("-", "_"), scenario_id.replace("_", "-")):
-        candidate = _PRESETS_DIR / f"{sep}.yaml"
-        if candidate.is_file():
-            return candidate
-    return None
-
-
 def _load_preset_dict(path: Path) -> dict[str, Any]:
     """Parse a preset YAML file into a dict; raise 500 on malformed YAML."""
     try:
@@ -140,9 +127,10 @@ async def list_scenarios() -> list[ScenarioSummary]:
 @router.get("/scenarios/{scenario_id}", response_model=ScenarioDetail)
 async def get_scenario(scenario_id: str) -> ScenarioDetail:
     """Return the full body of a preset scenario."""
-    path = _preset_path(scenario_id)
-    if path is None:
-        raise HTTPException(status_code=404, detail=f"No scenario with id {scenario_id!r}")
+    try:
+        path = resolve_preset(scenario_id)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
     data = _load_preset_dict(path)
 
     # Resolve the data source: inline `data`, else `dataset_id` lookup via
@@ -150,7 +138,7 @@ async def get_scenario(scenario_id: str) -> ScenarioDetail:
     body: Any = data.get("data")
     dataset_id = data.get("dataset_id")
     if body is None and dataset_id:
-        from bricks.playground.web.datasets import DatasetLoader
+        from bricks.playground.dataset_loader import DatasetLoader
 
         loader = DatasetLoader()
         matching = next((ds for ds in loader.list_datasets() if ds.get("id") == dataset_id), None)

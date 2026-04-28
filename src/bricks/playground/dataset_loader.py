@@ -1,7 +1,7 @@
-"""Dataset loader for the Bricks Playground web API.
+"""Dataset loader for the Bricks Playground (web + CLI).
 
-Loads built-in datasets from the ``web/datasets/`` directory and serves them
-via the ``/api/datasets`` endpoint.
+Loads built-in datasets from the ``playground/datasets/`` directory and
+serves them via the web ``/api/datasets`` endpoint or the CLI run command.
 """
 
 from __future__ import annotations
