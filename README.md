@@ -26,9 +26,9 @@ The Playground is a local web UI that runs your task through Bricks against embe
 ```bash
 git clone https://github.com/hemipaska-maker/bricks-ai.git
 cd bricks
-pip install -e ".[stdlib,ai]"
+pip install -e ".[stdlib,ai,playground]"
 export ANTHROPIC_API_KEY=sk-ant-...       # or any supported LLM — see below
-python -m bricks.playground.showcase.run --live --scenario CRM-pipeline
+bricks playground                          # open the web UI at http://localhost:8080
 ```
 
 Here's what you'll see — real results tested across three Claude models:
@@ -49,24 +49,21 @@ Bricks composed one blueprint, reused it 20 times at zero cost. The raw LLM call
 
 Bricks works with any model. Blueprints are model-agnostic — compose with one LLM, execute anywhere.
 
+Set the relevant API key for your provider, then pick the model from the playground's model dropdown (`bricks playground`):
+
 ```bash
 # Anthropic (default)
 export ANTHROPIC_API_KEY=sk-ant-...
-python -m bricks.playground.showcase.run --live --scenario CRM-pipeline
 
 # OpenAI
 export OPENAI_API_KEY=sk-...
-python -m bricks.playground.showcase.run --live --scenario CRM-pipeline --model gpt-4o-mini
 
 # Google Gemini
 export GOOGLE_API_KEY=AIza...
-python -m bricks.playground.showcase.run --live --scenario CRM-pipeline --model gemini/gemini-2.0-flash
 
-# Local with Ollama (free, no API key)
-python -m bricks.playground.showcase.run --live --scenario CRM-pipeline --model ollama/llama3
+# Local with Ollama (free, no API key) — selectable as `ollama/llama3`
 
-# Claude Code Max plan ($0)
-python -m bricks.playground.showcase.run --live --scenario CRM-pipeline --model claudecode
+# Claude Code Max plan ($0) — selectable as `claudecode`
 ```
 
 ---
@@ -415,13 +412,13 @@ Three acts: compose a blueprint, execute it on CRM data, compare Bricks vs raw L
 
 ## Benchmark Scenarios
 
-Run the full benchmark suite:
+The playground ships preset scenarios (CRM, support tickets, dataset join, custom) selectable from the web UI:
 
 ```bash
-python -m bricks.playground.showcase.run --live                         # all scenarios
-python -m bricks.playground.showcase.run --live --scenario CRM-pipeline # single scenario
-python -m bricks.playground.showcase.run --live --scenario TICKET-pipeline  # support tickets
+bricks playground   # open the web UI, pick a scenario from the dropdown
 ```
+
+Each scenario runs both BricksEngine and (optionally) raw-LLM side by side. Headless single-shot CLI: `bricks playground run <preset>` (lands in a follow-up PR).
 
 | Scenario | What it proves | Bricks | Raw LLM |
 |----------|---------------|--------|---------|

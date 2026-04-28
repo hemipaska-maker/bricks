@@ -64,27 +64,11 @@ _FALLBACK_DATA = json.dumps(
 
 
 def _load_data() -> tuple[str, int]:
-    """Return (raw_json_string, expected_active_count).
-
-    Uses the benchmark CRM generator when available; falls back to inline data.
-    """
-    try:
-        from bricks.playground.showcase.crm_generator import generate_crm_task
-
-        task = generate_crm_task(seed=42)
-        raw = task.raw_api_response.strip()
-        if raw.startswith("```"):
-            lines = raw.splitlines()
-            raw = "\n".join(lines[1:-1])
-        data = json.loads(raw)
-        active_count = sum(1 for c in data["customers"] if c["status"] == "active")
-        print(f"  Using benchmark CRM generator: {len(data['customers'])} records")
-        return raw, active_count
-    except ImportError:
-        data = json.loads(_FALLBACK_DATA)
-        active_count = sum(1 for c in data["customers"] if c["status"] == "active")
-        print(f"  bricks.playground not installed — using {len(data['customers'])} inline records")
-        return _FALLBACK_DATA, active_count
+    """Return (raw_json_string, expected_active_count) from inline fallback data."""
+    data = json.loads(_FALLBACK_DATA)
+    active_count = sum(1 for c in data["customers"] if c["status"] == "active")
+    print(f"  Using {len(data['customers'])} inline records")
+    return _FALLBACK_DATA, active_count
 
 
 def run_demo(raw_data: str, expected_active: int) -> None:

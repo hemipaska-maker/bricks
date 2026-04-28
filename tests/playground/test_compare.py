@@ -36,8 +36,8 @@ def test_compare_false_skips_raw_llm(client: TestClient) -> None:
     raw_init = lambda *a, **kw: pytest.fail("RawLLMEngine must not be constructed when compare=False")  # noqa: E731
 
     with (
-        patch("bricks.playground.showcase.engine.BricksEngine.solve", new=bricks_solve),
-        patch("bricks.playground.showcase.engine.RawLLMEngine.__init__", new=raw_init),
+        patch("bricks.playground.engine.BricksEngine.solve", new=bricks_solve),
+        patch("bricks.playground.engine.RawLLMEngine.__init__", new=raw_init),
         patch("bricks.playground.web.routes._build_provider", return_value=object()),
     ):
         r = client.post(
@@ -69,8 +69,8 @@ def test_compare_true_invokes_both_engines(client: TestClient) -> None:
         return _stub_result("raw-result")
 
     with (
-        patch("bricks.playground.showcase.engine.BricksEngine.solve", new=bricks_solve),
-        patch("bricks.playground.showcase.engine.RawLLMEngine.solve", new=raw_solve),
+        patch("bricks.playground.engine.BricksEngine.solve", new=bricks_solve),
+        patch("bricks.playground.engine.RawLLMEngine.solve", new=raw_solve),
         patch("bricks.playground.web.routes._build_provider", return_value=object()),
     ):
         r = client.post(
@@ -123,8 +123,8 @@ def test_compare_true_runs_checks_on_both_engines(client: TestClient) -> None:
         )
 
     with (
-        patch("bricks.playground.showcase.engine.BricksEngine.solve", new=bricks_solve),
-        patch("bricks.playground.showcase.engine.RawLLMEngine.solve", new=raw_solve),
+        patch("bricks.playground.engine.BricksEngine.solve", new=bricks_solve),
+        patch("bricks.playground.engine.RawLLMEngine.solve", new=raw_solve),
         patch("bricks.playground.web.routes._build_provider", return_value=object()),
     ):
         r = client.post(
