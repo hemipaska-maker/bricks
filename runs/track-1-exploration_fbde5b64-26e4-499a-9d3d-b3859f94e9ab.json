@@ -1,0 +1,70 @@
+{
+  "run_id": "fbde5b64-26e4-499a-9d3d-b3859f94e9ab",
+  "track": "track-1-exploration",
+  "timestamp": "2026-04-27T11:59:18.676530+00:00",
+  "meta": {
+    "git_sha": "bf68452ce79c314d5580cbcc539c4726b0f00289",
+    "pip_freeze_hash": "sha256:6c16775dd80c3c235acabff017c536788a014d8dba534fb68363cce9d491ed12",
+    "model": "sonnet",
+    "seed": 42,
+    "runner": "tracks/track-1-exploration/run.py"
+  },
+  "config": {
+    "case_slug": "email-rewrite",
+    "data_size": 1
+  },
+  "bricks": {
+    "success": true,
+    "error": null,
+    "outputs": {
+      "rewritten": "hi support, your product STOPPED WORKING after the last update. I've been a customer for 3 years and this is unacceptable. Fix it ASAP or I'm canceling my subscription. Order #A8821."
+    },
+    "tokens": {
+      "input": 3,
+      "output": 809,
+      "cache_read": 25306,
+      "cache_creation": 4564
+    },
+    "cost_usd": 0.061418,
+    "duration_ms": 22334,
+    "blueprint_yaml": "name: rewrite_email_warmer\ndescription: DSL-generated pipeline with 1 steps\ninputs:\n  email_text: Any\nsteps:\n- name: step_1_clean_whitespace\n  brick: clean_whitespace\n  params:\n    text: ${inputs.email_text}\n  save_as: step_1_clean_whitespace\noutputs_map:\n  rewritten: ${step_1_clean_whitespace.result}\n",
+    "n_llm_calls": 1,
+    "tokens_estimated": false,
+    "engine_cache_hit": false,
+    "engine_api_calls": 1,
+    "bricks_log_signals": [
+      "bricks.ai.composer INFO Composing blueprint for task (187 chars), 102 bricks in pool"
+    ]
+  },
+  "raw_llm": {
+    "success": true,
+    "error": null,
+    "outputs": {
+      "rewritten": "Hello Support Team, I hope you're doing well. I wanted to reach out regarding an issue I've encountered since the most recent update \u2014 unfortunately, the product has stopped working on my end. As a loyal customer of three years, I have always valued your service, so I'm hopeful this can be resolved soon. Could you please look into this at your earliest convenience? I'd really appreciate a prompt response, as I'd love to continue my subscription. For reference, my order number is #A8821. Thank you so much for your help!"
+    },
+    "tokens": {
+      "input": 3,
+      "output": 122,
+      "cache_read": 25306,
+      "cache_creation": 1084
+    },
+    "cost_usd": 0.022493,
+    "duration_ms": 7863,
+    "tokens_estimated": false
+  },
+  "verdict": {
+    "bricks_correct": false,
+    "raw_llm_correct": false,
+    "bricks_per_field_diffs": [
+      {
+        "note": "subjective task \u2014 manual review required"
+      }
+    ],
+    "raw_llm_per_field_diffs": [
+      {
+        "note": "subjective task \u2014 manual review required"
+      }
+    ]
+  },
+  "notes": "counter-case: judgment task"
+}

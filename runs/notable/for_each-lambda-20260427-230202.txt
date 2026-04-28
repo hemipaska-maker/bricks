@@ -1,0 +1,29 @@
+=== LAMBDA SHAPE ===
+getsource failed: could not get source code
+co_name: <lambda>
+co_consts: (None, 'pattern', ('items', 'key', 'value'))
+co_names: ('step', 'filter_dict_list', 'output')
+co_varnames: ('pat',)
+co_freevars: ('msg_dicts',)
+co_cellvars: ()
+dis:
+ 39           0 LOAD_GLOBAL              0 (step)
+              2 LOAD_ATTR                1 (filter_dict_list)
+              4 LOAD_DEREF               0 (msg_dicts)
+              6 LOAD_ATTR                2 (output)
+              8 LOAD_CONST               1 ('pattern')
+             10 LOAD_FAST                0 (pat)
+             12 LOAD_CONST               1 ('pattern')
+             14 BINARY_SUBSCR
+             16 LOAD_CONST               2 (('items', 'key', 'value'))
+             18 CALL_FUNCTION_KW         3
+             20 RETURN_VALUE
+--- traceback ---
+Traceback (most recent call last):
+  File "C:\Users\hemip.LAPTOP-CRSEUI93\Documents\Claude\Projects\Bricks\Code\bench-runs\debug_capture.py", line 61, in _patched_for_each
+    return _orig_for_each(items, do, on_error=on_error)
+  File "C:\Users\hemip.LAPTOP-CRSEUI93\Documents\Claude\Projects\Bricks\Code\bench-runs\src\bricks\core\dsl.py", line 311, in for_each
+    raise ValueError(
+ValueError: for_each: could not extract brick name from do= callable. Ensure the lambda calls exactly one step.brick_name(...).
+  Inner lambda raised: TypeError: 'Node' object is not subscriptable
+=== END ===

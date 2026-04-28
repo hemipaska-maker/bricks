@@ -1,0 +1,63 @@
+{
+  "run_id": "b24fb996-ce12-4484-8d4a-daa4de081afb",
+  "track": "track-1-exploration",
+  "timestamp": "2026-04-27T12:31:09.573273+00:00",
+  "meta": {
+    "git_sha": "bf68452ce79c314d5580cbcc539c4726b0f00289",
+    "pip_freeze_hash": "sha256:6c16775dd80c3c235acabff017c536788a014d8dba534fb68363cce9d491ed12",
+    "model": "sonnet",
+    "seed": 42,
+    "runner": "tracks/track-1-exploration/run.py"
+  },
+  "config": {
+    "case_slug": "squared-sum",
+    "data_size": 50
+  },
+  "bricks": {
+    "success": true,
+    "error": null,
+    "outputs": {
+      "sum": 123300.11245423002
+    },
+    "tokens": {
+      "input": 3,
+      "output": 91,
+      "cache_read": 25306,
+      "cache_creation": 4516
+    },
+    "cost_usd": 0.043168,
+    "duration_ms": 7731,
+    "blueprint_yaml": "name: sum_of_squares\ndescription: DSL-generated pipeline with 3 steps\ninputs:\n  values: Any\nsteps:\n- name: step_1_for_each\n  brick: __for_each__\n  params:\n    items: ${inputs.values}\n    do_brick: power\n    item_kwarg: base\n    static_kwargs:\n      exponent: 2\n    on_error: fail\n  save_as: step_1_for_each\n- name: step_2_map_values\n  brick: map_values\n  params:\n    items: ${step_1_for_each.result}\n    key: result\n  save_as: step_2_map_values\n- name: step_3_reduce_sum\n  brick: reduce_sum\n  params:\n    values: ${step_2_map_values.result}\n  save_as: step_3_reduce_sum\noutputs_map:\n  sum: ${step_3_reduce_sum.result}\n",
+    "n_llm_calls": 1,
+    "tokens_estimated": false,
+    "engine_cache_hit": false,
+    "engine_api_calls": 1,
+    "bricks_log_signals": [
+      "bricks.ai.composer INFO Composing blueprint for task (100 chars), 102 bricks in pool"
+    ]
+  },
+  "raw_llm": {
+    "success": false,
+    "error": null,
+    "outputs": {
+      "__parse_error__": true,
+      "raw": "Computing each value\u00b2 and summing manually:\n\n| # | Value | Squared |\n|---|-------|---------|\n| 1 | 56.4915 | 3191.2896 |\n| 2 | 58.885 | 3467.4432 |\n| 3 | 12.016 | 144.3843 |\n| 4 | 83.8331 | 7027.9887 |\n| 5 | 5.8708 | 34.4663 |\n| 6 | 86.2079 | 7431.8020 |\n| 7 | 5.5824 | 31.1632 |\n| 8 | 60.594 | 3671.6328 |\n| 9 | 41.1552 | 1693.7505 |\n| 10 | 17.1054 | 292.5947 |\n| 11 | 1.7695 | 3.1311 |\n| 12 | 90.8208 | 8248.4177 |\n| 13 | 2.8039 | 7.8619 |\n| 14 | 60.8166 | 3698.6588 |\n| 15 | 0.6801 | 0.4625 |\n| 16 | 2.9715 | 8.8298 |\n| 17 | 15.4792 | 239.6056 |\n| 18 | 37.6842 | 1420.0989 |\n| 19 | 10.7803 | 116.2149 |\n| 20 | 95.457 | 9112.0388 |\n| 21 | 11.1523 | 124.3738 |\n| 22 | 31.9978 | 1023.8592 |\n| 23 | 36.6949 | 1346.5157 |\n| 24 | 96.3444 | 9282.2434 |\n| 25 | 4.3743 | 19.1345 |\n| 26 | 8.2313 | 67.7543 |\n| 27 | 16.9355 | 286.8112 |\n| 28 | 4.6144 | 21.2927 |\n| 29 | 1.1358 | 1.2900 |\n| 30 | 78.7965 | 6208.8884 |\n| 31 | 83.6285 | 6993.7260 |\n| 32 | 46.1406 | 2128.9550 |\n| 33 | 31.2371 | 975.7464 |\n| 34 | 0.8751 | 0.7658 |\n| 35 | 79.9197 | 6387.1584 |\n| 36 | 45.2426 | 2046.8929 |\n| 37 | 5.6448 | 31.8638 |\n| 38 | 76.8527 | 5906.3375 |\n| 39 | 10.9475 | 119.8478 |\n| 40 | 46.1881 | 2133.3406 |\n| 41 | 81.9701 | 6719.0973 |\n| 42 | 74.9047 | 5610.7141 |\n| 43 | 15.7835 | 249.1189 |\n| 44 | 31.2154 | 974.4012 |\n| 45 | 1.681 | 2.8258 |\n| 46 | 50.9868 | 2599.6538 |\n| 47 | 80.0607 | 6409.7157 |\n| 48 | 63.9475 | 4089.2828 |\n| 49 | 25.8927 | 670.4319 |\n| 50 | 32.0348 | 1026.2284 |\n\n**Grouped sums:**\n- Items 1\u201310: 26,986.5153\n- Items 11\u201320: 22,855.3202\n- Items 21\u201330: 18,382.1632\n- Items 31\u201340: 26,724.6341\n- Items 41\u201350: 28,351.4697\n\n**Total:** 26986.5153 + 22855.3202 + 18382.1632 + 26724.6341 + 28351.4697 = **123,300.1025**\n\n```json\n{\"sum\": 123300.1025}\n```"
+    },
+    "tokens": {
+      "input": 4,
+      "output": 16711,
+      "cache_read": 51905,
+      "cache_creation": 1811
+    },
+    "cost_usd": 0.45506625,
+    "duration_ms": 196548,
+    "tokens_estimated": false
+  },
+  "verdict": {
+    "bricks_correct": true,
+    "raw_llm_correct": false,
+    "bricks_per_field_diffs": [],
+    "raw_llm_per_field_diffs": []
+  },
+  "notes": "reliability sweep"
+}

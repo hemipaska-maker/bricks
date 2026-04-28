@@ -1,0 +1,55 @@
+{
+  "run_id": "93a9ec63-a24a-4f1c-9a3e-04e83652649d",
+  "track": "track-1-exploration",
+  "timestamp": "2026-04-22T10:29:49.788710+00:00",
+  "meta": {
+    "git_sha": "bf68452ce79c314d5580cbcc539c4726b0f00289",
+    "pip_freeze_hash": "sha256:6c16775dd80c3c235acabff017c536788a014d8dba534fb68363cce9d491ed12",
+    "model": "sonnet",
+    "seed": 42,
+    "runner": "tracks/track-1-exploration/run.py"
+  },
+  "config": {
+    "case_slug": "sum-only",
+    "data_size": 5000
+  },
+  "bricks": {
+    "success": true,
+    "error": null,
+    "outputs": {
+      "sum": 166073.85610000006
+    },
+    "tokens": {
+      "input": 3,
+      "output": 105,
+      "cache_read": 29658,
+      "cache_creation": 0
+    },
+    "cost_usd": 0.017469,
+    "duration_ms": 7159,
+    "blueprint_yaml": "name: sum_values\ndescription: DSL-generated pipeline with 1 steps\ninputs:\n  values: Any\nsteps:\n- name: step_1_reduce_sum\n  brick: reduce_sum\n  params:\n    values: ${inputs.values}\n  save_as: step_1_reduce_sum\noutputs_map:\n  sum: ${step_1_reduce_sum.result}\n",
+    "n_llm_calls": 1,
+    "tokens_estimated": false
+  },
+  "raw_llm": {
+    "success": false,
+    "error": "TimeoutExpired: Command '['claude', '-p', '--output-format', 'json', '--model', 'sonnet']' timed out after 600 seconds",
+    "outputs": {},
+    "tokens": {
+      "input": 0,
+      "output": 0,
+      "cache_read": 0,
+      "cache_creation": 0
+    },
+    "cost_usd": 0.0,
+    "duration_ms": 600059,
+    "tokens_estimated": false
+  },
+  "verdict": {
+    "bricks_correct": true,
+    "raw_llm_correct": false,
+    "bricks_per_field_diffs": [],
+    "raw_llm_per_field_diffs": []
+  },
+  "notes": "sweep N=5000"
+}

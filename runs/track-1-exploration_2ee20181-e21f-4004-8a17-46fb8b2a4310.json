@@ -1,0 +1,55 @@
+{
+  "run_id": "2ee20181-e21f-4004-8a17-46fb8b2a4310",
+  "track": "track-1-exploration",
+  "timestamp": "2026-04-22T07:18:03.619435+00:00",
+  "meta": {
+    "git_sha": "20dc0cc607f652578ba7617988683dc357eb802d",
+    "pip_freeze_hash": "sha256:5416bf3565a984a11e7249e1aa504c10a21af092fff4e27bd996b7359ca9f0e9",
+    "model": "sonnet",
+    "seed": 42,
+    "runner": "tracks/track-1-exploration/run.py"
+  },
+  "config": {
+    "case_slug": "count-only",
+    "data_size": 50
+  },
+  "bricks": {
+    "success": false,
+    "error": "OrchestratorError: Blueprint execution failed for task 'Given a list of numbers under inputs.values, return {\"count\": N} where N is the number of values in the list.': Brick 'count_dict_list' failed at step 'step_1_count_dict_list': object of type 'NoneType' has no len()\nTraceback (most recent call last):\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\core\\engine.py\", line 237, in _execute_brick_step\n    result = callable_(**resolved_params)\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\stdlib\\data_transformation.py\", line 472, in count_dict_list\n    return {\"result\": len(items)}\nTypeError: object of type 'NoneType' has no len()\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\orchestrator\\runtime.py\", line 155, in execute\n    execution = self._engine.run(blueprint, mapped, verbosity=verbosity)\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\core\\engine.py\", line 112, in run\n    return self._execute(blueprint, inputs, depth=0, verbosity=verbosity)\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\core\\engine.py\", line 149, in _execute\n    result, step_result = self._execute_step(\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\core\\engine.py\", line 205, in _execute_step\n    return self._execute_brick_step(step, resolved_params, completed, verbosity)\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\core\\engine.py\", line 250, in _execute_brick_step\n    raise BrickExecutionError(\nbricks.core.exceptions.BrickExecutionError: Brick 'count_dict_list' failed at step 'step_1_count_dict_list': object of type 'NoneType' has no len()\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\tracks\\track-1-exploration\\run.py\", line 268, in _run_bricks\n    result = engine.execute(\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\api.py\", line 217, in execute\n    return self._orchestrator.execute(task, inputs, verbose=verbose)\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\orchestrator\\runtime.py\", line 157, in execute\n    raise OrchestratorError(f\"Blueprint execution failed for task {task_text!r}: {exc}\") from exc\nbricks.core.exceptions.OrchestratorError: Blueprint execution failed for task 'Given a list of numbers under inputs.values, return {\"count\": N} where N is the number of values in the list.': Brick 'count_dict_list' failed at step 'step_1_count_dict_list': object of type 'NoneType' has no len()\n",
+    "outputs": {},
+    "tokens": {
+      "input": 3,
+      "output": 110,
+      "cache_read": 25287,
+      "cache_creation": 4358
+    },
+    "cost_usd": 0.042645999999999996,
+    "duration_ms": 6960,
+    "blueprint_yaml": "",
+    "n_llm_calls": 1,
+    "tokens_estimated": false
+  },
+  "raw_llm": {
+    "success": true,
+    "error": null,
+    "outputs": {
+      "count": 50
+    },
+    "tokens": {
+      "input": 3,
+      "output": 9,
+      "cache_read": 25287,
+      "cache_creation": 1134
+    },
+    "cost_usd": 0.019971000000000003,
+    "duration_ms": 6042,
+    "tokens_estimated": false
+  },
+  "verdict": {
+    "bricks_correct": false,
+    "raw_llm_correct": true,
+    "bricks_per_field_diffs": [],
+    "raw_llm_per_field_diffs": []
+  },
+  "notes": "probe: simplest count @20dc0cc"
+}

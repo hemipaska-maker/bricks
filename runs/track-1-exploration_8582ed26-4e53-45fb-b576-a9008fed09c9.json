@@ -1,0 +1,90 @@
+{
+  "run_id": "8582ed26-4e53-45fb-b576-a9008fed09c9",
+  "track": "track-1-exploration",
+  "timestamp": "2026-04-21T08:50:43.929525+00:00",
+  "meta": {
+    "git_sha": "d80c190ab098bf177cbafaa4ae18113d828a8121",
+    "pip_freeze_hash": "sha256:7fb7736448a5ed96bb58f19efbb58b13f21274f13b8e3e856bdf253c539f4907",
+    "model": "sonnet",
+    "seed": 42,
+    "runner": "tracks/track-1-exploration/run.py"
+  },
+  "config": {
+    "case_slug": "log-analysis",
+    "data_size": 200
+  },
+  "bricks": {
+    "success": false,
+    "error": "ComposerError: API call failed: Command '['claude', '-p', '--output-format', 'json', '--model', 'sonnet']' timed out after 120 seconds",
+    "outputs": {},
+    "tokens": {
+      "input": 0,
+      "output": 0,
+      "cache_read": 0,
+      "cache_creation": 0
+    },
+    "cost_usd": 0,
+    "duration_ms": 120103,
+    "blueprint_yaml": "",
+    "n_llm_calls": 0,
+    "tokens_estimated": false
+  },
+  "raw_llm": {
+    "success": true,
+    "error": null,
+    "outputs": {
+      "severity_counts": {
+        "INFO": 153,
+        "WARN": 25,
+        "ERROR": 11,
+        "DEBUG": 5
+      },
+      "top_error_patterns": [
+        {
+          "pattern": "Connection refused to upstream",
+          "count": 3
+        },
+        {
+          "pattern": "Invalid JWT signature",
+          "count": 3
+        },
+        {
+          "pattern": "Timeout after 30s calling /api/users",
+          "count": 2
+        }
+      ]
+    },
+    "tokens": {
+      "input": 3,
+      "output": 11093,
+      "cache_read": 25271,
+      "cache_creation": 7465
+    },
+    "cost_usd": 0.33663175,
+    "duration_ms": 110175,
+    "tokens_estimated": false
+  },
+  "verdict": {
+    "bricks_correct": false,
+    "raw_llm_correct": false,
+    "bricks_per_field_diffs": [],
+    "raw_llm_per_field_diffs": [
+      {
+        "field": "severity_counts",
+        "expected": {
+          "INFO": 157,
+          "WARN": 25,
+          "ERROR": 11,
+          "DEBUG": 5
+        },
+        "got": {
+          "INFO": 153,
+          "WARN": 25,
+          "ERROR": 11,
+          "DEBUG": 5
+        }
+      }
+    ]
+  },
+  "notes": "first smoke run post-#49"
+}

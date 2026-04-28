@@ -1,0 +1,142 @@
+{
+  "run_id": "a1287c47-d861-4216-ac29-706112e8e2c3",
+  "track": "track-1-exploration",
+  "timestamp": "2026-04-27T12:36:58.819091+00:00",
+  "meta": {
+    "git_sha": "bf68452ce79c314d5580cbcc539c4726b0f00289",
+    "pip_freeze_hash": "sha256:6c16775dd80c3c235acabff017c536788a014d8dba534fb68363cce9d491ed12",
+    "model": "sonnet",
+    "seed": 42,
+    "runner": "tracks/track-1-exploration/run.py"
+  },
+  "config": {
+    "case_slug": "string-lengths",
+    "data_size": 5
+  },
+  "bricks": {
+    "success": true,
+    "error": null,
+    "outputs": {
+      "lengths": [
+        {
+          "result": {
+            "words": 1,
+            "chars": 5
+          }
+        },
+        {
+          "result": {
+            "words": 1,
+            "chars": 6
+          }
+        },
+        {
+          "result": {
+            "words": 1,
+            "chars": 3
+          }
+        },
+        {
+          "result": {
+            "words": 1,
+            "chars": 9
+          }
+        },
+        {
+          "result": {
+            "words": 1,
+            "chars": 4
+          }
+        }
+      ]
+    },
+    "tokens": {
+      "input": 3,
+      "output": 52,
+      "cache_read": 25306,
+      "cache_creation": 4516
+    },
+    "cost_usd": 0.042193,
+    "duration_ms": 6746,
+    "blueprint_yaml": "name: compute_string_lengths\ndescription: DSL-generated pipeline with 1 steps\ninputs:\n  strings: Any\nsteps:\n- name: step_1_for_each\n  brick: __for_each__\n  params:\n    items: ${inputs.strings}\n    do_brick: count_words_chars\n    item_kwarg: text\n    static_kwargs: {}\n    on_error: fail\n  save_as: step_1_for_each\noutputs_map:\n  lengths: ${step_1_for_each.result}\n",
+    "n_llm_calls": 1,
+    "tokens_estimated": false,
+    "engine_cache_hit": false,
+    "engine_api_calls": 1,
+    "bricks_log_signals": [
+      "bricks.ai.composer INFO Composing blueprint for task (108 chars), 102 bricks in pool"
+    ]
+  },
+  "raw_llm": {
+    "success": true,
+    "error": null,
+    "outputs": {
+      "lengths": [
+        5,
+        6,
+        3,
+        9,
+        4
+      ]
+    },
+    "tokens": {
+      "input": 3,
+      "output": 21,
+      "cache_read": 25306,
+      "cache_creation": 1021
+    },
+    "cost_usd": 0.01957425,
+    "duration_ms": 5828,
+    "tokens_estimated": false
+  },
+  "verdict": {
+    "bricks_correct": false,
+    "raw_llm_correct": true,
+    "bricks_per_field_diffs": [
+      {
+        "field": "lengths",
+        "expected": [
+          5,
+          6,
+          3,
+          9,
+          4
+        ],
+        "got": [
+          {
+            "result": {
+              "words": 1,
+              "chars": 5
+            }
+          },
+          {
+            "result": {
+              "words": 1,
+              "chars": 6
+            }
+          },
+          {
+            "result": {
+              "words": 1,
+              "chars": 3
+            }
+          },
+          {
+            "result": {
+              "words": 1,
+              "chars": 9
+            }
+          },
+          {
+            "result": {
+              "words": 1,
+              "chars": 4
+            }
+          }
+        ]
+      }
+    ],
+    "raw_llm_per_field_diffs": []
+  },
+  "notes": "reliability sweep"
+}

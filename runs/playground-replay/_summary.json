@@ -1,0 +1,69 @@
+[
+  {
+    "id": "crm-pipeline",
+    "bricks_error": "",
+    "bricks_outputs_keys": [
+      "active_count",
+      "total_active_revenue",
+      "avg_active_revenue"
+    ],
+    "bricks_dsl_present": true,
+    "raw_outputs_keys": [
+      "active_count",
+      "total_active_revenue",
+      "avg_active_revenue"
+    ],
+    "raw_error": "",
+    "elapsed_ms": 29688
+  },
+  {
+    "id": "cross-dataset-join",
+    "bricks_error": "",
+    "bricks_outputs_keys": [
+      "basic_revenue",
+      "pro_revenue",
+      "enterprise_revenue",
+      "total_completed"
+    ],
+    "bricks_dsl_present": true,
+    "raw_outputs_keys": [
+      "basic_revenue",
+      "pro_revenue",
+      "enterprise_revenue",
+      "total_completed"
+    ],
+    "raw_error": "",
+    "elapsed_ms": 62890
+  },
+  {
+    "id": "custom-example",
+    "bricks_error": "API call failed: Command '['claude', '-p', '--output-format', 'json', '--model', 'sonnet']' timed out after 120 seconds",
+    "bricks_outputs_keys": [],
+    "bricks_dsl_present": false,
+    "raw_outputs_keys": [
+      "available_count",
+      "total_value"
+    ],
+    "raw_error": "",
+    "elapsed_ms": 127547
+  },
+  {
+    "id": "ticket-pipeline",
+    "bricks_error": "",
+    "bricks_outputs_keys": [
+      "open_high_count",
+      "billing_count",
+      "technical_count",
+      "general_count"
+    ],
+    "bricks_dsl_present": true,
+    "raw_outputs_keys": [
+      "open_high_count",
+      "billing_count",
+      "technical_count",
+      "general_count"
+    ],
+    "raw_error": "",
+    "elapsed_ms": 25313
+  }
+]

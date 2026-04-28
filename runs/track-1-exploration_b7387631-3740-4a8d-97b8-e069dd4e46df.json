@@ -1,0 +1,68 @@
+{
+  "run_id": "b7387631-3740-4a8d-97b8-e069dd4e46df",
+  "track": "track-1-exploration",
+  "timestamp": "2026-04-27T12:38:15.345101+00:00",
+  "meta": {
+    "git_sha": "bf68452ce79c314d5580cbcc539c4726b0f00289",
+    "pip_freeze_hash": "sha256:6c16775dd80c3c235acabff017c536788a014d8dba534fb68363cce9d491ed12",
+    "model": "sonnet",
+    "seed": 42,
+    "runner": "tracks/track-1-exploration/run.py"
+  },
+  "config": {
+    "case_slug": "sort-asc-unique",
+    "data_size": 10
+  },
+  "bricks": {
+    "success": false,
+    "error": "OrchestratorError: Blueprint execution failed for task 'Given a list of integers under inputs.values, deduplicate then sort ascending, return {\"unique_sorted\": [...]}.': Brick 'sort_dict_list' failed at step 'step_2_sort_dict_list': 'int' object has no attribute 'get'\nTraceback (most recent call last):\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\core\\engine.py\", line 237, in _execute_brick_step\n    result = callable_(**resolved_params)\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\stdlib\\data_transformation.py\", line 185, in sort_dict_list\n    return {\"result\": sorted(items, key=lambda x: x.get(key, 0), reverse=reverse)}\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\stdlib\\data_transformation.py\", line 185, in <lambda>\n    return {\"result\": sorted(items, key=lambda x: x.get(key, 0), reverse=reverse)}\nAttributeError: 'int' object has no attribute 'get'\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\orchestrator\\runtime.py\", line 155, in execute\n    execution = self._engine.run(blueprint, mapped, verbosity=verbosity)\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\core\\engine.py\", line 112, in run\n    return self._execute(blueprint, inputs, depth=0, verbosity=verbosity)\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\core\\engine.py\", line 149, in _execute\n    result, step_result = self._execute_step(\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\core\\engine.py\", line 205, in _execute_step\n    return self._execute_brick_step(step, resolved_params, completed, verbosity)\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\core\\engine.py\", line 250, in _execute_brick_step\n    raise BrickExecutionError(\nbricks.core.exceptions.BrickExecutionError: Brick 'sort_dict_list' failed at step 'step_2_sort_dict_list': 'int' object has no attribute 'get'\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\tracks\\track-1-exploration\\run.py\", line 544, in _run_bricks\n    result = engine.execute(\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\api.py\", line 224, in execute\n    return self._orchestrator.execute(task, inputs, verbose=verbose)\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\orchestrator\\runtime.py\", line 157, in execute\n    raise OrchestratorError(f\"Blueprint execution failed for task {task_text!r}: {exc}\") from exc\nbricks.core.exceptions.OrchestratorError: Blueprint execution failed for task 'Given a list of integers under inputs.values, deduplicate then sort ascending, return {\"unique_sorted\": [...]}.': Brick 'sort_dict_list' failed at step 'step_2_sort_dict_list': 'int' object has no attribute 'get'\n",
+    "outputs": {},
+    "tokens": {
+      "input": 3,
+      "output": 71,
+      "cache_read": 25306,
+      "cache_creation": 4520
+    },
+    "cost_usd": 0.042692999999999995,
+    "duration_ms": 7138,
+    "blueprint_yaml": "",
+    "n_llm_calls": 1,
+    "tokens_estimated": false,
+    "engine_cache_hit": null,
+    "engine_api_calls": null,
+    "bricks_log_signals": [
+      "bricks.ai.composer INFO Composing blueprint for task (111 chars), 102 bricks in pool"
+    ]
+  },
+  "raw_llm": {
+    "success": true,
+    "error": null,
+    "outputs": {
+      "unique_sorted": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        9
+      ]
+    },
+    "tokens": {
+      "input": 3,
+      "output": 52,
+      "cache_read": 25306,
+      "cache_creation": 1032
+    },
+    "cost_usd": 0.020418,
+    "duration_ms": 6220,
+    "tokens_estimated": false
+  },
+  "verdict": {
+    "bricks_correct": false,
+    "raw_llm_correct": true,
+    "bricks_per_field_diffs": [],
+    "raw_llm_per_field_diffs": []
+  },
+  "notes": "reliability sweep"
+}

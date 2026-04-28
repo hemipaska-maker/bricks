@@ -1,0 +1,65 @@
+{
+  "run_id": "57d235ea-1775-4b0d-8a14-07b78019466a",
+  "track": "track-1-exploration",
+  "timestamp": "2026-04-22T09:55:40.496454+00:00",
+  "meta": {
+    "git_sha": "bf68452ce79c314d5580cbcc539c4726b0f00289",
+    "pip_freeze_hash": "sha256:6c16775dd80c3c235acabff017c536788a014d8dba534fb68363cce9d491ed12",
+    "model": "sonnet",
+    "seed": 42,
+    "runner": "tracks/track-1-exploration/run.py"
+  },
+  "config": {
+    "case_slug": "numeric-stats",
+    "data_size": 50
+  },
+  "bricks": {
+    "success": true,
+    "error": null,
+    "outputs": {
+      "sum": 1922.4355,
+      "mean": 38.44871,
+      "min": 0.6801,
+      "max": 96.3444,
+      "count": 50.0
+    },
+    "tokens": {
+      "input": 4,
+      "output": 4802,
+      "cache_read": 55022,
+      "cache_creation": 9063
+    },
+    "cost_usd": 0.20422475,
+    "duration_ms": 75308,
+    "blueprint_yaml": "name: compute_statistics\ndescription: DSL-generated pipeline with 7 steps\ninputs:\n  values: Any\nsteps:\n- name: step_1_for_each\n  brick: __for_each__\n  params:\n    items: ${inputs.values}\n    do_brick: set_dict_field\n    item_kwarg: value\n    static_kwargs:\n      data: {}\n      field: v\n    on_error: fail\n  save_as: step_1_for_each\n- name: step_2_map_values\n  brick: map_values\n  params:\n    items: ${step_1_for_each.result}\n    key: result\n  save_as: step_2_map_values\n- name: step_3_calculate_aggregates\n  brick: calculate_aggregates\n  params:\n    items: ${step_2_map_values.result}\n    field: v\n    operation: min\n  save_as: step_3_calculate_aggregates\n- name: step_4_calculate_aggregates\n  brick: calculate_aggregates\n  params:\n    items: ${step_2_map_values.result}\n    field: v\n    operation: max\n  save_as: step_4_calculate_aggregates\n- name: step_5_calculate_aggregates\n  brick: calculate_aggregates\n  params:\n    items: ${step_2_map_values.result}\n    field: v\n    operation: sum\n  save_as: step_5_calculate_aggregates\n- name: step_6_calculate_aggregates\n  brick: calculate_aggregates\n  params:\n    items: ${step_2_map_values.result}\n    field: v\n    operation: count\n  save_as: step_6_calculate_aggregates\n- name: step_7_divide\n  brick: divide\n  params:\n    a: ${step_5_calculate_aggregates.result}\n    b: ${step_6_calculate_aggregates.result}\n  save_as: step_7_divide\noutputs_map:\n  sum: ${step_5_calculate_aggregates.result}\n  mean: ${step_7_divide.result}\n  min: ${step_3_calculate_aggregates.result}\n  max: ${step_4_calculate_aggregates.result}\n  count: ${step_6_calculate_aggregates.result}\n",
+    "n_llm_calls": 1,
+    "tokens_estimated": false
+  },
+  "raw_llm": {
+    "success": true,
+    "error": null,
+    "outputs": {
+      "sum": 1922.4355,
+      "mean": 38.44871,
+      "min": 0.6801,
+      "max": 96.3444,
+      "count": 50
+    },
+    "tokens": {
+      "input": 3,
+      "output": 1824,
+      "cache_read": 25300,
+      "cache_creation": 1196
+    },
+    "cost_usd": 0.06574,
+    "duration_ms": 22141,
+    "tokens_estimated": false
+  },
+  "verdict": {
+    "bricks_correct": true,
+    "raw_llm_correct": true,
+    "bricks_per_field_diffs": [],
+    "raw_llm_per_field_diffs": []
+  },
+  "notes": "post-#66 retry"
+}

@@ -1,0 +1,59 @@
+{
+  "run_id": "a782ccb3-be3b-4796-9fdf-dc83abf5394b",
+  "track": "track-1-exploration",
+  "timestamp": "2026-04-22T06:10:46.070408+00:00",
+  "meta": {
+    "git_sha": "1c203b83d4b7da1335584bea6e8b3188b2c9c1a8",
+    "pip_freeze_hash": "sha256:89372cbae78de389f5889e67bd9de98d72aac4a2b7d5650591caa5a3697401db",
+    "model": "sonnet",
+    "seed": 42,
+    "runner": "tracks/track-1-exploration/run.py"
+  },
+  "config": {
+    "case_slug": "numeric-stats",
+    "data_size": 50
+  },
+  "bricks": {
+    "success": false,
+    "error": "OrchestratorError: Blueprint execution failed for task 'Given a list of numbers under inputs.values, return a dict with keys sum, mean, min, max, count. sum is the arithmetic sum, mean is sum divided by count, min and max are the smallest and largest values, count is the number of values. All as numbers.': Brick not found: '__for_each__'\nTraceback (most recent call last):\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\orchestrator\\runtime.py\", line 155, in execute\n    execution = self._engine.run(blueprint, mapped, verbosity=verbosity)\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\core\\engine.py\", line 103, in run\n    return self._execute(blueprint, inputs, depth=0, verbosity=verbosity)\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\core\\engine.py\", line 140, in _execute\n    result, step_result = self._execute_step(\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\core\\engine.py\", line 196, in _execute_step\n    return self._execute_brick_step(step, resolved_params, completed, verbosity)\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\core\\engine.py\", line 218, in _execute_brick_step\n    callable_, meta = self._registry.get(brick_name)\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\core\\registry.py\", line 50, in get\n    raise BrickNotFoundError(name)\nbricks.core.exceptions.BrickNotFoundError: Brick not found: '__for_each__'\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"c:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\tracks\\track-1-exploration\\run.py\", line 218, in _run_bricks\n    result = engine.execute(\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\api.py\", line 217, in execute\n    return self._orchestrator.execute(task, inputs, verbose=verbose)\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\orchestrator\\runtime.py\", line 157, in execute\n    raise OrchestratorError(f\"Blueprint execution failed for task {task_text!r}: {exc}\") from exc\nbricks.core.exceptions.OrchestratorError: Blueprint execution failed for task 'Given a list of numbers under inputs.values, return a dict with keys sum, mean, min, max, count. sum is the arithmetic sum, mean is sum divided by count, min and max are the smallest and largest values, count is the number of values. All as numbers.': Brick not found: '__for_each__'\n",
+    "outputs": {},
+    "tokens": {
+      "input": 3,
+      "output": 1645,
+      "cache_read": 21521,
+      "cache_creation": 8016
+    },
+    "cost_usd": 0.10200050000000001,
+    "duration_ms": 27006,
+    "blueprint_yaml": "",
+    "n_llm_calls": 1,
+    "tokens_estimated": false
+  },
+  "raw_llm": {
+    "success": true,
+    "error": null,
+    "outputs": {
+      "sum": 1922.4355,
+      "mean": 38.44871,
+      "min": 0.6801,
+      "max": 96.3444,
+      "count": 50
+    },
+    "tokens": {
+      "input": 3,
+      "output": 1931,
+      "cache_read": 25242,
+      "cache_creation": 1196
+    },
+    "cost_usd": 0.068386,
+    "duration_ms": 19727,
+    "tokens_estimated": false
+  },
+  "verdict": {
+    "bricks_correct": false,
+    "raw_llm_correct": true,
+    "bricks_per_field_diffs": [],
+    "raw_llm_per_field_diffs": []
+  },
+  "notes": "post-utf8-fix"
+}

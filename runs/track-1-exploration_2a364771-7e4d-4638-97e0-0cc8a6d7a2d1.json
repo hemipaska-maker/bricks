@@ -1,0 +1,95 @@
+{
+  "run_id": "2a364771-7e4d-4638-97e0-0cc8a6d7a2d1",
+  "track": "track-1-exploration",
+  "timestamp": "2026-04-27T11:11:11.850400+00:00",
+  "meta": {
+    "git_sha": "bf68452ce79c314d5580cbcc539c4726b0f00289",
+    "pip_freeze_hash": "sha256:6c16775dd80c3c235acabff017c536788a014d8dba534fb68363cce9d491ed12",
+    "model": "sonnet",
+    "seed": 42,
+    "runner": "tracks/track-1-exploration/run.py"
+  },
+  "config": {
+    "case_slug": "log-analysis",
+    "data_size": 200
+  },
+  "bricks": {
+    "success": false,
+    "error": "ValueError: for_each: could not extract brick name from do= callable. Ensure the lambda calls exactly one step.brick_name(...).\n  Inner lambda raised: TypeError: 'Node' object is not subscriptable\nTraceback (most recent call last):\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\tracks\\track-1-exploration\\run.py\", line 294, in _run_bricks\n    result = engine.execute(\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\api.py\", line 224, in execute\n    return self._orchestrator.execute(task, inputs, verbose=verbose)\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\orchestrator\\runtime.py\", line 138, in execute\n    compose_result = self._composer.compose(\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\ai\\composer.py\", line 410, in compose\n    flow_def = self._parse_dsl_response(last.yaml_text)\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\debug_capture.py\", line 47, in _patched_parse\n    return _orig_parse(self, raw_code)\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\ai\\composer.py\", line 722, in _parse_dsl_response\n    exec(code, namespace)  # noqa: S102 \u2014 safe: AST-validated above\n  File \"<string>\", line 2, in <module>\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\core\\dsl.py\", line 604, in flow\n    return_value = func(**mock_args)\n  File \"<string>\", line 39, in analyze_log_lines\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\debug_capture.py\", line 61, in _patched_for_each\n    return _orig_for_each(items, do, on_error=on_error)\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\core\\dsl.py\", line 311, in for_each\n    raise ValueError(\nValueError: for_each: could not extract brick name from do= callable. Ensure the lambda calls exactly one step.brick_name(...).\n  Inner lambda raised: TypeError: 'Node' object is not subscriptable\n",
+    "outputs": {},
+    "tokens": {
+      "input": 3,
+      "output": 26653,
+      "cache_read": 25306,
+      "cache_creation": 4716
+    },
+    "cost_usd": 0.708468,
+    "duration_ms": 415637,
+    "blueprint_yaml": "",
+    "n_llm_calls": 1,
+    "tokens_estimated": false,
+    "engine_cache_hit": null,
+    "engine_api_calls": null,
+    "bricks_log_signals": [
+      "bricks.ai.composer INFO Composing blueprint for task (482 chars), 102 bricks in pool"
+    ]
+  },
+  "raw_llm": {
+    "success": true,
+    "error": null,
+    "outputs": {
+      "severity_counts": {
+        "INFO": 153,
+        "WARN": 25,
+        "ERROR": 11,
+        "DEBUG": 5
+      },
+      "top_error_patterns": [
+        {
+          "pattern": "Connection refused to upstream",
+          "count": 3
+        },
+        {
+          "pattern": "Invalid JWT signature",
+          "count": 3
+        },
+        {
+          "pattern": "Timeout after 30s calling /api/users",
+          "count": 2
+        }
+      ]
+    },
+    "tokens": {
+      "input": 3,
+      "output": 13757,
+      "cache_read": 25306,
+      "cache_creation": 7629
+    },
+    "cost_usd": 0.40427425,
+    "duration_ms": 132817,
+    "tokens_estimated": false
+  },
+  "verdict": {
+    "bricks_correct": false,
+    "raw_llm_correct": false,
+    "bricks_per_field_diffs": [],
+    "raw_llm_per_field_diffs": [
+      {
+        "field": "severity_counts",
+        "expected": {
+          "INFO": 157,
+          "WARN": 25,
+          "ERROR": 11,
+          "DEBUG": 5
+        },
+        "got": {
+          "INFO": 153,
+          "WARN": 25,
+          "ERROR": 11,
+          "DEBUG": 5
+        }
+      }
+    ]
+  },
+  "notes": "post-#66 generality check N=200"
+}

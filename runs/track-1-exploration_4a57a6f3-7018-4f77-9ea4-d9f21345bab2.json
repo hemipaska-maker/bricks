@@ -1,0 +1,57 @@
+{
+  "run_id": "4a57a6f3-7018-4f77-9ea4-d9f21345bab2",
+  "track": "track-1-exploration",
+  "timestamp": "2026-04-22T11:06:44.749015+00:00",
+  "meta": {
+    "git_sha": "bf68452ce79c314d5580cbcc539c4726b0f00289",
+    "pip_freeze_hash": "sha256:6c16775dd80c3c235acabff017c536788a014d8dba534fb68363cce9d491ed12",
+    "model": "sonnet",
+    "seed": 42,
+    "runner": "tracks/track-1-exploration/run.py"
+  },
+  "config": {
+    "case_slug": "mean-only",
+    "data_size": 200
+  },
+  "bricks": {
+    "success": true,
+    "error": null,
+    "outputs": {
+      "mean": 31.14130050000001
+    },
+    "tokens": {
+      "input": 3,
+      "output": 858,
+      "cache_read": 21521,
+      "cache_creation": 8113
+    },
+    "cost_usd": 0.08293175,
+    "duration_ms": 20027,
+    "blueprint_yaml": "name: compute_mean\ndescription: DSL-generated pipeline with 3 steps\ninputs:\n  values: Any\nsteps:\n- name: step_1_count_dict_list\n  brick: count_dict_list\n  params:\n    items: ${inputs.values}\n  save_as: step_1_count_dict_list\n- name: step_2_reduce_sum\n  brick: reduce_sum\n  params:\n    values: ${inputs.values}\n  save_as: step_2_reduce_sum\n- name: step_3_divide\n  brick: divide\n  params:\n    a: ${step_2_reduce_sum.result}\n    b: ${step_1_count_dict_list.result}\n  save_as: step_3_divide\noutputs_map:\n  mean: ${step_3_divide.result}\n",
+    "n_llm_calls": 1,
+    "tokens_estimated": false
+  },
+  "raw_llm": {
+    "success": true,
+    "error": null,
+    "outputs": {
+      "mean": 31.1413
+    },
+    "tokens": {
+      "input": 3,
+      "output": 12861,
+      "cache_read": 25272,
+      "cache_creation": 2016
+    },
+    "cost_usd": 0.346776,
+    "duration_ms": 120948,
+    "tokens_estimated": false
+  },
+  "verdict": {
+    "bricks_correct": true,
+    "raw_llm_correct": true,
+    "bricks_per_field_diffs": [],
+    "raw_llm_per_field_diffs": []
+  },
+  "notes": "cold-start Bricks at N=200"
+}

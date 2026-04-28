@@ -1,0 +1,90 @@
+{
+  "run_id": "00ab797c-fbb4-431e-b2ed-b3e798b2b90a",
+  "track": "track-1-exploration",
+  "timestamp": "2026-04-21T12:01:03.493831+00:00",
+  "meta": {
+    "git_sha": "1c203b83d4b7da1335584bea6e8b3188b2c9c1a8",
+    "pip_freeze_hash": "sha256:89372cbae78de389f5889e67bd9de98d72aac4a2b7d5650591caa5a3697401db",
+    "model": "sonnet",
+    "seed": 42,
+    "runner": "tracks/track-1-exploration/run.py"
+  },
+  "config": {
+    "case_slug": "log-analysis",
+    "data_size": 200
+  },
+  "bricks": {
+    "success": false,
+    "error": "ValueError: for_each: could not extract brick name from do= callable. Ensure the lambda calls exactly one step.brick_name(...).",
+    "outputs": {},
+    "tokens": {
+      "input": 6,
+      "output": 33202,
+      "cache_read": 29697,
+      "cache_creation": 61678
+    },
+    "cost_usd": 1.230416,
+    "duration_ms": 492934,
+    "blueprint_yaml": "",
+    "n_llm_calls": 1,
+    "tokens_estimated": false
+  },
+  "raw_llm": {
+    "success": true,
+    "error": null,
+    "outputs": {
+      "severity_counts": {
+        "INFO": 153,
+        "WARN": 25,
+        "ERROR": 11,
+        "DEBUG": 5
+      },
+      "top_error_patterns": [
+        {
+          "pattern": "Connection refused to upstream",
+          "count": 3
+        },
+        {
+          "pattern": "Invalid JWT signature",
+          "count": 3
+        },
+        {
+          "pattern": "Timeout after 30s calling /api/users",
+          "count": 2
+        }
+      ]
+    },
+    "tokens": {
+      "input": 3,
+      "output": 12830,
+      "cache_read": 25272,
+      "cache_creation": 7465
+    },
+    "cost_usd": 0.38005724999999996,
+    "duration_ms": 131190,
+    "tokens_estimated": false
+  },
+  "verdict": {
+    "bricks_correct": false,
+    "raw_llm_correct": false,
+    "bricks_per_field_diffs": [],
+    "raw_llm_per_field_diffs": [
+      {
+        "field": "severity_counts",
+        "expected": {
+          "INFO": 157,
+          "WARN": 25,
+          "ERROR": 11,
+          "DEBUG": 5
+        },
+        "got": {
+          "INFO": 153,
+          "WARN": 25,
+          "ERROR": 11,
+          "DEBUG": 5
+        }
+      }
+    ]
+  },
+  "notes": "retry post-#57-#58"
+}

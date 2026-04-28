@@ -1,0 +1,60 @@
+{
+  "run_id": "c3e3c214-6736-45c6-ae79-10d17d38f1b6",
+  "track": "track-1-exploration",
+  "timestamp": "2026-04-27T11:35:33.710517+00:00",
+  "meta": {
+    "git_sha": "bf68452ce79c314d5580cbcc539c4726b0f00289",
+    "pip_freeze_hash": "sha256:6c16775dd80c3c235acabff017c536788a014d8dba534fb68363cce9d491ed12",
+    "model": "haiku",
+    "seed": 42,
+    "runner": "tracks/track-1-exploration/run.py"
+  },
+  "config": {
+    "case_slug": "sum-only",
+    "data_size": 5000
+  },
+  "bricks": {
+    "success": true,
+    "error": null,
+    "outputs": {
+      "sum": 166073.85610000006
+    },
+    "tokens": {
+      "input": 10,
+      "output": 552,
+      "cache_read": 30041,
+      "cache_creation": 0
+    },
+    "cost_usd": 0.005774100000000001,
+    "duration_ms": 10664,
+    "blueprint_yaml": "name: sum_values\ndescription: DSL-generated pipeline with 1 steps\ninputs:\n  values: Any\nsteps:\n- name: step_1_reduce_sum\n  brick: reduce_sum\n  params:\n    values: ${inputs.values}\n  save_as: step_1_reduce_sum\noutputs_map:\n  sum: ${step_1_reduce_sum.result}\n",
+    "n_llm_calls": 1,
+    "tokens_estimated": false,
+    "engine_cache_hit": false,
+    "engine_api_calls": 1,
+    "bricks_log_signals": [
+      "bricks.ai.composer INFO Composing blueprint for task (111 chars), 102 bricks in pool"
+    ]
+  },
+  "raw_llm": {
+    "success": false,
+    "error": "TimeoutExpired: Command '['claude', '-p', '--output-format', 'json', '--model', 'haiku']' timed out after 600 seconds",
+    "outputs": {},
+    "tokens": {
+      "input": 0,
+      "output": 0,
+      "cache_read": 0,
+      "cache_creation": 0
+    },
+    "cost_usd": 0.0,
+    "duration_ms": 600059,
+    "tokens_estimated": false
+  },
+  "verdict": {
+    "bricks_correct": true,
+    "raw_llm_correct": false,
+    "bricks_per_field_diffs": [],
+    "raw_llm_per_field_diffs": []
+  },
+  "notes": "haiku sweep"
+}

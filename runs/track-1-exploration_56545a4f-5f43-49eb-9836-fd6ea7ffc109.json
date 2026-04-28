@@ -1,0 +1,59 @@
+{
+  "run_id": "56545a4f-5f43-49eb-9836-fd6ea7ffc109",
+  "track": "track-1-exploration",
+  "timestamp": "2026-04-22T05:37:09.075746+00:00",
+  "meta": {
+    "git_sha": "1c203b83d4b7da1335584bea6e8b3188b2c9c1a8",
+    "pip_freeze_hash": "sha256:89372cbae78de389f5889e67bd9de98d72aac4a2b7d5650591caa5a3697401db",
+    "model": "sonnet",
+    "seed": 42,
+    "runner": "tracks/track-1-exploration/run.py"
+  },
+  "config": {
+    "case_slug": "numeric-stats",
+    "data_size": 50
+  },
+  "bricks": {
+    "success": false,
+    "error": "UnicodeEncodeError: 'charmap' codec can't encode character '\\u2192' in position 34: character maps to <undefined>\nTraceback (most recent call last):\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\tracks\\track-1-exploration\\run.py\", line 208, in _run_bricks\n    result = engine.execute(\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\api.py\", line 217, in execute\n    return self._orchestrator.execute(task, inputs, verbose=verbose)\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\orchestrator\\runtime.py\", line 138, in execute\n    compose_result = self._composer.compose(\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\ai\\composer.py\", line 371, in compose\n    flow_def = self._parse_dsl_response(last.yaml_text)\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\debug_capture.py\", line 36, in _patched_parse\n    print(f\"[debug_capture] raw composer code \u2192 {dump} ({len(raw_code)} chars)\")\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\AppData\\Local\\Programs\\Python\\Python310\\lib\\encodings\\cp1252.py\", line 19, in encode\n    return codecs.charmap_encode(input,self.errors,encoding_table)[0]\nUnicodeEncodeError: 'charmap' codec can't encode character '\\u2192' in position 34: character maps to <undefined>\n",
+    "outputs": {},
+    "tokens": {
+      "input": 3,
+      "output": 2943,
+      "cache_read": 0,
+      "cache_creation": 29571
+    },
+    "cost_usd": 0.25840875,
+    "duration_ms": 50133,
+    "blueprint_yaml": "",
+    "n_llm_calls": 1,
+    "tokens_estimated": false
+  },
+  "raw_llm": {
+    "success": true,
+    "error": null,
+    "outputs": {
+      "sum": 1922.4355,
+      "mean": 38.44871,
+      "min": 0.6801,
+      "max": 96.3444,
+      "count": 50
+    },
+    "tokens": {
+      "input": 3,
+      "output": 2989,
+      "cache_read": 25276,
+      "cache_creation": 1196
+    },
+    "cost_usd": 0.09485299999999999,
+    "duration_ms": 34402,
+    "tokens_estimated": false
+  },
+  "verdict": {
+    "bricks_correct": false,
+    "raw_llm_correct": true,
+    "bricks_per_field_diffs": [],
+    "raw_llm_per_field_diffs": []
+  },
+  "notes": "numeric-stats smoke"
+}

@@ -1,0 +1,1031 @@
+{
+  "scenario": {
+    "id": "ticket-pipeline",
+    "name": "Support Ticket Pipeline",
+    "description": "Find high-priority open tickets and count by category",
+    "task": "Parse the JSON ticket data. Filter to tickets with priority=\"high\" AND status=\"open\".\nCount the total (open_high_count), then count by category:\nbilling (billing_count), technical (technical_count), general (general_count).\n",
+    "data": [
+      {
+        "id": 1,
+        "subject": "Feature not working",
+        "email": "user42@corp.net",
+        "priority": "low",
+        "category": "technical",
+        "status": "open",
+        "created_date": "2024-07-15"
+      },
+      {
+        "id": 2,
+        "subject": "Integration broken",
+        "email": "user79@yahoo.com",
+        "priority": "medium",
+        "category": "technical",
+        "status": "pending",
+        "created_date": "2025-08-24"
+      },
+      {
+        "id": 3,
+        "subject": "API rate limit exceeded",
+        "email": "user116@example.com",
+        "priority": "high",
+        "category": "general",
+        "status": "closed",
+        "created_date": "2024-09-05"
+      },
+      {
+        "id": 4,
+        "subject": "Payment failed",
+        "email": "user153@yahoo.com",
+        "priority": "low",
+        "category": "general",
+        "status": "open",
+        "created_date": "2025-10-14"
+      },
+      {
+        "id": 5,
+        "subject": "Cannot login to account",
+        "email": "user190@example.com",
+        "priority": "medium",
+        "category": "general",
+        "status": "open",
+        "created_date": "2024-11-23"
+      },
+      {
+        "id": 6,
+        "subject": "Password reset not received",
+        "email": "user227@gmail.com",
+        "priority": "high",
+        "category": "general",
+        "status": "pending",
+        "created_date": "2025-12-04"
+      },
+      {
+        "id": 7,
+        "subject": "Account suspended",
+        "email": "user264@example.com",
+        "priority": "low",
+        "category": "billing",
+        "status": "closed",
+        "created_date": "2024-01-13"
+      },
+      {
+        "id": 8,
+        "subject": "Invoice discrepancy",
+        "email": "user301@gmail.com",
+        "priority": "medium",
+        "category": "billing",
+        "status": "closed",
+        "created_date": "2025-02-22"
+      },
+      {
+        "id": 9,
+        "subject": "Billing cycle question",
+        "email": "user338@company.io",
+        "priority": "high",
+        "category": "billing",
+        "status": "open",
+        "created_date": "2024-03-03"
+      },
+      {
+        "id": 10,
+        "subject": "Data export issue",
+        "email": "user375@gmail.com",
+        "priority": "low",
+        "category": "billing",
+        "status": "pending",
+        "created_date": "2025-04-12"
+      },
+      {
+        "id": 11,
+        "subject": "Feature not working",
+        "email": "user412@company.io",
+        "priority": "medium",
+        "category": "technical",
+        "status": "closed",
+        "created_date": "2024-05-21"
+      },
+      {
+        "id": 12,
+        "subject": "Integration broken",
+        "email": "user449@corp.net",
+        "priority": "high",
+        "category": "technical",
+        "status": "closed",
+        "created_date": "2025-06-02"
+      },
+      {
+        "id": 13,
+        "subject": "API rate limit exceeded",
+        "email": "user486@company.io",
+        "priority": "low",
+        "category": "technical",
+        "status": "open",
+        "created_date": "2024-07-11"
+      },
+      {
+        "id": 14,
+        "subject": "Payment failed",
+        "email": "user23@corp.net",
+        "priority": "medium",
+        "category": "technical",
+        "status": "pending",
+        "created_date": "2025-08-20"
+      },
+      {
+        "id": 15,
+        "subject": "Cannot login to account",
+        "email": "user60@yahoo.com",
+        "priority": "high",
+        "category": "general",
+        "status": "pending",
+        "created_date": "2024-09-01"
+      },
+      {
+        "id": 16,
+        "subject": "Password reset not received",
+        "email": "user97@corp.net",
+        "priority": "low",
+        "category": "general",
+        "status": "closed",
+        "created_date": "2025-10-10"
+      },
+      {
+        "id": 17,
+        "subject": "Account suspended",
+        "email": "user134@yahoo.com",
+        "priority": "medium",
+        "category": "general",
+        "status": "open",
+        "created_date": "2024-11-19"
+      },
+      {
+        "id": 18,
+        "subject": "Invoice discrepancy",
+        "email": "user171@example.com",
+        "priority": "high",
+        "category": "general",
+        "status": "pending",
+        "created_date": "2025-12-28"
+      },
+      {
+        "id": 19,
+        "subject": "Billing cycle question",
+        "email": "user208@yahoo.com",
+        "priority": "low",
+        "category": "billing",
+        "status": "pending",
+        "created_date": "2024-01-09"
+      },
+      {
+        "id": 20,
+        "subject": "Data export issue",
+        "email": "user245@example.com",
+        "priority": "medium",
+        "category": "billing",
+        "status": "closed",
+        "created_date": "2025-02-18"
+      },
+      {
+        "id": 21,
+        "subject": "Feature not working",
+        "email": "user282@gmail.com",
+        "priority": "high",
+        "category": "billing",
+        "status": "open",
+        "created_date": "2024-03-27"
+      },
+      {
+        "id": 22,
+        "subject": "Integration broken",
+        "email": "user319@example.com",
+        "priority": "low",
+        "category": "billing",
+        "status": "open",
+        "created_date": "2025-04-08"
+      },
+      {
+        "id": 23,
+        "subject": "API rate limit exceeded",
+        "email": "user356@gmail.com",
+        "priority": "medium",
+        "category": "technical",
+        "status": "pending",
+        "created_date": "2024-05-17"
+      },
+      {
+        "id": 24,
+        "subject": "Payment failed",
+        "email": "user393@company.io",
+        "priority": "high",
+        "category": "technical",
+        "status": "closed",
+        "created_date": "2025-06-26"
+      },
+      {
+        "id": 25,
+        "subject": "Cannot login to account",
+        "email": "user430@gmail.com",
+        "priority": "low",
+        "category": "technical",
+        "status": "open",
+        "created_date": "2024-07-07"
+      },
+      {
+        "id": 26,
+        "subject": "Password reset not received",
+        "email": "user467@company.io",
+        "priority": "medium",
+        "category": "technical",
+        "status": "open",
+        "created_date": "2025-08-16"
+      },
+      {
+        "id": 27,
+        "subject": "Account suspended",
+        "email": "user4@yahoo.com",
+        "priority": "medium",
+        "category": "technical",
+        "status": "open",
+        "created_date": "2024-05-05"
+      },
+      {
+        "id": 28,
+        "subject": "Invoice discrepancy",
+        "email": "user41@example.com",
+        "priority": "high",
+        "category": "technical",
+        "status": "pending",
+        "created_date": "2025-06-14"
+      },
+      {
+        "id": 29,
+        "subject": "Billing cycle question",
+        "email": "user78@yahoo.com",
+        "priority": "low",
+        "category": "technical",
+        "status": "pending",
+        "created_date": "2024-07-23"
+      },
+      {
+        "id": 30,
+        "subject": "Data export issue",
+        "email": "user115@example.com",
+        "priority": "medium",
+        "category": "technical",
+        "status": "closed",
+        "created_date": "2025-08-04"
+      },
+      {
+        "id": 31,
+        "subject": "Feature not working",
+        "email": "user152@gmail.com",
+        "priority": "high",
+        "category": "general",
+        "status": "open",
+        "created_date": "2024-09-13"
+      },
+      {
+        "id": 32,
+        "subject": "Integration broken",
+        "email": "user189@example.com",
+        "priority": "low",
+        "category": "general",
+        "status": "open",
+        "created_date": "2025-10-22"
+      },
+      {
+        "id": 33,
+        "subject": "API rate limit exceeded",
+        "email": "user226@gmail.com",
+        "priority": "medium",
+        "category": "general",
+        "status": "pending",
+        "created_date": "2024-11-03"
+      },
+      {
+        "id": 34,
+        "subject": "Payment failed",
+        "email": "user263@company.io",
+        "priority": "high",
+        "category": "general",
+        "status": "closed",
+        "created_date": "2025-12-12"
+      },
+      {
+        "id": 35,
+        "subject": "Cannot login to account",
+        "email": "user300@gmail.com",
+        "priority": "low",
+        "category": "billing",
+        "status": "open",
+        "created_date": "2024-01-21"
+      },
+      {
+        "id": 36,
+        "subject": "Password reset not received",
+        "email": "user337@company.io",
+        "priority": "medium",
+        "category": "billing",
+        "status": "open",
+        "created_date": "2025-02-02"
+      },
+      {
+        "id": 37,
+        "subject": "Account suspended",
+        "email": "user374@corp.net",
+        "priority": "high",
+        "category": "billing",
+        "status": "pending",
+        "created_date": "2024-03-11"
+      },
+      {
+        "id": 38,
+        "subject": "Invoice discrepancy",
+        "email": "user411@company.io",
+        "priority": "low",
+        "category": "billing",
+        "status": "closed",
+        "created_date": "2025-04-20"
+      },
+      {
+        "id": 39,
+        "subject": "Billing cycle question",
+        "email": "user448@corp.net",
+        "priority": "medium",
+        "category": "technical",
+        "status": "closed",
+        "created_date": "2024-05-01"
+      },
+      {
+        "id": 40,
+        "subject": "Data export issue",
+        "email": "user485@yahoo.com",
+        "priority": "high",
+        "category": "technical",
+        "status": "open",
+        "created_date": "2025-06-10"
+      },
+      {
+        "id": 41,
+        "subject": "Feature not working",
+        "email": "user22@corp.net",
+        "priority": "low",
+        "category": "technical",
+        "status": "pending",
+        "created_date": "2024-07-19"
+      },
+      {
+        "id": 42,
+        "subject": "Integration broken",
+        "email": "user59@yahoo.com",
+        "priority": "medium",
+        "category": "technical",
+        "status": "closed",
+        "created_date": "2025-08-28"
+      },
+      {
+        "id": 43,
+        "subject": "API rate limit exceeded",
+        "email": "user96@example.com",
+        "priority": "high",
+        "category": "general",
+        "status": "closed",
+        "created_date": "2024-09-09"
+      },
+      {
+        "id": 44,
+        "subject": "Payment failed",
+        "email": "user133@yahoo.com",
+        "priority": "low",
+        "category": "general",
+        "status": "open",
+        "created_date": "2025-10-18"
+      },
+      {
+        "id": 45,
+        "subject": "Cannot login to account",
+        "email": "user170@example.com",
+        "priority": "medium",
+        "category": "general",
+        "status": "pending",
+        "created_date": "2024-11-27"
+      },
+      {
+        "id": 46,
+        "subject": "Password reset not received",
+        "email": "user207@gmail.com",
+        "priority": "high",
+        "category": "general",
+        "status": "pending",
+        "created_date": "2025-12-08"
+      },
+      {
+        "id": 47,
+        "subject": "Account suspended",
+        "email": "user244@example.com",
+        "priority": "low",
+        "category": "billing",
+        "status": "closed",
+        "created_date": "2024-01-17"
+      },
+      {
+        "id": 48,
+        "subject": "Invoice discrepancy",
+        "email": "user281@gmail.com",
+        "priority": "medium",
+        "category": "billing",
+        "status": "open",
+        "created_date": "2025-02-26"
+      },
+      {
+        "id": 49,
+        "subject": "Billing cycle question",
+        "email": "user318@company.io",
+        "priority": "high",
+        "category": "billing",
+        "status": "pending",
+        "created_date": "2024-03-07"
+      },
+      {
+        "id": 50,
+        "subject": "Data export issue",
+        "email": "user355@gmail.com",
+        "priority": "low",
+        "category": "billing",
+        "status": "pending",
+        "created_date": "2025-04-16"
+      },
+      {
+        "id": 51,
+        "subject": "Feature not working",
+        "email": "user392@company.io",
+        "priority": "medium",
+        "category": "technical",
+        "status": "closed",
+        "created_date": "2024-05-25"
+      },
+      {
+        "id": 52,
+        "subject": "Integration broken",
+        "email": "user429@corp.net",
+        "priority": "high",
+        "category": "technical",
+        "status": "open",
+        "created_date": "2025-06-06"
+      },
+      {
+        "id": 53,
+        "subject": "API rate limit exceeded",
+        "email": "user466@company.io",
+        "priority": "low",
+        "category": "technical",
+        "status": "open",
+        "created_date": "2024-07-15"
+      },
+      {
+        "id": 54,
+        "subject": "Payment failed",
+        "email": "user3@yahoo.com",
+        "priority": "low",
+        "category": "billing",
+        "status": "open",
+        "created_date": "2025-04-04"
+      },
+      {
+        "id": 55,
+        "subject": "Cannot login to account",
+        "email": "user40@example.com",
+        "priority": "medium",
+        "category": "technical",
+        "status": "pending",
+        "created_date": "2024-05-13"
+      },
+      {
+        "id": 56,
+        "subject": "Password reset not received",
+        "email": "user77@gmail.com",
+        "priority": "high",
+        "category": "technical",
+        "status": "pending",
+        "created_date": "2025-06-22"
+      },
+      {
+        "id": 57,
+        "subject": "Account suspended",
+        "email": "user114@example.com",
+        "priority": "low",
+        "category": "technical",
+        "status": "closed",
+        "created_date": "2024-07-03"
+      },
+      {
+        "id": 58,
+        "subject": "Invoice discrepancy",
+        "email": "user151@gmail.com",
+        "priority": "medium",
+        "category": "technical",
+        "status": "open",
+        "created_date": "2025-08-12"
+      },
+      {
+        "id": 59,
+        "subject": "Billing cycle question",
+        "email": "user188@company.io",
+        "priority": "high",
+        "category": "general",
+        "status": "pending",
+        "created_date": "2024-09-21"
+      },
+      {
+        "id": 60,
+        "subject": "Data export issue",
+        "email": "user225@gmail.com",
+        "priority": "low",
+        "category": "general",
+        "status": "pending",
+        "created_date": "2025-10-02"
+      },
+      {
+        "id": 61,
+        "subject": "Feature not working",
+        "email": "user262@company.io",
+        "priority": "medium",
+        "category": "general",
+        "status": "closed",
+        "created_date": "2024-11-11"
+      },
+      {
+        "id": 62,
+        "subject": "Integration broken",
+        "email": "user299@corp.net",
+        "priority": "high",
+        "category": "general",
+        "status": "open",
+        "created_date": "2025-12-20"
+      },
+      {
+        "id": 63,
+        "subject": "API rate limit exceeded",
+        "email": "user336@company.io",
+        "priority": "low",
+        "category": "billing",
+        "status": "open",
+        "created_date": "2024-01-01"
+      },
+      {
+        "id": 64,
+        "subject": "Payment failed",
+        "email": "user373@corp.net",
+        "priority": "medium",
+        "category": "billing",
+        "status": "pending",
+        "created_date": "2025-02-10"
+      },
+      {
+        "id": 65,
+        "subject": "Cannot login to account",
+        "email": "user410@yahoo.com",
+        "priority": "high",
+        "category": "billing",
+        "status": "closed",
+        "created_date": "2024-03-19"
+      },
+      {
+        "id": 66,
+        "subject": "Password reset not received",
+        "email": "user447@corp.net",
+        "priority": "low",
+        "category": "billing",
+        "status": "open",
+        "created_date": "2025-04-28"
+      },
+      {
+        "id": 67,
+        "subject": "Account suspended",
+        "email": "user484@yahoo.com",
+        "priority": "medium",
+        "category": "technical",
+        "status": "open",
+        "created_date": "2024-05-09"
+      },
+      {
+        "id": 68,
+        "subject": "Invoice discrepancy",
+        "email": "user21@example.com",
+        "priority": "high",
+        "category": "technical",
+        "status": "pending",
+        "created_date": "2025-06-18"
+      },
+      {
+        "id": 69,
+        "subject": "Billing cycle question",
+        "email": "user58@yahoo.com",
+        "priority": "low",
+        "category": "technical",
+        "status": "closed",
+        "created_date": "2024-07-27"
+      },
+      {
+        "id": 70,
+        "subject": "Data export issue",
+        "email": "user95@example.com",
+        "priority": "medium",
+        "category": "technical",
+        "status": "closed",
+        "created_date": "2025-08-08"
+      },
+      {
+        "id": 71,
+        "subject": "Feature not working",
+        "email": "user132@gmail.com",
+        "priority": "high",
+        "category": "general",
+        "status": "open",
+        "created_date": "2024-09-17"
+      },
+      {
+        "id": 72,
+        "subject": "Integration broken",
+        "email": "user169@example.com",
+        "priority": "low",
+        "category": "general",
+        "status": "pending",
+        "created_date": "2025-10-26"
+      },
+      {
+        "id": 73,
+        "subject": "API rate limit exceeded",
+        "email": "user206@gmail.com",
+        "priority": "medium",
+        "category": "general",
+        "status": "closed",
+        "created_date": "2024-11-07"
+      },
+      {
+        "id": 74,
+        "subject": "Payment failed",
+        "email": "user243@company.io",
+        "priority": "high",
+        "category": "general",
+        "status": "closed",
+        "created_date": "2025-12-16"
+      },
+      {
+        "id": 75,
+        "subject": "Cannot login to account",
+        "email": "user280@gmail.com",
+        "priority": "low",
+        "category": "billing",
+        "status": "open",
+        "created_date": "2024-01-25"
+      },
+      {
+        "id": 76,
+        "subject": "Password reset not received",
+        "email": "user317@company.io",
+        "priority": "medium",
+        "category": "billing",
+        "status": "pending",
+        "created_date": "2025-02-06"
+      },
+      {
+        "id": 77,
+        "subject": "Account suspended",
+        "email": "user354@corp.net",
+        "priority": "high",
+        "category": "billing",
+        "status": "pending",
+        "created_date": "2024-03-15"
+      },
+      {
+        "id": 78,
+        "subject": "Invoice discrepancy",
+        "email": "user391@company.io",
+        "priority": "low",
+        "category": "billing",
+        "status": "closed",
+        "created_date": "2025-04-24"
+      },
+      {
+        "id": 79,
+        "subject": "Billing cycle question",
+        "email": "user428@corp.net",
+        "priority": "medium",
+        "category": "technical",
+        "status": "open",
+        "created_date": "2024-05-05"
+      },
+      {
+        "id": 80,
+        "subject": "Data export issue",
+        "email": "user465@yahoo.com",
+        "priority": "high",
+        "category": "technical",
+        "status": "pending",
+        "created_date": "2025-06-14"
+      },
+      {
+        "id": 81,
+        "subject": "Feature not working",
+        "email": "user2@gmail.com",
+        "priority": "high",
+        "category": "billing",
+        "status": "open",
+        "created_date": "2024-03-03"
+      },
+      {
+        "id": 82,
+        "subject": "Integration broken",
+        "email": "user39@example.com",
+        "priority": "low",
+        "category": "billing",
+        "status": "pending",
+        "created_date": "2025-04-12"
+      },
+      {
+        "id": 83,
+        "subject": "API rate limit exceeded",
+        "email": "user76@gmail.com",
+        "priority": "medium",
+        "category": "technical",
+        "status": "closed",
+        "created_date": "2024-05-21"
+      },
+      {
+        "id": 84,
+        "subject": "Payment failed",
+        "email": "user113@company.io",
+        "priority": "high",
+        "category": "technical",
+        "status": "closed",
+        "created_date": "2025-06-02"
+      },
+      {
+        "id": 85,
+        "subject": "Cannot login to account",
+        "email": "user150@gmail.com",
+        "priority": "low",
+        "category": "technical",
+        "status": "open",
+        "created_date": "2024-07-11"
+      },
+      {
+        "id": 86,
+        "subject": "Password reset not received",
+        "email": "user187@company.io",
+        "priority": "medium",
+        "category": "technical",
+        "status": "pending",
+        "created_date": "2025-08-20"
+      },
+      {
+        "id": 87,
+        "subject": "Account suspended",
+        "email": "user224@corp.net",
+        "priority": "high",
+        "category": "general",
+        "status": "pending",
+        "created_date": "2024-09-01"
+      },
+      {
+        "id": 88,
+        "subject": "Invoice discrepancy",
+        "email": "user261@company.io",
+        "priority": "low",
+        "category": "general",
+        "status": "closed",
+        "created_date": "2025-10-10"
+      },
+      {
+        "id": 89,
+        "subject": "Billing cycle question",
+        "email": "user298@corp.net",
+        "priority": "medium",
+        "category": "general",
+        "status": "open",
+        "created_date": "2024-11-19"
+      },
+      {
+        "id": 90,
+        "subject": "Data export issue",
+        "email": "user335@yahoo.com",
+        "priority": "high",
+        "category": "general",
+        "status": "pending",
+        "created_date": "2025-12-28"
+      },
+      {
+        "id": 91,
+        "subject": "Feature not working",
+        "email": "user372@corp.net",
+        "priority": "low",
+        "category": "billing",
+        "status": "pending",
+        "created_date": "2024-01-09"
+      },
+      {
+        "id": 92,
+        "subject": "Integration broken",
+        "email": "user409@yahoo.com",
+        "priority": "medium",
+        "category": "billing",
+        "status": "closed",
+        "created_date": "2025-02-18"
+      },
+      {
+        "id": 93,
+        "subject": "API rate limit exceeded",
+        "email": "user446@example.com",
+        "priority": "high",
+        "category": "billing",
+        "status": "open",
+        "created_date": "2024-03-27"
+      },
+      {
+        "id": 94,
+        "subject": "Payment failed",
+        "email": "user483@yahoo.com",
+        "priority": "low",
+        "category": "billing",
+        "status": "open",
+        "created_date": "2025-04-08"
+      },
+      {
+        "id": 95,
+        "subject": "Cannot login to account",
+        "email": "user20@example.com",
+        "priority": "medium",
+        "category": "technical",
+        "status": "pending",
+        "created_date": "2024-05-17"
+      },
+      {
+        "id": 96,
+        "subject": "Password reset not received",
+        "email": "user57@gmail.com",
+        "priority": "high",
+        "category": "technical",
+        "status": "closed",
+        "created_date": "2025-06-26"
+      },
+      {
+        "id": 97,
+        "subject": "Account suspended",
+        "email": "user94@example.com",
+        "priority": "low",
+        "category": "technical",
+        "status": "open",
+        "created_date": "2024-07-07"
+      },
+      {
+        "id": 98,
+        "subject": "Invoice discrepancy",
+        "email": "user131@gmail.com",
+        "priority": "medium",
+        "category": "technical",
+        "status": "open",
+        "created_date": "2025-08-16"
+      },
+      {
+        "id": 99,
+        "subject": "Billing cycle question",
+        "email": "user168@company.io",
+        "priority": "high",
+        "category": "general",
+        "status": "pending",
+        "created_date": "2024-09-25"
+      },
+      {
+        "id": 100,
+        "subject": "Data export issue",
+        "email": "user205@gmail.com",
+        "priority": "low",
+        "category": "general",
+        "status": "closed",
+        "created_date": "2025-10-06"
+      }
+    ],
+    "expected_output": {
+      "open_high_count": 9,
+      "billing_count": 4,
+      "technical_count": 2,
+      "general_count": 3
+    },
+    "required_bricks": [
+      "extract_json_from_str",
+      "filter_dict_list",
+      "count_dict_list"
+    ]
+  },
+  "result": {
+    "bricks": {
+      "blueprint_yaml": "name: filter_and_count_tickets\ndescription: DSL-generated pipeline with 10 steps\ninputs:\n  raw_api_response: Any\nsteps:\n- name: step_1_extract_json_from_str\n  brick: extract_json_from_str\n  params:\n    text: ${inputs.raw_api_response}\n  save_as: step_1_extract_json_from_str\n- name: step_2_filter_dict_list\n  brick: filter_dict_list\n  params:\n    items: ${step_1_extract_json_from_str.result}\n    key: priority\n    value: high\n  save_as: step_2_filter_dict_list\n- name: step_3_filter_dict_list\n  brick: filter_dict_list\n  params:\n    items: ${step_2_filter_dict_list.result}\n    key: status\n    value: open\n  save_as: step_3_filter_dict_list\n- name: step_4_filter_dict_list\n  brick: filter_dict_list\n  params:\n    items: ${step_3_filter_dict_list.result}\n    key: category\n    value: billing\n  save_as: step_4_filter_dict_list\n- name: step_5_filter_dict_list\n  brick: filter_dict_list\n  params:\n    items: ${step_3_filter_dict_list.result}\n    key: category\n    value: general\n  save_as: step_5_filter_dict_list\n- name: step_6_count_dict_list\n  brick: count_dict_list\n  params:\n    items: ${step_5_filter_dict_list.result}\n  save_as: step_6_count_dict_list\n- name: step_7_count_dict_list\n  brick: count_dict_list\n  params:\n    items: ${step_3_filter_dict_list.result}\n  save_as: step_7_count_dict_list\n- name: step_8_filter_dict_list\n  brick: filter_dict_list\n  params:\n    items: ${step_3_filter_dict_list.result}\n    key: category\n    value: technical\n  save_as: step_8_filter_dict_list\n- name: step_9_count_dict_list\n  brick: count_dict_list\n  params:\n    items: ${step_8_filter_dict_list.result}\n  save_as: step_9_count_dict_list\n- name: step_10_count_dict_list\n  brick: count_dict_list\n  params:\n    items: ${step_4_filter_dict_list.result}\n  save_as: step_10_count_dict_list\noutputs_map:\n  open_high_count: ${step_7_count_dict_list.result}\n  billing_count: ${step_10_count_dict_list.result}\n  technical_count: ${step_9_count_dict_list.result}\n  general_count: ${step_6_count_dict_list.result}\n",
+      "dsl_code": "@flow\ndef filter_and_count_tickets(raw_api_response):\n    parsed       = step.extract_json_from_str(text=raw_api_response)\n    high         = step.filter_dict_list(items=parsed.output, key=\"priority\", value=\"high\")\n    open_high    = step.filter_dict_list(items=high.output, key=\"status\", value=\"open\")\n    open_high_count = step.count_dict_list(items=open_high.output)\n    billing      = step.filter_dict_list(items=open_high.output, key=\"category\", value=\"billing\")\n    technical    = step.filter_dict_list(items=open_high.output, key=\"category\", value=\"technical\")\n    general      = step.filter_dict_list(items=open_high.output, key=\"category\", value=\"general\")\n    billing_count   = step.count_dict_list(items=billing.output)\n    technical_count = step.count_dict_list(items=technical.output)\n    general_count   = step.count_dict_list(items=general.output)\n    return {\n        \"open_high_count\": open_high_count,\n        \"billing_count\": billing_count,\n        \"technical_count\": technical_count,\n        \"general_count\": general_count,\n    }",
+      "bricks_used": [
+        {
+          "name": "filter_dict_list",
+          "category": "",
+          "count": 5
+        },
+        {
+          "name": "count_dict_list",
+          "category": "",
+          "count": 4
+        },
+        {
+          "name": "extract_json_from_str",
+          "category": "",
+          "count": 1
+        }
+      ],
+      "outputs": {
+        "open_high_count": 9,
+        "billing_count": 4,
+        "technical_count": 2,
+        "general_count": 3
+      },
+      "tokens": {
+        "in": 6,
+        "out": 767,
+        "total": 773
+      },
+      "duration_ms": 16702,
+      "checks": [
+        {
+          "key": "open_high_count",
+          "expected": 9,
+          "got": 9,
+          "pass": true
+        },
+        {
+          "key": "billing_count",
+          "expected": 4,
+          "got": 4,
+          "pass": true
+        },
+        {
+          "key": "technical_count",
+          "expected": 2,
+          "got": 2,
+          "pass": true
+        },
+        {
+          "key": "general_count",
+          "expected": 3,
+          "got": 3,
+          "pass": true
+        }
+      ]
+    },
+    "raw_llm": {
+      "response": "{\"open_high_count\": 10, \"billing_count\": 4, \"technical_count\": 2, \"general_count\": 4}",
+      "outputs": {
+        "open_high_count": 10,
+        "billing_count": 4,
+        "technical_count": 2,
+        "general_count": 4
+      },
+      "tokens": {
+        "in": 3,
+        "out": 37,
+        "total": 40
+      },
+      "duration_ms": 6578,
+      "checks": [
+        {
+          "key": "open_high_count",
+          "expected": 9,
+          "got": 10,
+          "pass": false
+        },
+        {
+          "key": "billing_count",
+          "expected": 4,
+          "got": 4,
+          "pass": true
+        },
+        {
+          "key": "technical_count",
+          "expected": 2,
+          "got": 2,
+          "pass": true
+        },
+        {
+          "key": "general_count",
+          "expected": 3,
+          "got": 4,
+          "pass": false
+        }
+      ]
+    },
+    "run_metadata": {
+      "model": "sonnet",
+      "provider": "claude_code",
+      "seed": 42,
+      "version": "0.5.0-dev",
+      "timestamp": "2026-04-28T10:04:16Z"
+    },
+    "_driver_elapsed_ms": 25313
+  }
+}

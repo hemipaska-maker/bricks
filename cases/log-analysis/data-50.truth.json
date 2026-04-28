@@ -1,0 +1,22 @@
+{
+  "severity_counts": {
+    "INFO": 36,
+    "WARN": 9,
+    "ERROR": 4,
+    "DEBUG": 0
+  },
+  "top_error_patterns": [
+    {
+      "pattern": "Database deadlock on orders table",
+      "count": 1
+    },
+    {
+      "pattern": "Rate limit exceeded for client",
+      "count": 1
+    },
+    {
+      "pattern": "S3 upload failed: access denied",
+      "count": 1
+    }
+  ]
+}

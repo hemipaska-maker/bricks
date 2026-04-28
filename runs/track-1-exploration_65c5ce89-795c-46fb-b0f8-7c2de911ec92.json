@@ -1,0 +1,84 @@
+{
+  "run_id": "65c5ce89-795c-46fb-b0f8-7c2de911ec92",
+  "track": "track-1-exploration",
+  "timestamp": "2026-04-27T12:27:43.731927+00:00",
+  "meta": {
+    "git_sha": "bf68452ce79c314d5580cbcc539c4726b0f00289",
+    "pip_freeze_hash": "sha256:6c16775dd80c3c235acabff017c536788a014d8dba534fb68363cce9d491ed12",
+    "model": "sonnet",
+    "seed": 42,
+    "runner": "tracks/track-1-exploration/run.py"
+  },
+  "config": {
+    "case_slug": "bottom3-asc",
+    "data_size": 50
+  },
+  "bricks": {
+    "success": true,
+    "error": null,
+    "outputs": {
+      "bottom": [
+        null,
+        null,
+        null
+      ]
+    },
+    "tokens": {
+      "input": 3,
+      "output": 1282,
+      "cache_read": 25306,
+      "cache_creation": 4532
+    },
+    "cost_usd": 0.073043,
+    "duration_ms": 23074,
+    "blueprint_yaml": "name: bottom_three_values\ndescription: DSL-generated pipeline with 4 steps\ninputs:\n  values: Any\nsteps:\n- name: step_1_for_each\n  brick: __for_each__\n  params:\n    items: ${inputs.values}\n    do_brick: set_dict_field\n    item_kwarg: value\n    static_kwargs:\n      data: {}\n      field: v\n    on_error: fail\n  save_as: step_1_for_each\n- name: step_2_sort_dict_list\n  brick: sort_dict_list\n  params:\n    items: ${step_1_for_each.result}\n    key: v\n    reverse: false\n  save_as: step_2_sort_dict_list\n- name: step_3_take_first_n\n  brick: take_first_n\n  params:\n    items: ${step_2_sort_dict_list.result}\n    n: 3\n  save_as: step_3_take_first_n\n- name: step_4_map_values\n  brick: map_values\n  params:\n    items: ${step_3_take_first_n.result}\n    key: v\n  save_as: step_4_map_values\noutputs_map:\n  bottom: ${step_4_map_values.result}\n",
+    "n_llm_calls": 1,
+    "tokens_estimated": false,
+    "engine_cache_hit": false,
+    "engine_api_calls": 1,
+    "bricks_log_signals": [
+      "bricks.ai.composer INFO Composing blueprint for task (118 chars), 102 bricks in pool"
+    ]
+  },
+  "raw_llm": {
+    "success": true,
+    "error": null,
+    "outputs": {
+      "bottom": [
+        0.6801,
+        0.8751,
+        1.1358
+      ]
+    },
+    "tokens": {
+      "input": 3,
+      "output": 24,
+      "cache_read": 25306,
+      "cache_creation": 1304
+    },
+    "cost_usd": 0.021418,
+    "duration_ms": 5658,
+    "tokens_estimated": false
+  },
+  "verdict": {
+    "bricks_correct": false,
+    "raw_llm_correct": true,
+    "bricks_per_field_diffs": [
+      {
+        "field": "bottom",
+        "expected": [
+          0.6801,
+          0.8751,
+          1.1358
+        ],
+        "got": [
+          null,
+          null,
+          null
+        ]
+      }
+    ],
+    "raw_llm_per_field_diffs": []
+  },
+  "notes": "reliability sweep"
+}

@@ -1,0 +1,347 @@
+{
+  "scenario": {
+    "id": "crm-pipeline",
+    "name": "CRM Pipeline",
+    "description": "Filter active CRM customers and compute revenue statistics",
+    "task": "Parse the JSON customer data. Filter to only active customers (status = \"active\").\nCalculate: total number of active customers (active_count), sum of their monthly_revenue\n(total_active_revenue), and average revenue per active customer (avg_active_revenue).\n",
+    "data": [
+      {
+        "id": 1,
+        "name": "Quinn Taylor",
+        "email": "quinn.taylor0@example.com",
+        "status": "active",
+        "plan": "basic",
+        "monthly_revenue": 50.0,
+        "signup_date": "2020-07-15"
+      },
+      {
+        "id": 2,
+        "name": "Vince Taylor",
+        "email": "vince.taylor1@example.com",
+        "status": "inactive",
+        "plan": "pro",
+        "monthly_revenue": 110.5,
+        "signup_date": "2021-02-18"
+      },
+      {
+        "id": 3,
+        "name": "Alice Taylor",
+        "email": "alice.taylor2@example.com",
+        "status": "suspended",
+        "plan": "enterprise",
+        "monthly_revenue": 501.0,
+        "signup_date": "2022-09-21"
+      },
+      {
+        "id": 4,
+        "name": "Frank Wilson",
+        "email": "frank.wilson3@example.com",
+        "status": "active",
+        "plan": "pro",
+        "monthly_revenue": 116.5,
+        "signup_date": "2023-04-24"
+      },
+      {
+        "id": 5,
+        "name": "Kim Wilson",
+        "email": "kim.wilson4@example.com",
+        "status": "inactive",
+        "plan": "enterprise",
+        "monthly_revenue": 507.0,
+        "signup_date": "2024-11-27"
+      },
+      {
+        "id": 6,
+        "name": "Paul Wilson",
+        "email": "paul.wilson5@example.com",
+        "status": "suspended",
+        "plan": "pro",
+        "monthly_revenue": 122.5,
+        "signup_date": "2020-06-02"
+      },
+      {
+        "id": 7,
+        "name": "Uma Davis",
+        "email": "uma.davis6@example.com",
+        "status": "active",
+        "plan": "enterprise",
+        "monthly_revenue": 513.0,
+        "signup_date": "2021-01-05"
+      },
+      {
+        "id": 8,
+        "name": "Zoe Davis",
+        "email": "zoe.davis7@example.com",
+        "status": "inactive",
+        "plan": "pro",
+        "monthly_revenue": 103.5,
+        "signup_date": "2022-08-08"
+      },
+      {
+        "id": 9,
+        "name": "Eve Davis",
+        "email": "eve.davis8@example.com",
+        "status": "suspended",
+        "plan": "enterprise",
+        "monthly_revenue": 519.0,
+        "signup_date": "2023-03-11"
+      },
+      {
+        "id": 10,
+        "name": "Jack Miller",
+        "email": "jack.miller9@example.com",
+        "status": "active",
+        "plan": "basic",
+        "monthly_revenue": 39.5,
+        "signup_date": "2024-10-14"
+      },
+      {
+        "id": 11,
+        "name": "Olivia Miller",
+        "email": "olivia.miller10@example.com",
+        "status": "inactive",
+        "plan": "enterprise",
+        "monthly_revenue": 500.0,
+        "signup_date": "2020-05-17"
+      },
+      {
+        "id": 12,
+        "name": "Tina Miller",
+        "email": "tina.miller11@example.com",
+        "status": "suspended",
+        "plan": "basic",
+        "monthly_revenue": 45.5,
+        "signup_date": "2021-12-20"
+      },
+      {
+        "id": 13,
+        "name": "Yara Moore",
+        "email": "yara.moore12@example.com",
+        "status": "active",
+        "plan": "enterprise",
+        "monthly_revenue": 506.0,
+        "signup_date": "2022-07-23"
+      },
+      {
+        "id": 14,
+        "name": "Dave Moore",
+        "email": "dave.moore13@example.com",
+        "status": "inactive",
+        "plan": "basic",
+        "monthly_revenue": 51.5,
+        "signup_date": "2023-02-26"
+      },
+      {
+        "id": 15,
+        "name": "Iris Moore",
+        "email": "iris.moore14@example.com",
+        "status": "suspended",
+        "plan": "enterprise",
+        "monthly_revenue": 512.0,
+        "signup_date": "2024-09-01"
+      },
+      {
+        "id": 16,
+        "name": "Ned Clark",
+        "email": "ned.clark15@example.com",
+        "status": "active",
+        "plan": "basic",
+        "monthly_revenue": 32.5,
+        "signup_date": "2020-04-04"
+      },
+      {
+        "id": 17,
+        "name": "Sam Clark",
+        "email": "sam.clark16@example.com",
+        "status": "inactive",
+        "plan": "pro",
+        "monthly_revenue": 118.0,
+        "signup_date": "2021-11-07"
+      },
+      {
+        "id": 18,
+        "name": "Xander Clark",
+        "email": "xander.clark17@example.com",
+        "status": "suspended",
+        "plan": "basic",
+        "monthly_revenue": 38.5,
+        "signup_date": "2022-06-10"
+      },
+      {
+        "id": 19,
+        "name": "Carol Smith",
+        "email": "carol.smith18@example.com",
+        "status": "active",
+        "plan": "pro",
+        "monthly_revenue": 99.0,
+        "signup_date": "2023-01-13"
+      },
+      {
+        "id": 20,
+        "name": "Hank Smith",
+        "email": "hank.smith19@example.com",
+        "status": "inactive",
+        "plan": "basic",
+        "monthly_revenue": 44.5,
+        "signup_date": "2024-08-16"
+      },
+      {
+        "id": 21,
+        "name": "Mia Smith",
+        "email": "mia.smith20@example.com",
+        "status": "suspended",
+        "plan": "pro",
+        "monthly_revenue": 105.0,
+        "signup_date": "2020-03-19"
+      },
+      {
+        "id": 22,
+        "name": "Rose Jones",
+        "email": "rose.jones21@example.com",
+        "status": "active",
+        "plan": "basic",
+        "monthly_revenue": 50.5,
+        "signup_date": "2021-10-22"
+      },
+      {
+        "id": 23,
+        "name": "Wendy Jones",
+        "email": "wendy.jones22@example.com",
+        "status": "inactive",
+        "plan": "pro",
+        "monthly_revenue": 111.0,
+        "signup_date": "2022-05-25"
+      },
+      {
+        "id": 24,
+        "name": "Bob Jones",
+        "email": "bob.jones23@example.com",
+        "status": "suspended",
+        "plan": "enterprise",
+        "monthly_revenue": 501.5,
+        "signup_date": "2023-12-28"
+      },
+      {
+        "id": 25,
+        "name": "Grace Lee",
+        "email": "grace.lee24@example.com",
+        "status": "active",
+        "plan": "pro",
+        "monthly_revenue": 117.0,
+        "signup_date": "2024-07-03"
+      }
+    ],
+    "expected_output": {
+      "active_count": 9,
+      "total_active_revenue": 1524.0,
+      "avg_active_revenue": 169.33
+    },
+    "required_bricks": [
+      "extract_json_from_str",
+      "filter_dict_list",
+      "calculate_aggregates",
+      "count_dict_list"
+    ]
+  },
+  "result": {
+    "bricks": {
+      "blueprint_yaml": "name: active_customer_summary\ndescription: DSL-generated pipeline with 5 steps\ninputs:\n  raw_api_response: Any\nsteps:\n- name: step_1_extract_json_from_str\n  brick: extract_json_from_str\n  params:\n    text: ${inputs.raw_api_response}\n  save_as: step_1_extract_json_from_str\n- name: step_2_filter_dict_list\n  brick: filter_dict_list\n  params:\n    items: ${step_1_extract_json_from_str.result}\n    key: status\n    value: active\n  save_as: step_2_filter_dict_list\n- name: step_3_calculate_aggregates\n  brick: calculate_aggregates\n  params:\n    items: ${step_2_filter_dict_list.result}\n    field: monthly_revenue\n    operation: sum\n  save_as: step_3_calculate_aggregates\n- name: step_4_calculate_aggregates\n  brick: calculate_aggregates\n  params:\n    items: ${step_2_filter_dict_list.result}\n    field: monthly_revenue\n    operation: avg\n  save_as: step_4_calculate_aggregates\n- name: step_5_count_dict_list\n  brick: count_dict_list\n  params:\n    items: ${step_2_filter_dict_list.result}\n  save_as: step_5_count_dict_list\noutputs_map:\n  active_count: ${step_5_count_dict_list.result}\n  total_active_revenue: ${step_3_calculate_aggregates.result}\n  avg_active_revenue: ${step_4_calculate_aggregates.result}\n",
+      "dsl_code": "@flow\ndef active_customer_summary(raw_api_response):\n    parsed   = step.extract_json_from_str(text=raw_api_response)\n    actives  = step.filter_dict_list(items=parsed.output, key=\"status\", value=\"active\")\n    count    = step.count_dict_list(items=actives.output)\n    total    = step.calculate_aggregates(items=actives.output, field=\"monthly_revenue\", operation=\"sum\")\n    average  = step.calculate_aggregates(items=actives.output, field=\"monthly_revenue\", operation=\"avg\")\n    return {\"active_count\": count, \"total_active_revenue\": total, \"avg_active_revenue\": average}",
+      "bricks_used": [
+        {
+          "name": "calculate_aggregates",
+          "category": "",
+          "count": 2
+        },
+        {
+          "name": "extract_json_from_str",
+          "category": "",
+          "count": 1
+        },
+        {
+          "name": "filter_dict_list",
+          "category": "",
+          "count": 1
+        },
+        {
+          "name": "count_dict_list",
+          "category": "",
+          "count": 1
+        }
+      ],
+      "outputs": {
+        "active_count": 9,
+        "total_active_revenue": 1524.0,
+        "avg_active_revenue": 169.33333333333334
+      },
+      "tokens": {
+        "in": 6,
+        "out": 460,
+        "total": 466
+      },
+      "duration_ms": 21375,
+      "checks": [
+        {
+          "key": "active_count",
+          "expected": 9,
+          "got": 9,
+          "pass": true
+        },
+        {
+          "key": "total_active_revenue",
+          "expected": 1524.0,
+          "got": 1524.0,
+          "pass": true
+        },
+        {
+          "key": "avg_active_revenue",
+          "expected": 169.33,
+          "got": 169.33333333333334,
+          "pass": true
+        }
+      ]
+    },
+    "raw_llm": {
+      "response": "{\"active_count\": 9, \"total_active_revenue\": 1023.5, \"avg_active_revenue\": 113.72222222222223}",
+      "outputs": {
+        "active_count": 9,
+        "total_active_revenue": 1023.5,
+        "avg_active_revenue": 113.72222222222223
+      },
+      "tokens": {
+        "in": 3,
+        "out": 40,
+        "total": 43
+      },
+      "duration_ms": 6217,
+      "checks": [
+        {
+          "key": "active_count",
+          "expected": 9,
+          "got": 9,
+          "pass": true
+        },
+        {
+          "key": "total_active_revenue",
+          "expected": 1524.0,
+          "got": 1023.5,
+          "pass": false
+        },
+        {
+          "key": "avg_active_revenue",
+          "expected": 169.33,
+          "got": 113.72222222222223,
+          "pass": false
+        }
+      ]
+    },
+    "run_metadata": {
+      "model": "sonnet",
+      "provider": "claude_code",
+      "seed": 42,
+      "version": "0.5.0-dev",
+      "timestamp": "2026-04-28T10:00:34Z"
+    },
+    "_driver_elapsed_ms": 29688
+  }
+}

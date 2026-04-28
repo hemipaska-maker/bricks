@@ -1,0 +1,70 @@
+{
+  "run_id": "a9df3d7f-b468-4b88-b76a-fa2b544aea20",
+  "track": "track-1-exploration",
+  "timestamp": "2026-04-27T12:27:13.488797+00:00",
+  "meta": {
+    "git_sha": "bf68452ce79c314d5580cbcc539c4726b0f00289",
+    "pip_freeze_hash": "sha256:6c16775dd80c3c235acabff017c536788a014d8dba534fb68363cce9d491ed12",
+    "model": "sonnet",
+    "seed": 42,
+    "runner": "tracks/track-1-exploration/run.py"
+  },
+  "config": {
+    "case_slug": "top3-desc",
+    "data_size": 50
+  },
+  "bricks": {
+    "success": true,
+    "error": null,
+    "outputs": {
+      "top": [
+        96.3444,
+        95.457,
+        90.8208
+      ]
+    },
+    "tokens": {
+      "input": 3,
+      "output": 4507,
+      "cache_read": 25306,
+      "cache_creation": 4534
+    },
+    "cost_usd": 0.1536805,
+    "duration_ms": 83641,
+    "blueprint_yaml": "name: top_three_values\ndescription: DSL-generated pipeline with 4 steps\ninputs:\n  values: Any\nsteps:\n- name: step_1_for_each\n  brick: __for_each__\n  params:\n    items: ${inputs.values}\n    do_brick: divide\n    item_kwarg: a\n    static_kwargs:\n      b: 1\n    on_error: fail\n  save_as: step_1_for_each\n- name: step_2_sort_dict_list\n  brick: sort_dict_list\n  params:\n    items: ${step_1_for_each.result}\n    key: result\n    reverse: true\n  save_as: step_2_sort_dict_list\n- name: step_3_take_first_n\n  brick: take_first_n\n  params:\n    items: ${step_2_sort_dict_list.result}\n    n: 3\n  save_as: step_3_take_first_n\n- name: step_4_map_values\n  brick: map_values\n  params:\n    items: ${step_3_take_first_n.result}\n    key: result\n  save_as: step_4_map_values\noutputs_map:\n  top: ${step_4_map_values.result}\n",
+    "n_llm_calls": 1,
+    "tokens_estimated": false,
+    "engine_cache_hit": false,
+    "engine_api_calls": 1,
+    "bricks_log_signals": [
+      "bricks.ai.composer INFO Composing blueprint for task (115 chars), 102 bricks in pool"
+    ]
+  },
+  "raw_llm": {
+    "success": true,
+    "error": null,
+    "outputs": {
+      "top": [
+        96.3444,
+        95.457,
+        90.8208
+      ]
+    },
+    "tokens": {
+      "input": 3,
+      "output": 23,
+      "cache_read": 25306,
+      "cache_creation": 1305
+    },
+    "cost_usd": 0.02139925,
+    "duration_ms": 5597,
+    "tokens_estimated": false
+  },
+  "verdict": {
+    "bricks_correct": true,
+    "raw_llm_correct": true,
+    "bricks_per_field_diffs": [],
+    "raw_llm_per_field_diffs": []
+  },
+  "notes": "reliability sweep"
+}

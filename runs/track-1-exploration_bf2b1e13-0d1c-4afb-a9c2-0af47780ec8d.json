@@ -1,0 +1,68 @@
+{
+  "run_id": "bf2b1e13-0d1c-4afb-a9c2-0af47780ec8d",
+  "track": "track-1-exploration",
+  "timestamp": "2026-04-27T11:25:21.654694+00:00",
+  "meta": {
+    "git_sha": "bf68452ce79c314d5580cbcc539c4726b0f00289",
+    "pip_freeze_hash": "sha256:6c16775dd80c3c235acabff017c536788a014d8dba534fb68363cce9d491ed12",
+    "model": "haiku",
+    "seed": 42,
+    "runner": "tracks/track-1-exploration/run.py"
+  },
+  "config": {
+    "case_slug": "sum-only",
+    "data_size": 1000
+  },
+  "bricks": {
+    "success": true,
+    "error": null,
+    "outputs": {
+      "sum": 31656.564100000014
+    },
+    "tokens": {
+      "input": 10,
+      "output": 508,
+      "cache_read": 30041,
+      "cache_creation": 0
+    },
+    "cost_usd": 0.0055541,
+    "duration_ms": 8388,
+    "blueprint_yaml": "name: sum_values\ndescription: DSL-generated pipeline with 1 steps\ninputs:\n  values: Any\nsteps:\n- name: step_1_reduce_sum\n  brick: reduce_sum\n  params:\n    values: ${inputs.values}\n  save_as: step_1_reduce_sum\noutputs_map:\n  sum: ${step_1_reduce_sum.result}\n",
+    "n_llm_calls": 1,
+    "tokens_estimated": false,
+    "engine_cache_hit": false,
+    "engine_api_calls": 1,
+    "bricks_log_signals": [
+      "bricks.ai.composer INFO Composing blueprint for task (111 chars), 102 bricks in pool"
+    ]
+  },
+  "raw_llm": {
+    "success": true,
+    "error": null,
+    "outputs": {
+      "sum": 31656.3841
+    },
+    "tokens": {
+      "input": 10,
+      "output": 21052,
+      "cache_read": 25348,
+      "cache_creation": 7068
+    },
+    "cost_usd": 0.1166398,
+    "duration_ms": 233356,
+    "tokens_estimated": false
+  },
+  "verdict": {
+    "bricks_correct": true,
+    "raw_llm_correct": false,
+    "bricks_per_field_diffs": [],
+    "raw_llm_per_field_diffs": [
+      {
+        "field": "sum",
+        "expected": 31656.5641,
+        "got": 31656.3841
+      }
+    ]
+  },
+  "notes": "haiku sweep"
+}

@@ -1,0 +1,90 @@
+{
+  "run_id": "2ce134f2-3c19-4002-b268-3aaee1176b35",
+  "track": "track-1-exploration",
+  "timestamp": "2026-04-21T12:33:25.319756+00:00",
+  "meta": {
+    "git_sha": "1c203b83d4b7da1335584bea6e8b3188b2c9c1a8",
+    "pip_freeze_hash": "sha256:89372cbae78de389f5889e67bd9de98d72aac4a2b7d5650591caa5a3697401db",
+    "model": "sonnet",
+    "seed": 42,
+    "runner": "tracks/track-1-exploration/run.py"
+  },
+  "config": {
+    "case_slug": "log-analysis",
+    "data_size": 200
+  },
+  "bricks": {
+    "success": false,
+    "error": "ComposerError: API call failed: Command '['claude', '-p', '--output-format', 'json', '--model', 'sonnet']' timed out after 600 seconds",
+    "outputs": {},
+    "tokens": {
+      "input": 0,
+      "output": 0,
+      "cache_read": 0,
+      "cache_creation": 0
+    },
+    "cost_usd": 0,
+    "duration_ms": 600061,
+    "blueprint_yaml": "",
+    "n_llm_calls": 0,
+    "tokens_estimated": false
+  },
+  "raw_llm": {
+    "success": true,
+    "error": null,
+    "outputs": {
+      "severity_counts": {
+        "INFO": 153,
+        "WARN": 25,
+        "ERROR": 11,
+        "DEBUG": 5
+      },
+      "top_error_patterns": [
+        {
+          "pattern": "Connection refused to upstream",
+          "count": 3
+        },
+        {
+          "pattern": "Invalid JWT signature",
+          "count": 3
+        },
+        {
+          "pattern": "Timeout after 30s calling /api/users",
+          "count": 2
+        }
+      ]
+    },
+    "tokens": {
+      "input": 3,
+      "output": 15520,
+      "cache_read": 25276,
+      "cache_creation": 7465
+    },
+    "cost_usd": 0.44730925,
+    "duration_ms": 189432,
+    "tokens_estimated": false
+  },
+  "verdict": {
+    "bricks_correct": false,
+    "raw_llm_correct": false,
+    "bricks_per_field_diffs": [],
+    "raw_llm_per_field_diffs": [
+      {
+        "field": "severity_counts",
+        "expected": {
+          "INFO": 157,
+          "WARN": 25,
+          "ERROR": 11,
+          "DEBUG": 5
+        },
+        "got": {
+          "INFO": 153,
+          "WARN": 25,
+          "ERROR": 11,
+          "DEBUG": 5
+        }
+      }
+    ]
+  },
+  "notes": "debug-capture run"
+}

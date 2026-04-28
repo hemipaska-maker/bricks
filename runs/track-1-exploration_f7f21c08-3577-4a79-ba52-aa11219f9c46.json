@@ -1,0 +1,126 @@
+{
+  "run_id": "f7f21c08-3577-4a79-ba52-aa11219f9c46",
+  "track": "track-1-exploration",
+  "timestamp": "2026-04-27T11:01:59.447253+00:00",
+  "meta": {
+    "git_sha": "bf68452ce79c314d5580cbcc539c4726b0f00289",
+    "pip_freeze_hash": "sha256:6c16775dd80c3c235acabff017c536788a014d8dba534fb68363cce9d491ed12",
+    "model": "sonnet",
+    "seed": 42,
+    "runner": "tracks/track-1-exploration/run.py"
+  },
+  "config": {
+    "case_slug": "log-analysis",
+    "data_size": 50
+  },
+  "bricks": {
+    "success": false,
+    "error": "ComposerError: API call failed: Command '['claude', '-p', '--output-format', 'json', '--model', 'sonnet']' timed out after 600 seconds\nTraceback (most recent call last):\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\ai\\composer.py\", line 663, in _make_api_call\n    completion = self._provider.complete(prompt=user_message, system=system)\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\tracks\\track-1-exploration\\run.py\", line 73, in complete\n    res = self._inner.complete(prompt, system)\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\providers\\claudecode\\provider.py\", line 115, in complete\n    result = subprocess.run(  # noqa: S603\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\AppData\\Local\\Programs\\Python\\Python310\\lib\\subprocess.py\", line 505, in run\n    stdout, stderr = process.communicate(input, timeout=timeout)\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\AppData\\Local\\Programs\\Python\\Python310\\lib\\subprocess.py\", line 1154, in communicate\n    stdout, stderr = self._communicate(input, endtime, timeout)\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\AppData\\Local\\Programs\\Python\\Python310\\lib\\subprocess.py\", line 1546, in _communicate\n    raise TimeoutExpired(self.args, orig_timeout)\nsubprocess.TimeoutExpired: Command '['claude', '-p', '--output-format', 'json', '--model', 'sonnet']' timed out after 600 seconds\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\tracks\\track-1-exploration\\run.py\", line 294, in _run_bricks\n    result = engine.execute(\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\api.py\", line 224, in execute\n    return self._orchestrator.execute(task, inputs, verbose=verbose)\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\orchestrator\\runtime.py\", line 138, in execute\n    compose_result = self._composer.compose(\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\ai\\composer.py\", line 382, in compose\n    detail = self._compose_call(1, system, user_message)\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\ai\\composer.py\", line 616, in _compose_call\n    raw_text, in_tok, out_tok, cached_in = self._make_api_call(system, user_message)\n  File \"C:\\Users\\hemip.LAPTOP-CRSEUI93\\Documents\\Claude\\Projects\\Bricks\\Code\\bench-runs\\src\\bricks\\ai\\composer.py\", line 668, in _make_api_call\n    raise ComposerError(f\"API call failed: {exc}\", cause=exc) from exc\nbricks.ai.composer.ComposerError: API call failed: Command '['claude', '-p', '--output-format', 'json', '--model', 'sonnet']' timed out after 600 seconds\n",
+    "outputs": {},
+    "tokens": {
+      "input": 0,
+      "output": 0,
+      "cache_read": 0,
+      "cache_creation": 0
+    },
+    "cost_usd": 0,
+    "duration_ms": 600208,
+    "blueprint_yaml": "",
+    "n_llm_calls": 0,
+    "tokens_estimated": false,
+    "engine_cache_hit": null,
+    "engine_api_calls": null,
+    "bricks_log_signals": [
+      "bricks.ai.composer INFO Composing blueprint for task (482 chars), 102 bricks in pool"
+    ]
+  },
+  "raw_llm": {
+    "success": true,
+    "error": null,
+    "outputs": {
+      "severity_counts": {
+        "INFO": 35,
+        "WARN": 9,
+        "ERROR": 3,
+        "DEBUG": 0
+      },
+      "top_error_patterns": [
+        {
+          "pattern": "Rate limit exceeded for client",
+          "count": 1
+        },
+        {
+          "pattern": "S3 upload failed: access denied",
+          "count": 1
+        },
+        {
+          "pattern": "Timeout after 30s calling /api/users",
+          "count": 1
+        }
+      ]
+    },
+    "tokens": {
+      "input": 3,
+      "output": 3562,
+      "cache_read": 0,
+      "cache_creation": 28087
+    },
+    "cost_usd": 0.26460875,
+    "duration_ms": 44285,
+    "tokens_estimated": false
+  },
+  "verdict": {
+    "bricks_correct": false,
+    "raw_llm_correct": false,
+    "bricks_per_field_diffs": [],
+    "raw_llm_per_field_diffs": [
+      {
+        "field": "severity_counts",
+        "expected": {
+          "INFO": 36,
+          "WARN": 9,
+          "ERROR": 4,
+          "DEBUG": 0
+        },
+        "got": {
+          "INFO": 35,
+          "WARN": 9,
+          "ERROR": 3,
+          "DEBUG": 0
+        }
+      },
+      {
+        "field": "top_error_patterns",
+        "expected": [
+          {
+            "pattern": "Database deadlock on orders table",
+            "count": 1
+          },
+          {
+            "pattern": "Rate limit exceeded for client",
+            "count": 1
+          },
+          {
+            "pattern": "S3 upload failed: access denied",
+            "count": 1
+          }
+        ],
+        "got": [
+          {
+            "pattern": "Rate limit exceeded for client",
+            "count": 1
+          },
+          {
+            "pattern": "S3 upload failed: access denied",
+            "count": 1
+          },
+          {
+            "pattern": "Timeout after 30s calling /api/users",
+            "count": 1
+          }
+        ]
+      }
+    ]
+  },
+  "notes": "post-#66 generality check N=50"
+}

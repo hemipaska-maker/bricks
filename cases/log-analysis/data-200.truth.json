@@ -1,0 +1,22 @@
+{
+  "severity_counts": {
+    "INFO": 157,
+    "WARN": 25,
+    "ERROR": 11,
+    "DEBUG": 5
+  },
+  "top_error_patterns": [
+    {
+      "pattern": "Connection refused to upstream",
+      "count": 3
+    },
+    {
+      "pattern": "Invalid JWT signature",
+      "count": 3
+    },
+    {
+      "pattern": "Timeout after 30s calling /api/users",
+      "count": 2
+    }
+  ]
+}

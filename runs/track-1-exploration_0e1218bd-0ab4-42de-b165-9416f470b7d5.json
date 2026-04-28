@@ -1,0 +1,57 @@
+{
+  "run_id": "0e1218bd-0ab4-42de-b165-9416f470b7d5",
+  "track": "track-1-exploration",
+  "timestamp": "2026-04-22T09:53:22.333596+00:00",
+  "meta": {
+    "git_sha": "bf68452ce79c314d5580cbcc539c4726b0f00289",
+    "pip_freeze_hash": "sha256:6c16775dd80c3c235acabff017c536788a014d8dba534fb68363cce9d491ed12",
+    "model": "sonnet",
+    "seed": 42,
+    "runner": "tracks/track-1-exploration/run.py"
+  },
+  "config": {
+    "case_slug": "count-only",
+    "data_size": 50
+  },
+  "bricks": {
+    "success": true,
+    "error": null,
+    "outputs": {
+      "count": 50
+    },
+    "tokens": {
+      "input": 3,
+      "output": 436,
+      "cache_read": 25300,
+      "cache_creation": 4358
+    },
+    "cost_usd": 0.0508025,
+    "duration_ms": 12129,
+    "blueprint_yaml": "name: count_values\ndescription: DSL-generated pipeline with 1 steps\ninputs:\n  values: Any\nsteps:\n- name: step_1_count_dict_list\n  brick: count_dict_list\n  params:\n    items: ${inputs.values}\n  save_as: step_1_count_dict_list\noutputs_map:\n  count: ${step_1_count_dict_list.result}\n",
+    "n_llm_calls": 1,
+    "tokens_estimated": false
+  },
+  "raw_llm": {
+    "success": true,
+    "error": null,
+    "outputs": {
+      "count": 50
+    },
+    "tokens": {
+      "input": 3,
+      "output": 9,
+      "cache_read": 25300,
+      "cache_creation": 1134
+    },
+    "cost_usd": 0.019977500000000002,
+    "duration_ms": 5216,
+    "tokens_estimated": false
+  },
+  "verdict": {
+    "bricks_correct": true,
+    "raw_llm_correct": true,
+    "bricks_per_field_diffs": [],
+    "raw_llm_per_field_diffs": []
+  },
+  "notes": "post-#66 retry"
+}

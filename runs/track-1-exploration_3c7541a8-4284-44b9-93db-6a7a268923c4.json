@@ -1,0 +1,57 @@
+{
+  "run_id": "3c7541a8-4284-44b9-93db-6a7a268923c4",
+  "track": "track-1-exploration",
+  "timestamp": "2026-04-22T09:54:01.257934+00:00",
+  "meta": {
+    "git_sha": "bf68452ce79c314d5580cbcc539c4726b0f00289",
+    "pip_freeze_hash": "sha256:6c16775dd80c3c235acabff017c536788a014d8dba534fb68363cce9d491ed12",
+    "model": "sonnet",
+    "seed": 42,
+    "runner": "tracks/track-1-exploration/run.py"
+  },
+  "config": {
+    "case_slug": "max-only",
+    "data_size": 50
+  },
+  "bricks": {
+    "success": true,
+    "error": null,
+    "outputs": {
+      "max": 96.3444
+    },
+    "tokens": {
+      "input": 3,
+      "output": 1815,
+      "cache_read": 25300,
+      "cache_creation": 4356
+    },
+    "cost_usd": 0.08526500000000001,
+    "duration_ms": 32117,
+    "blueprint_yaml": "name: find_max_value\ndescription: DSL-generated pipeline with 3 steps\ninputs:\n  values: Any\nsteps:\n- name: step_1_for_each\n  brick: __for_each__\n  params:\n    items: ${inputs.values}\n    do_brick: set_dict_field\n    item_kwarg: value\n    static_kwargs:\n      data: {}\n      field: v\n    on_error: fail\n  save_as: step_1_for_each\n- name: step_2_map_values\n  brick: map_values\n  params:\n    items: ${step_1_for_each.result}\n    key: result\n  save_as: step_2_map_values\n- name: step_3_calculate_aggregates\n  brick: calculate_aggregates\n  params:\n    items: ${step_2_map_values.result}\n    field: v\n    operation: max\n  save_as: step_3_calculate_aggregates\noutputs_map:\n  max: ${step_3_calculate_aggregates.result}\n",
+    "n_llm_calls": 1,
+    "tokens_estimated": false
+  },
+  "raw_llm": {
+    "success": true,
+    "error": null,
+    "outputs": {
+      "max": 96.3444
+    },
+    "tokens": {
+      "input": 3,
+      "output": 12,
+      "cache_read": 25300,
+      "cache_creation": 1134
+    },
+    "cost_usd": 0.0200525,
+    "duration_ms": 5200,
+    "tokens_estimated": false
+  },
+  "verdict": {
+    "bricks_correct": true,
+    "raw_llm_correct": true,
+    "bricks_per_field_diffs": [],
+    "raw_llm_per_field_diffs": []
+  },
+  "notes": "post-#66 retry"
+}

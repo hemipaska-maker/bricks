@@ -1,0 +1,108 @@
+{
+  "scenario": {
+    "id": "custom-example",
+    "name": "Custom Inline Example",
+    "description": "Minimal working example using inline data \u2014 safe to edit and share",
+    "task": "Parse the JSON product data. Filter to products with stock > 0.\nCount the number of available products (available_count) and\ncalculate the total value of available inventory (total_value =\nsum of price * stock for each available product).\n",
+    "data": [
+      {
+        "id": 1,
+        "name": "Keyboard",
+        "price": 79.99,
+        "stock": 12
+      },
+      {
+        "id": 2,
+        "name": "Mouse",
+        "price": 29.99,
+        "stock": 0
+      },
+      {
+        "id": 3,
+        "name": "Monitor",
+        "price": 299.99,
+        "stock": 5
+      },
+      {
+        "id": 4,
+        "name": "Headset",
+        "price": 49.99,
+        "stock": 8
+      },
+      {
+        "id": 5,
+        "name": "Webcam",
+        "price": 89.99,
+        "stock": 0
+      }
+    ],
+    "expected_output": {
+      "available_count": 3,
+      "total_value": 2459.82
+    },
+    "required_bricks": [
+      "extract_json_from_str",
+      "filter_dict_list",
+      "calculate_aggregates"
+    ]
+  },
+  "result": {
+    "bricks": {
+      "outputs": {},
+      "tokens": {
+        "in": 0,
+        "out": 0,
+        "total": 0
+      },
+      "duration_ms": 120093,
+      "checks": [
+        {
+          "key": "available_count",
+          "expected": 3,
+          "pass": false
+        },
+        {
+          "key": "total_value",
+          "expected": 2459.82,
+          "pass": false
+        }
+      ],
+      "error": "API call failed: Command '['claude', '-p', '--output-format', 'json', '--model', 'sonnet']' timed out after 120 seconds"
+    },
+    "raw_llm": {
+      "response": "{\"available_count\": 3, \"total_value\": 2858.27}",
+      "outputs": {
+        "available_count": 3,
+        "total_value": 2858.27
+      },
+      "tokens": {
+        "in": 3,
+        "out": 22,
+        "total": 25
+      },
+      "duration_ms": 5422,
+      "checks": [
+        {
+          "key": "available_count",
+          "expected": 3,
+          "got": 3,
+          "pass": true
+        },
+        {
+          "key": "total_value",
+          "expected": 2459.82,
+          "got": 2858.27,
+          "pass": false
+        }
+      ]
+    },
+    "run_metadata": {
+      "model": "sonnet",
+      "provider": "claude_code",
+      "seed": 42,
+      "version": "0.5.0-dev",
+      "timestamp": "2026-04-28T10:03:49Z"
+    },
+    "_driver_elapsed_ms": 127547
+  }
+}

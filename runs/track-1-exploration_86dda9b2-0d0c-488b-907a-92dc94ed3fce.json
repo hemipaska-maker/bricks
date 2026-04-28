@@ -1,0 +1,66 @@
+{
+  "run_id": "86dda9b2-0d0c-488b-907a-92dc94ed3fce",
+  "track": "track-1-exploration",
+  "timestamp": "2026-04-27T12:36:44.608957+00:00",
+  "meta": {
+    "git_sha": "bf68452ce79c314d5580cbcc539c4726b0f00289",
+    "pip_freeze_hash": "sha256:6c16775dd80c3c235acabff017c536788a014d8dba534fb68363cce9d491ed12",
+    "model": "sonnet",
+    "seed": 42,
+    "runner": "tracks/track-1-exploration/run.py"
+  },
+  "config": {
+    "case_slug": "range-stats",
+    "data_size": 50
+  },
+  "bricks": {
+    "success": true,
+    "error": null,
+    "outputs": {
+      "min": 0.6801,
+      "max": 96.3444,
+      "range": 95.6643
+    },
+    "tokens": {
+      "input": 3,
+      "output": 9074,
+      "cache_read": 25306,
+      "cache_creation": 4524
+    },
+    "cost_usd": 0.267793,
+    "duration_ms": 132501,
+    "blueprint_yaml": "name: min_max_range\ndescription: DSL-generated pipeline with 6 steps\ninputs:\n  values: Any\nsteps:\n- name: step_1_for_each\n  brick: __for_each__\n  params:\n    items: ${inputs.values}\n    do_brick: set_dict_field\n    item_kwarg: value\n    static_kwargs:\n      data: {}\n      field: v\n    on_error: fail\n  save_as: step_1_for_each\n- name: step_2_map_values\n  brick: map_values\n  params:\n    items: ${step_1_for_each.result}\n    key: result\n  save_as: step_2_map_values\n- name: step_3_calculate_aggregates\n  brick: calculate_aggregates\n  params:\n    items: ${step_2_map_values.result}\n    field: v\n    operation: min\n  save_as: step_3_calculate_aggregates\n- name: step_4_calculate_aggregates\n  brick: calculate_aggregates\n  params:\n    items: ${step_2_map_values.result}\n    field: v\n    operation: max\n  save_as: step_4_calculate_aggregates\n- name: step_5_divide\n  brick: divide\n  params:\n    a: ${step_3_calculate_aggregates.result}\n    b: -1\n  save_as: step_5_divide\n- name: step_6_reduce_sum\n  brick: reduce_sum\n  params:\n    values:\n    - ${step_4_calculate_aggregates.result}\n    - ${step_5_divide.result}\n  save_as: step_6_reduce_sum\noutputs_map:\n  min: ${step_3_calculate_aggregates.result}\n  max: ${step_4_calculate_aggregates.result}\n  range: ${step_6_reduce_sum.result}\n",
+    "n_llm_calls": 1,
+    "tokens_estimated": false,
+    "engine_cache_hit": false,
+    "engine_api_calls": 1,
+    "bricks_log_signals": [
+      "bricks.ai.composer INFO Composing blueprint for task (87 chars), 102 bricks in pool"
+    ]
+  },
+  "raw_llm": {
+    "success": true,
+    "error": null,
+    "outputs": {
+      "min": 0.6801,
+      "max": 96.3444,
+      "range": 95.6643
+    },
+    "tokens": {
+      "input": 3,
+      "output": 30,
+      "cache_read": 25306,
+      "cache_creation": 1301
+    },
+    "cost_usd": 0.02154925,
+    "duration_ms": 6064,
+    "tokens_estimated": false
+  },
+  "verdict": {
+    "bricks_correct": true,
+    "raw_llm_correct": true,
+    "bricks_per_field_diffs": [],
+    "raw_llm_per_field_diffs": []
+  },
+  "notes": "reliability sweep"
+}

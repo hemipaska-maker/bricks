@@ -1,0 +1,74 @@
+{
+  "run_id": "ca477528-c143-49ba-9b0d-e6b79d7dc55f",
+  "track": "track-1-exploration",
+  "timestamp": "2026-04-27T12:37:47.000938+00:00",
+  "meta": {
+    "git_sha": "bf68452ce79c314d5580cbcc539c4726b0f00289",
+    "pip_freeze_hash": "sha256:6c16775dd80c3c235acabff017c536788a014d8dba534fb68363cce9d491ed12",
+    "model": "sonnet",
+    "seed": 42,
+    "runner": "tracks/track-1-exploration/run.py"
+  },
+  "config": {
+    "case_slug": "extract-names",
+    "data_size": 5
+  },
+  "bricks": {
+    "success": true,
+    "error": null,
+    "outputs": {
+      "names": [
+        "Alice",
+        "Bob",
+        "Carol",
+        "Dan",
+        "Eve"
+      ]
+    },
+    "tokens": {
+      "input": 3,
+      "output": 39,
+      "cache_read": 25306,
+      "cache_creation": 4530
+    },
+    "cost_usd": 0.0419555,
+    "duration_ms": 7042,
+    "blueprint_yaml": "name: extract_names\ndescription: DSL-generated pipeline with 1 steps\ninputs:\n  records: Any\nsteps:\n- name: step_1_map_values\n  brick: map_values\n  params:\n    items: ${inputs.records}\n    key: name\n  save_as: step_1_map_values\noutputs_map:\n  names: ${step_1_map_values.result}\n",
+    "n_llm_calls": 1,
+    "tokens_estimated": false,
+    "engine_cache_hit": false,
+    "engine_api_calls": 1,
+    "bricks_log_signals": [
+      "bricks.ai.composer INFO Composing blueprint for task (122 chars), 102 bricks in pool"
+    ]
+  },
+  "raw_llm": {
+    "success": true,
+    "error": null,
+    "outputs": {
+      "names": [
+        "Alice",
+        "Bob",
+        "Carol",
+        "Dan",
+        "Eve"
+      ]
+    },
+    "tokens": {
+      "input": 3,
+      "output": 22,
+      "cache_read": 25306,
+      "cache_creation": 1067
+    },
+    "cost_usd": 0.019886749999999998,
+    "duration_ms": 4863,
+    "tokens_estimated": false
+  },
+  "verdict": {
+    "bricks_correct": true,
+    "raw_llm_correct": true,
+    "bricks_per_field_diffs": [],
+    "raw_llm_per_field_diffs": []
+  },
+  "notes": "reliability sweep"
+}
